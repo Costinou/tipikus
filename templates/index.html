@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Tipikus - Choisir une langue{% endblock %}
+
+{% block content %}
+<h1>Tipikus</h1>
+<h2>Choisir une langue</h2>
+
+{% for langue in langues_supportees %}
+    <a href="{{ url_for('langue', langue=langue) }}" class="btn">
+        {{ langue }}
+        {% if langue in langues_existantes %}
+            <small style="opacity: 0.8;">({{ langues_existantes.count(langue) if langues_existantes.count(langue) > 1 else '' }}decks disponibles)</small>
+        {% endif %}
+    </a>
+{% endfor %}
+
+<a href="{{ url_for('nouveau_deck') }}" class="btn btn-secondary" style="margin-top: 30px;">
+    + Nouveau deck
+</a>
+{% endblock %}

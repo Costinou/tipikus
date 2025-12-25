@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Initial tipikus db must be empty
+tipikus.db
+
 # Distribution / packaging
 .Python
 build/

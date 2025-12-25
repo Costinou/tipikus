@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau deck - Tipikus{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
+
+<h1>Nouveau deck</h1>
+{% if langue_preselect %}
+    <h2>{{ langue_preselect }}</h2>
+{% endif %}
+
+<form method="POST" action="{{ url_for('creer_deck') }}" enctype="multipart/form-data">
+    <div class="form-group">
+        <select name="langue" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; background: white;">
+            <option value="">Choisir une langue</option>
+            {% for langue in langues %}
+                <option value="{{ langue }}" {% if langue == langue_preselect %}selected{% endif %}>{{ langue }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <input type="text" name="nom_deck" placeholder="Nom du deck" required>
+    </div>
+    
+    <div class="form-group">
+        <input type="file" name="fichier_json" accept=".json" required>
+    </div>
+    
+    <button type="submit" class="btn">Créer le deck</button>
+</form>
+
+<div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; font-size: 14px; color: #666;">
+    <strong>Format JSON attendu :</strong>
+    <pre style="margin-top: 10px; font-family: monospace;">{
+  "bonjour": "jó napot",
+  "merci": "köszönöm",
+  "au revoir": "viszlát"
+}</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ langue }} - Tipikus{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('index') }}" class="back-link">← Retour aux langues</a>
+
+<h1>{{ langue }}</h1>
+
+{% if decks %}
+    <h2>Vos decks</h2>
+    <ul class="deck-list">
+        {% for deck in decks %}
+            <li class="deck-item">
+                <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn">
+                    {{ deck.nom }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<a href="{{ url_for('nouveau_deck', langue=langue) }}" class="btn btn-secondary">
+    + Nouveau deck
+</a>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Apprentissage - Tipikus{% endblock %}
+
+{% block content %}
+<div class="learning-container">
+    <div class="top-bar">
+        <a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
+        <div class="controls">
+            <button id="mode-toggle" class="mode-toggle" onclick="toggleMode()">
+                FR → Étranger
+            </button>
+            <div class="counter">
+                Mot <span id="compteur">0</span> sur {{ mots|length }}
+            </div>
+        </div>
+    </div>
+
+    <div class="flashcard-container" onclick="revelerTraduction()">
+        <div id="flashcard" class="flashcard">
+            <div id="mot-actuel" class="word-content">Cliquez pour commencer</div>
+            <div class="instruction">Cliquez ou appuyez sur Espace</div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Style spécifique pour annuler le container sur cette page */
+body { padding: 0; background: #0f0f0f; }
+</style>
+
+<script>
+const mots = {{ mots|tojson }};
+let indexActuel = 0;
+let traductionVisible = false;
+let modeInverse = false; // false = FR→Étranger, true = Étranger→FR
+
+function toggleMode() {
+    modeInverse = !modeInverse;
+    const button = document.getElementById('mode-toggle');
+    button.textContent = modeInverse ? 'Étranger → FR' : 'FR → Étranger';
+    
+    // Recommencer avec le nouveau mode
+    indexActuel = 0;
+    melangerMots();
+    afficherMot();
+}
+
+function melangerMots() {
+    for (let i = mots.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [mots[i], mots[j]] = [mots[j], mots[i]];
+    }
+}
+
+function afficherMot() {
+    const flashcard = document.getElementById('flashcard');
+    const motActuel = document.getElementById('mot-actuel');
+    
+    if (indexActuel >= mots.length) {
+        motActuel.innerHTML = '🎉<br>Terminé !<br><small>Cliquez pour recommencer</small>';
+        flashcard.classList.remove('revealed');
+        document.getElementById('compteur').textContent = mots.length;
+        return;
+    }
+    
+    const mot = mots[indexActuel];
+    const texteAffiche = modeInverse ? mot.traduction : mot.mot_francais;
+    
+    motActuel.textContent = texteAffiche;
+    flashcard.classList.remove('revealed');
+    document.getElementById('compteur').textContent = indexActuel + 1;
+    traductionVisible = false;
+}
+
+function revelerTraduction() {
+    const flashcard = document.getElementById('flashcard');
+    const motActuel = document.getElementById('mot-actuel');
+    
+    if (indexActuel >= mots.length) {
+        // Recommencer
+        indexActuel = 0;
+        melangerMots();
+        afficherMot();
+        return;
+    }
+    
+    if (!traductionVisible) {
+        // Révéler la traduction
+        const mot = mots[indexActuel];
+        const traduction = modeInverse ? mot.mot_francais : mot.traduction;
+        
+        motActuel.textContent = traduction;
+        flashcard.classList.add('revealed');
+        traductionVisible = true;
+    } else {
+        // Passer au mot suivant
+        indexActuel++;
+        afficherMot();
+    }
+}
+
+// Initialiser
+melangerMots();
+afficherMot();
+
+// Support des touches clavier
+document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        revelerTraduction();
+    } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        toggleMode();
+    }
+});
+</script>
+{% endblock %}
