@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 import json
 import os
+from io import BytesIO
 from database import (
-    init_db, get_langues, get_decks_by_langue, 
-    create_deck, add_mots_to_deck, get_mots_by_deck
+    init_db, get_langues, get_decks_by_langue, get_deck_by_id,
+    create_deck, add_mots_to_deck, get_mots_by_deck, 
+    get_mots_by_deck_ordered, delete_deck
 )
 
 app = Flask(__name__)
@@ -84,6 +86,68 @@ def creer_deck():
     except Exception as e:
         flash(f'Erreur lors de la création du deck: {str(e)}')
         return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+
+@app.route('/supprimer-deck/<int:deck_id>', methods=['POST'])
+def supprimer_deck(deck_id):
+    """Supprimer un deck"""
+    try:
+        # Récupérer les infos du deck avant suppression
+        deck = get_deck_by_id(deck_id)
+        if not deck:
+            flash('Deck non trouvé')
+            return redirect(url_for('index'))
+        
+        langue = deck['langue']
+        nom_deck = deck['nom']
+        
+        # Supprimer le deck
+        delete_deck(deck_id)
+        
+        flash(f'Deck "{nom_deck}" supprimé avec succès')
+        return redirect(url_for('langue', langue=langue))
+        
+    except Exception as e:
+        flash(f'Erreur lors de la suppression: {str(e)}')
+        return redirect(url_for('index'))
+
+@app.route('/exporter-deck/<int:deck_id>')
+def exporter_deck(deck_id):
+    """Exporter un deck au format JSON"""
+    try:
+        # Récupérer les infos du deck
+        deck = get_deck_by_id(deck_id)
+        if not deck:
+            flash('Deck non trouvé')
+            return redirect(url_for('index'))
+        
+        # Récupérer les mots (triés alphabétiquement)
+        mots_dict = get_mots_by_deck_ordered(deck_id)
+        
+        if not mots_dict:
+            flash('Ce deck ne contient aucun mot')
+            return redirect(url_for('langue', langue=deck['langue']))
+        
+        # Créer le JSON
+        json_content = json.dumps(mots_dict, ensure_ascii=False, indent=2)
+        
+        # Créer un fichier en mémoire
+        buffer = BytesIO()
+        buffer.write(json_content.encode('utf-8'))
+        buffer.seek(0)
+        
+        # Nom du fichier à télécharger
+        filename = f"{deck['nom'].replace(' ', '_')}.json"
+        
+        return send_file(
+            buffer,
+            mimetype='application/json',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        flash(f'Erreur lors de l\'export: {str(e)}')
+        return redirect(url_for('index'))
 
 @app.route('/apprendre/<int:deck_id>')
 def apprendre(deck_id):

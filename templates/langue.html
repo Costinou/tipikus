@@ -11,10 +11,24 @@
     <h2>Vos decks</h2>
     <ul class="deck-list">
         {% for deck in decks %}
-            <li class="deck-item">
-                <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn">
-                    {{ deck.nom }}
-                </a>
+            <li class="deck-item-wrapper">
+                <div class="deck-item-content">
+                    <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-main-btn">
+                        {{ deck.nom }}
+                    </a>
+                    <div class="deck-actions">
+                        <a href="{{ url_for('exporter_deck', deck_id=deck.id) }}" 
+                           class="btn-action btn-export" 
+                           title="Exporter en JSON">
+                            📥
+                        </a>
+                        <button onclick="confirmerSuppression('{{ deck.nom }}', {{ deck.id }})" 
+                                class="btn-action btn-delete" 
+                                title="Supprimer le deck">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
             </li>
         {% endfor %}
     </ul>
@@ -23,4 +37,85 @@
 <a href="{{ url_for('nouveau_deck', langue=langue) }}" class="btn btn-secondary">
     + Nouveau deck
 </a>
+
+<style>
+.deck-item-wrapper {
+    margin-bottom: 15px;
+}
+
+.deck-item-content {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.deck-main-btn {
+    flex: 1;
+    margin: 0;
+}
+
+.deck-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-action {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-export {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.btn-export:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+@media (max-width: 600px) {
+    .deck-item-content {
+        flex-direction: column;
+    }
+    
+    .deck-actions {
+        width: 100%;
+    }
+    
+    .btn-action {
+        flex: 1;
+    }
+}
+</style>
+
+<script>
+function confirmerSuppression(nomDeck, deckId) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le deck "${nomDeck}" ?\n\nCette action est irréversible.`)) {
+        // Créer un formulaire pour envoyer la requête POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/supprimer-deck/${deckId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

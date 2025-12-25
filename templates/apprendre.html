@@ -22,11 +22,52 @@
             <div class="instruction">Cliquez ou appuyez sur Espace</div>
         </div>
     </div>
+    
+    <button id="btn-precedent" class="btn-precedent" onclick="motPrecedent()" disabled>
+        ← Précédent
+    </button>
 </div>
 
 <style>
 /* Style spécifique pour annuler le container sur cette page */
 body { padding: 0; background: #0f0f0f; }
+
+.btn-precedent {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 100;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.btn-precedent:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-precedent:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #4a4a4a 0%, #2d2d2d 100%);
+}
+
+@media (max-width: 768px) {
+    .btn-precedent {
+        bottom: 20px;
+        left: 20px;
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+}
 </style>
 
 <script>
@@ -34,6 +75,7 @@ const mots = {{ mots|tojson }};
 let indexActuel = 0;
 let traductionVisible = false;
 let modeInverse = false; // false = FR→Étranger, true = Étranger→FR
+let historique = []; // Historique des indices visités
 
 function toggleMode() {
     modeInverse = !modeInverse;
@@ -42,8 +84,10 @@ function toggleMode() {
     
     // Recommencer avec le nouveau mode
     indexActuel = 0;
+    historique = [];
     melangerMots();
     afficherMot();
+    updateBoutonPrecedent();
 }
 
 function melangerMots() {
@@ -80,8 +124,10 @@ function revelerTraduction() {
     if (indexActuel >= mots.length) {
         // Recommencer
         indexActuel = 0;
+        historique = [];
         melangerMots();
         afficherMot();
+        updateBoutonPrecedent();
         return;
     }
     
@@ -95,14 +141,31 @@ function revelerTraduction() {
         traductionVisible = true;
     } else {
         // Passer au mot suivant
+        historique.push(indexActuel);
         indexActuel++;
         afficherMot();
+        updateBoutonPrecedent();
     }
+}
+
+function motPrecedent() {
+    if (historique.length > 0) {
+        // Récupérer le dernier index de l'historique
+        indexActuel = historique.pop();
+        afficherMot();
+        updateBoutonPrecedent();
+    }
+}
+
+function updateBoutonPrecedent() {
+    const btn = document.getElementById('btn-precedent');
+    btn.disabled = historique.length === 0;
 }
 
 // Initialiser
 melangerMots();
 afficherMot();
+updateBoutonPrecedent();
 
 // Support des touches clavier
 document.addEventListener('keydown', function(e) {
@@ -112,6 +175,9 @@ document.addEventListener('keydown', function(e) {
     } else if (e.code === 'KeyM') {
         e.preventDefault();
         toggleMode();
+    } else if (e.code === 'ArrowLeft' || e.code === 'Backspace') {
+        e.preventDefault();
+        motPrecedent();
     }
 });
 </script>

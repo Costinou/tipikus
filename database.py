@@ -55,6 +55,16 @@ def get_decks_by_langue(langue):
     conn.close()
     return decks
 
+def get_deck_by_id(deck_id):
+    """Retourne un deck par son ID"""
+    conn = get_db()
+    deck = conn.execute(
+        'SELECT * FROM decks WHERE id = ?', 
+        (deck_id,)
+    ).fetchone()
+    conn.close()
+    return deck
+
 def create_deck(nom, langue):
     """Crée un nouveau deck"""
     conn = get_db()
@@ -95,6 +105,31 @@ def get_mots_by_deck(deck_id):
 
     mots = [dict(row) for row in rows]
     return mots
+
+def get_mots_by_deck_ordered(deck_id):
+    """Retourne tous les mots d'un deck dans l'ordre alphabétique (pour l'export)"""
+    conn = get_db()
+    rows = conn.execute(
+        'SELECT mot_francais, traduction FROM mots WHERE deck_id = ? ORDER BY mot_francais',
+        (deck_id,)
+    ).fetchall()
+    conn.close()
+    
+    # Retourner un dictionnaire pour l'export JSON
+    return {row['mot_francais']: row['traduction'] for row in rows}
+
+def delete_deck(deck_id):
+    """Supprime un deck et tous ses mots associés"""
+    conn = get_db()
+    
+    # Supprimer d'abord tous les mots du deck
+    conn.execute('DELETE FROM mots WHERE deck_id = ?', (deck_id,))
+    
+    # Supprimer ensuite le deck
+    conn.execute('DELETE FROM decks WHERE id = ?', (deck_id,))
+    
+    conn.commit()
+    conn.close()
 
 if __name__ == '__main__':
     # Initialiser la DB si on lance ce fichier directement
