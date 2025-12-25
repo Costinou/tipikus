@@ -40,7 +40,7 @@
 
 <style>
 .deck-item-wrapper {
-    margin-bottom: 15px;
+    margin-bottom: 8px;
 }
 
 .deck-item-content {
@@ -92,16 +92,19 @@
 }
 
 @media (max-width: 600px) {
-    .deck-item-content {
-        flex-direction: column;
-    }
-    
-    .deck-actions {
-        width: 100%;
+    .deck-main-btn {
+        font-size: 14px;
+        padding: 12px 10px;
     }
     
     .btn-action {
-        flex: 1;
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+    }
+    
+    .deck-actions {
+        gap: 6px;
     }
 }
 </style>
