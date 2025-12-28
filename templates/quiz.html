@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz - Tipikus{% endblock %}
+
+{% block content %}
+<div class="learning-container">
+    <div class="top-bar">
+        <a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
+        <div class="controls">
+            <div class="score">
+                Score: <span id="score">0</span>/<span id="total">0</span>
+            </div>
+            <div class="counter">
+                Question <span id="compteur">0</span> sur {{ mots|length }}
+            </div>
+        </div>
+    </div>
+
+    <div class="quiz-container">
+        <div id="quiz-card" class="quiz-card">
+            <div id="question" class="question">Cliquez pour commencer</div>
+            
+            <div id="choices" class="choices">
+                <button class="choice-btn" onclick="verifierReponse(0)">
+                    <span class="choice-letter">A</span>
+                    <span class="choice-text" id="choice-0"></span>
+                </button>
+                <button class="choice-btn" onclick="verifierReponse(1)">
+                    <span class="choice-letter">B</span>
+                    <span class="choice-text" id="choice-1"></span>
+                </button>
+                <button class="choice-btn" onclick="verifierReponse(2)">
+                    <span class="choice-letter">C</span>
+                    <span class="choice-text" id="choice-2"></span>
+                </button>
+            </div>
+            
+            <div id="feedback" class="feedback"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+body { padding: 0; background: #0f0f0f; }
+
+.quiz-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px 20px;
+}
+
+.quiz-card {
+    width: 100%;
+    max-width: 800px;
+    background: #1a1a1a;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+}
+
+.question {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 600;
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 40px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.choices {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.choice-btn {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 18px;
+    color: #e0e0e0;
+    text-align: left;
+}
+
+.choice-btn:hover:not(:disabled) {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
+    transform: translateX(5px);
+}
+
+.choice-btn:disabled {
+    cursor: not-allowed;
+}
+
+.choice-letter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.choice-text {
+    flex: 1;
+}
+
+.choice-btn.correct {
+    border-color: #22c55e;
+    background: linear-gradient(135deg, #1a3a1a 0%, #0f2a0f 100%);
+}
+
+.choice-btn.correct .choice-letter {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.choice-btn.incorrect {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #3a1a1a 0%, #2a0f0f 100%);
+}
+
+.choice-btn.incorrect .choice-letter {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.feedback {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    min-height: 30px;
+}
+
+.feedback.correct {
+    color: #4ade80;
+}
+
+.feedback.incorrect {
+    color: #f87171;
+}
+
+.score {
+    color: #888;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.result-screen {
+    text-align: center;
+    padding: 40px;
+}
+
+.result-screen h2 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.result-screen .final-score {
+    font-size: 2rem;
+    color: #667eea;
+    margin-bottom: 30px;
+}
+
+.result-screen .percentage {
+    font-size: 1.2rem;
+    color: #888;
+    margin-bottom: 40px;
+}
+
+.result-screen .btn {
+    display: inline-block;
+    width: auto;
+    padding: 15px 40px;
+    margin: 10px;
+}
+
+@media (max-width: 768px) {
+    .quiz-card {
+        padding: 30px 20px;
+    }
+    
+    .question {
+        font-size: 1.3rem;
+        margin-bottom: 30px;
+        min-height: 60px;
+    }
+    
+    .choice-btn {
+        padding: 15px;
+        font-size: 16px;
+    }
+    
+    .choice-letter {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+    
+    .controls {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5px;
+    }
+}
+</style>
+
+<script>
+const mots = {{ mots|tojson }};
+let indexActuel = 0;
+let score = 0;
+let bonneReponse = 0;
+let reponduPourCetteQuestion = false;
+
+function melangerArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function genererChoix() {
+    const motCourant = mots[indexActuel];
+    const bonneTraduction = motCourant.traduction;
+    
+    // Obtenir les autres traductions possibles
+    const autresTraductions = mots
+        .filter((m, i) => i !== indexActuel)
+        .map(m => m.traduction);
+    
+    // Mélanger et prendre 2 mauvaises réponses
+    const shuffled = melangerArray(autresTraductions);
+    const mauvaisesReponses = shuffled.slice(0, 2);
+    
+    // Créer les 3 choix et les mélanger
+    const tousLesChoix = [bonneTraduction, ...mauvaisesReponses];
+    const choixMelanges = melangerArray(tousLesChoix);
+    
+    // Trouver l'index de la bonne réponse
+    bonneReponse = choixMelanges.indexOf(bonneTraduction);
+    
+    return choixMelanges;
+}
+
+function afficherQuestion() {
+    if (indexActuel >= mots.length) {
+        afficherResultats();
+        return;
+    }
+    
+    reponduPourCetteQuestion = false;
+    
+    const motCourant = mots[indexActuel];
+    const choix = genererChoix();
+    
+    // Afficher la question
+    document.getElementById('question').textContent = motCourant.mot_francais;
+    
+    // Afficher les choix
+    for (let i = 0; i < 3; i++) {
+        const btn = document.querySelectorAll('.choice-btn')[i];
+        const choiceText = document.getElementById(`choice-${i}`);
+        choiceText.textContent = choix[i];
+        btn.disabled = false;
+        btn.classList.remove('correct', 'incorrect');
+    }
+    
+    // Réinitialiser le feedback
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('feedback').className = 'feedback';
+    
+    // Mettre à jour le compteur
+    document.getElementById('compteur').textContent = indexActuel + 1;
+}
+
+function verifierReponse(choixIndex) {
+    if (reponduPourCetteQuestion) return;
+    
+    reponduPourCetteQuestion = true;
+    const buttons = document.querySelectorAll('.choice-btn');
+    const feedback = document.getElementById('feedback');
+    
+    // Désactiver tous les boutons
+    buttons.forEach(btn => btn.disabled = true);
+    
+    if (choixIndex === bonneReponse) {
+        // Bonne réponse
+        buttons[choixIndex].classList.add('correct');
+        feedback.textContent = '✓ Correct !';
+        feedback.className = 'feedback correct';
+        score++;
+        document.getElementById('score').textContent = score;
+    } else {
+        // Mauvaise réponse
+        buttons[choixIndex].classList.add('incorrect');
+        buttons[bonneReponse].classList.add('correct');
+        feedback.textContent = '✗ Incorrect';
+        feedback.className = 'feedback incorrect';
+    }
+    
+    // Passer à la question suivante après un délai
+    setTimeout(() => {
+        indexActuel++;
+        document.getElementById('total').textContent = indexActuel;
+        afficherQuestion();
+    }, 1500);
+}
+
+function afficherResultats() {
+    const quizCard = document.getElementById('quiz-card');
+    const pourcentage = Math.round((score / mots.length) * 100);
+    
+    let emoji = '🎉';
+    let message = 'Excellent !';
+    
+    if (pourcentage < 50) {
+        emoji = '📚';
+        message = 'Continuez à pratiquer !';
+    } else if (pourcentage < 80) {
+        emoji = '👍';
+        message = 'Bien joué !';
+    }
+    
+    quizCard.innerHTML = `
+        <div class="result-screen">
+            <h2>${emoji}</h2>
+            <div class="final-score">${score} / ${mots.length}</div>
+            <div class="percentage">${pourcentage}% de réussite</div>
+            <div>${message}</div>
+            <a href="{{ url_for('quiz', deck_id=deck_id) }}" class="btn">🔄 Recommencer</a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">🏠 Accueil</a>
+        </div>
+    `;
+}
+
+// Initialiser
+melangerArray(mots);
+document.getElementById('total').textContent = '0';
+afficherQuestion();
+
+// Support du clavier
+document.addEventListener('keydown', function(e) {
+    if (reponduPourCetteQuestion) return;
+    
+    if (e.code === 'KeyA' || e.code === 'Digit1') {
+        e.preventDefault();
+        verifierReponse(0);
+    } else if (e.code === 'KeyB' || e.code === 'Digit2') {
+        e.preventDefault();
+        verifierReponse(1);
+    } else if (e.code === 'KeyC' || e.code === 'Digit3') {
+        e.preventDefault();
+        verifierReponse(2);
+    }
+});
+</script>
+{% endblock %}

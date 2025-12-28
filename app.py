@@ -160,6 +160,21 @@ def apprendre(deck_id):
     
     return render_template('apprendre.html', mots=mots, deck_id=deck_id)
 
+@app.route('/quiz/<int:deck_id>')
+def quiz(deck_id):
+    """Page de quiz QCM pour un deck"""
+    mots = get_mots_by_deck(deck_id)
+    
+    if not mots:
+        flash('Ce deck ne contient aucun mot')
+        return redirect(url_for('index'))
+    
+    if len(mots) < 3:
+        flash('Le deck doit contenir au moins 3 mots pour faire un quiz')
+        return redirect(url_for('index'))
+    
+    return render_template('quiz.html', mots=mots, deck_id=deck_id)
+
 @app.route('/api/mots/<int:deck_id>')
 def api_mots(deck_id):
     """API pour récupérer les mots d'un deck (pour l'AJAX)"""

@@ -13,9 +13,14 @@
         {% for deck in decks %}
             <li class="deck-item-wrapper">
                 <div class="deck-item-content">
-                    <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-main-btn">
-                        {{ deck.nom }}
-                    </a>
+                    <div class="deck-main-buttons">
+                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-btn">
+                            📚 {{ deck.nom }}
+                        </a>
+                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn deck-btn btn-quiz">
+                            🎯 Quiz
+                        </a>
+                    </div>
                     <div class="deck-actions">
                         <a href="{{ url_for('exporter_deck', deck_id=deck.id) }}" 
                            class="btn-action btn-export" 
@@ -40,7 +45,7 @@
 
 <style>
 .deck-item-wrapper {
-    margin-bottom: 8px;
+    margin-bottom: 15px;
 }
 
 .deck-item-content {
@@ -49,9 +54,24 @@
     align-items: stretch;
 }
 
-.deck-main-btn {
+.deck-main-buttons {
+    flex: 1;
+    display: flex;
+    gap: 8px;
+}
+
+.deck-btn {
     flex: 1;
     margin: 0;
+    font-size: 15px;
+}
+
+.btn-quiz {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.btn-quiz:hover {
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
 }
 
 .deck-actions {
@@ -92,9 +112,18 @@
 }
 
 @media (max-width: 600px) {
-    .deck-main-btn {
-        font-size: 14px;
-        padding: 12px 10px;
+    .deck-item-content {
+        flex-wrap: wrap;
+    }
+    
+    .deck-main-buttons {
+        width: 100%;
+        gap: 6px;
+    }
+    
+    .deck-btn {
+        font-size: 13px;
+        padding: 12px 8px;
     }
     
     .btn-action {
