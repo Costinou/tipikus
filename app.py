@@ -8,6 +8,15 @@ from database import (
     get_mots_by_deck_ordered, delete_deck
 )
 
+# Import pour la synthèse vocale
+try:
+    from gtts import gTTS
+    GTTS_AVAILABLE = True
+except ImportError:
+    GTTS_AVAILABLE = False
+    print("Warning: gTTS n'est pas installé. La prononciation audio ne sera pas disponible.")
+    print("Installez-le avec: pip install gtts")
+
 app = Flask(__name__)
 app.secret_key = 'tipikus_secret_key_2024'  # Pour les messages flash
 
@@ -184,6 +193,33 @@ def api_mots(deck_id):
         'mot_francais': mot['mot_francais'],
         'traduction': mot['traduction']
     } for mot in mots])
+
+@app.route('/api/tts')
+def text_to_speech():
+    """API pour générer l'audio TTS en hongrois"""
+    if not GTTS_AVAILABLE:
+        return jsonify({'error': 'gTTS non disponible'}), 503
+    
+    texte = request.args.get('text', '')
+    if not texte:
+        return jsonify({'error': 'Paramètre text manquant'}), 400
+    
+    try:
+        # Générer l'audio en hongrois
+        tts = gTTS(text=texte, lang='hu', slow=False)
+        
+        # Sauvegarder dans un buffer en mémoire
+        audio_buffer = BytesIO()
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+        
+        return send_file(
+            audio_buffer,
+            mimetype='audio/mpeg',
+            as_attachment=False
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.errorhandler(404)
 def page_not_found(e):

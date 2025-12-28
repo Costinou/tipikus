@@ -19,6 +19,9 @@
     <div class="flashcard-container" onclick="revelerTraduction()">
         <div id="flashcard" class="flashcard">
             <div id="mot-actuel" class="word-content">Cliquez pour commencer</div>
+            <button id="btn-audio" class="btn-audio" onclick="prononcerMot(event)" style="display: none;">
+                🔊
+            </button>
             <div class="instruction">Cliquez ou appuyez sur Espace</div>
         </div>
     </div>
@@ -60,12 +63,49 @@ body { padding: 0; background: #0f0f0f; }
     background: linear-gradient(135deg, #4a4a4a 0%, #2d2d2d 100%);
 }
 
+.btn-audio {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 28px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.btn-audio:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-audio:active {
+    transform: scale(0.95);
+}
+
 @media (max-width: 768px) {
     .btn-precedent {
         bottom: 20px;
         left: 20px;
         padding: 10px 16px;
         font-size: 14px;
+    }
+    
+    .btn-audio {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+        top: 15px;
+        right: 15px;
     }
 }
 </style>
@@ -76,6 +116,46 @@ let indexActuel = 0;
 let traductionVisible = false;
 let modeInverse = false; // false = FR→Étranger, true = Étranger→FR
 let historique = []; // Historique des indices visités
+let motHongroisActuel = ''; // Stocke le mot hongrois à prononcer
+let audioElement = null; // Élément audio pour la lecture
+
+function prononcerMot(event) {
+    event.stopPropagation(); // Empêcher le clic de se propager à la flashcard
+    
+    if (!motHongroisActuel) return;
+    
+    // Arrêter toute lecture en cours
+    if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+    }
+    
+    // Créer l'URL de notre API TTS
+    const texteEncode = encodeURIComponent(motHongroisActuel);
+    const url = `/api/tts?text=${texteEncode}`;
+    
+    // Créer et jouer l'audio
+    audioElement = new Audio(url);
+    audioElement.play().catch(err => {
+        console.error('Erreur de lecture audio:', err);
+        alert('Impossible de lire l\'audio. Le serveur TTS n\'est peut-être pas disponible.');
+    });
+}
+
+function afficherBoutonAudio(afficher, texte = '') {
+    const btnAudio = document.getElementById('btn-audio');
+    if (afficher) {
+        motHongroisActuel = texte;
+        btnAudio.style.display = 'flex';
+    } else {
+        btnAudio.style.display = 'none';
+        motHongroisActuel = '';
+        // Arrêter la lecture si on cache le bouton
+        if (audioElement) {
+            audioElement.pause();
+        }
+    }
+}
 
 function toggleMode() {
     modeInverse = !modeInverse;
@@ -88,6 +168,7 @@ function toggleMode() {
     melangerMots();
     afficherMot();
     updateBoutonPrecedent();
+    afficherBoutonAudio(false);
 }
 
 function melangerMots() {
@@ -105,6 +186,7 @@ function afficherMot() {
         motActuel.innerHTML = '🎉<br>Terminé !<br><small>Cliquez pour recommencer</small>';
         flashcard.classList.remove('revealed');
         document.getElementById('compteur').textContent = mots.length;
+        afficherBoutonAudio(false);
         return;
     }
     
@@ -115,6 +197,9 @@ function afficherMot() {
     flashcard.classList.remove('revealed');
     document.getElementById('compteur').textContent = indexActuel + 1;
     traductionVisible = false;
+    
+    // Cacher le bouton audio quand on affiche la question
+    afficherBoutonAudio(false);
 }
 
 function revelerTraduction() {
@@ -139,6 +224,15 @@ function revelerTraduction() {
         motActuel.textContent = traduction;
         flashcard.classList.add('revealed');
         traductionVisible = true;
+        
+        // Afficher le bouton audio si c'est du hongrois
+        if (!modeInverse) {
+            // Mode normal : on affiche le hongrois, donc on peut prononcer
+            afficherBoutonAudio(true, traduction);
+        } else {
+            // Mode inverse : on affiche le français, pas de prononciation
+            afficherBoutonAudio(false);
+        }
     } else {
         // Passer au mot suivant
         historique.push(indexActuel);
@@ -154,6 +248,7 @@ function motPrecedent() {
         indexActuel = historique.pop();
         afficherMot();
         updateBoutonPrecedent();
+        afficherBoutonAudio(false);
     }
 }
 
@@ -178,6 +273,9 @@ document.addEventListener('keydown', function(e) {
     } else if (e.code === 'ArrowLeft' || e.code === 'Backspace') {
         e.preventDefault();
         motPrecedent();
+    } else if (e.code === 'KeyP' && traductionVisible) {
+        e.preventDefault();
+        prononcerMot(e);
     }
 });
 </script>
