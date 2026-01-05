@@ -21,18 +21,7 @@
             <div id="question" class="question">Cliquez pour commencer</div>
             
             <div id="choices" class="choices">
-                <button class="choice-btn" onclick="verifierReponse(0)">
-                    <span class="choice-letter">A</span>
-                    <span class="choice-text" id="choice-0"></span>
-                </button>
-                <button class="choice-btn" onclick="verifierReponse(1)">
-                    <span class="choice-letter">B</span>
-                    <span class="choice-text" id="choice-1"></span>
-                </button>
-                <button class="choice-btn" onclick="verifierReponse(2)">
-                    <span class="choice-letter">C</span>
-                    <span class="choice-text" id="choice-2"></span>
-                </button>
+                <!-- Les boutons seront générés dynamiquement -->
             </div>
             
             <div id="feedback" class="feedback"></div>
@@ -92,6 +81,12 @@ body { padding: 0; background: #0f0f0f; }
     font-size: 18px;
     color: #e0e0e0;
     text-align: left;
+    /* Désactiver tous les effets de surbrillance mobile */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    outline: none !important;
 }
 
 .choice-btn:hover:not(:disabled) {
@@ -102,6 +97,20 @@ body { padding: 0; background: #0f0f0f; }
 
 .choice-btn:disabled {
     cursor: not-allowed;
+}
+
+.choice-btn:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.choice-btn:active {
+    transform: translateX(0);
+    outline: none !important;
+}
+
+.choice-btn::selection {
+    background: transparent;
 }
 
 .choice-letter {
@@ -259,6 +268,29 @@ function genererChoix() {
     return choixMelanges;
 }
 
+function creerBoutons(choix) {
+    const choicesContainer = document.getElementById('choices');
+    const lettres = ['A', 'B', 'C'];
+    
+    // Vider complètement le container
+    choicesContainer.innerHTML = '';
+    
+    // Créer les 3 nouveaux boutons
+    choix.forEach((texte, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerHTML = `
+            <span class="choice-letter">${lettres[index]}</span>
+            <span class="choice-text">${texte}</span>
+        `;
+        
+        // Ajouter l'événement de clic
+        btn.addEventListener('click', () => verifierReponse(index));
+        
+        choicesContainer.appendChild(btn);
+    });
+}
+
 function afficherQuestion() {
     if (indexActuel >= mots.length) {
         afficherResultats();
@@ -273,14 +305,8 @@ function afficherQuestion() {
     // Afficher la question
     document.getElementById('question').textContent = motCourant.mot_francais;
     
-    // Afficher les choix
-    for (let i = 0; i < 3; i++) {
-        const btn = document.querySelectorAll('.choice-btn')[i];
-        const choiceText = document.getElementById(`choice-${i}`);
-        choiceText.textContent = choix[i];
-        btn.disabled = false;
-        btn.classList.remove('correct', 'incorrect');
-    }
+    // Recréer complètement les boutons (élimine tous les états résiduels)
+    creerBoutons(choix);
     
     // Réinitialiser le feedback
     document.getElementById('feedback').textContent = '';
@@ -298,7 +324,9 @@ function verifierReponse(choixIndex) {
     const feedback = document.getElementById('feedback');
     
     // Désactiver tous les boutons
-    buttons.forEach(btn => btn.disabled = true);
+    buttons.forEach(btn => {
+        btn.disabled = true;
+    });
     
     if (choixIndex === bonneReponse) {
         // Bonne réponse
@@ -316,6 +344,7 @@ function verifierReponse(choixIndex) {
     }
     
     // Passer à la question suivante après un délai
+    // Les boutons seront complètement recréés, éliminant tous les états
     setTimeout(() => {
         indexActuel++;
         document.getElementById('total').textContent = indexActuel;

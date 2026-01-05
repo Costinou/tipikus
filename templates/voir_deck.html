@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ deck.nom }} - Tipikus{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('langue', langue=deck.langue) }}" class="back-link">← Retour à {{ deck.langue }}</a>
+
+<h1>{{ deck.nom }}</h1>
+<p style="color: #888; margin-bottom: 30px;">{{ mots|length }} mots</p>
+
+<div class="export-buttons">
+    <a href="{{ url_for('exporter_deck', deck_id=deck.id, format='json') }}" class="btn btn-export">
+        📥 Exporter en JSON
+    </a>
+    <a href="{{ url_for('exporter_deck', deck_id=deck.id, format='csv') }}" class="btn btn-export">
+        📊 Exporter en CSV
+    </a>
+</div>
+
+<div class="table-container">
+    <table class="mots-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Français</th>
+                <th>{{ deck.langue }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mot in mots %}
+            <tr>
+                <td class="numero">{{ loop.index }}</td>
+                <td class="mot-fr">{{ mot.mot_francais }}</td>
+                <td class="mot-traduction">{{ mot.traduction }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.export-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.btn-export {
+    flex: 1;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.btn-export:hover {
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.table-container {
+    background: #1a1a1a;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #333;
+}
+
+.mots-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.mots-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.mots-table th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: white;
+    border-bottom: 2px solid #333;
+}
+
+.mots-table th:first-child {
+    width: 60px;
+    text-align: center;
+}
+
+.mots-table tbody tr {
+    border-bottom: 1px solid #2a2a2a;
+    transition: background 0.2s ease;
+}
+
+.mots-table tbody tr:hover {
+    background: #252525;
+}
+
+.mots-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.mots-table td {
+    padding: 15px;
+    color: #e0e0e0;
+}
+
+.mots-table td.numero {
+    text-align: center;
+    color: #888;
+    font-weight: 500;
+}
+
+.mots-table td.mot-fr {
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.mots-table td.mot-traduction {
+    color: #cccccc;
+}
+
+@media (max-width: 600px) {
+    .export-buttons {
+        flex-direction: column;
+    }
+    
+    .mots-table th,
+    .mots-table td {
+        padding: 10px 8px;
+        font-size: 14px;
+    }
+    
+    .mots-table th:first-child,
+    .mots-table td.numero {
+        width: 40px;
+    }
+}
+</style>
+{% endblock %}

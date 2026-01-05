@@ -22,10 +22,10 @@
                         </a>
                     </div>
                     <div class="deck-actions">
-                        <a href="{{ url_for('exporter_deck', deck_id=deck.id) }}" 
-                           class="btn-action btn-export" 
-                           title="Exporter en JSON">
-                            📥
+                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
+                           class="btn-action btn-view" 
+                           title="Voir le contenu">
+                            👁️
                         </a>
                         <button onclick="confirmerSuppression('{{ deck.nom }}', {{ deck.id }})" 
                                 class="btn-action btn-delete" 
@@ -93,13 +93,13 @@
     text-decoration: none;
 }
 
-.btn-export {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+.btn-view {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 }
 
-.btn-export:hover {
+.btn-view:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
 .btn-delete {

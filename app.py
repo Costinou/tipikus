@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 import json
 import os
+import io
+import csv
 from io import BytesIO
 from database import (
     init_db, get_langues, get_decks_by_langue, get_deck_by_id,
@@ -55,7 +57,7 @@ def creer_deck():
     """Traiter la création d'un nouveau deck"""
     langue = request.form.get('langue', '').strip()
     nom_deck = request.form.get('nom_deck', '').strip()
-    fichier_json = request.files.get('fichier_json')
+    fichier = request.files.get('fichier')
     
     if langue not in LANGUES_SUPPORTEES:
         flash('Veuillez sélectionner une langue valide')
@@ -65,21 +67,64 @@ def creer_deck():
         flash('Le nom du deck est obligatoire')
         return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
     
-    if not fichier_json or fichier_json.filename == '':
-        flash('Veuillez sélectionner un fichier JSON')
+    if not fichier or fichier.filename == '':
+        flash('Veuillez sélectionner un fichier')
+        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+    
+    # Déterminer le type de fichier
+    filename = fichier.filename.lower()
+    is_json = filename.endswith('.json')
+    is_csv = filename.endswith('.csv')
+    
+    if not (is_json or is_csv):
+        flash('Format de fichier non supporté. Utilisez .json ou .csv')
         return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
     
     try:
-        # Lire et parser le JSON
-        contenu = fichier_json.read().decode('utf-8')
-        mots_dict = json.loads(contenu)
+        # Lire le contenu du fichier
+        contenu = fichier.read().decode('utf-8-sig')  # utf-8-sig pour gérer le BOM
         
-        if not isinstance(mots_dict, dict):
-            flash('Le fichier JSON doit être un objet (dictionnaire)')
-            return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+        mots_dict = {}
+        
+        if is_json:
+            # Parser le JSON
+            mots_dict = json.loads(contenu)
+            
+            if not isinstance(mots_dict, dict):
+                flash('Le fichier JSON doit être un objet (dictionnaire)')
+                return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+        
+        elif is_csv:
+            # Parser le CSV
+            lignes = contenu.strip().split('\n')
+            
+            if len(lignes) < 2:
+                flash('Le fichier CSV doit contenir au moins 2 lignes (en-tête + données)')
+                return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+            
+            # Détecter le séparateur (point-virgule ou virgule)
+            premiere_ligne = lignes[0]
+            separateur = ';' if ';' in premiere_ligne else ','
+            
+            # Parser les lignes
+            reader = csv.reader(lignes, delimiter=separateur)
+            lignes_parsed = list(reader)
+            
+            # Ignorer la première ligne si elle ressemble à un en-tête
+            start_index = 0
+            if lignes_parsed[0][0].lower() in ['francais', 'français', 'french', 'fr']:
+                start_index = 1
+            
+            # Extraire les paires mot/traduction
+            for ligne in lignes_parsed[start_index:]:
+                if len(ligne) >= 2:
+                    mot_fr = ligne[0].strip()
+                    traduction = ligne[1].strip()
+                    if mot_fr and traduction:
+                        mots_dict[mot_fr] = traduction
         
         if not mots_dict:
-            flash('Le fichier JSON est vide')
+            flash('Le fichier est vide ou ne contient pas de mots valides')
             return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
         
         # Créer le deck et ajouter les mots
@@ -91,6 +136,9 @@ def creer_deck():
         
     except json.JSONDecodeError:
         flash('Erreur: Fichier JSON invalide')
+        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+    except UnicodeDecodeError:
+        flash('Erreur: Problème d\'encodage du fichier. Assurez-vous qu\'il est en UTF-8')
         return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
     except Exception as e:
         flash(f'Erreur lors de la création du deck: {str(e)}')
@@ -121,7 +169,9 @@ def supprimer_deck(deck_id):
 
 @app.route('/exporter-deck/<int:deck_id>')
 def exporter_deck(deck_id):
-    """Exporter un deck au format JSON"""
+    """Exporter un deck au format JSON ou CSV"""
+    format_export = request.args.get('format', 'json').lower()
+    
     try:
         # Récupérer les infos du deck
         deck = get_deck_by_id(deck_id)
@@ -136,26 +186,73 @@ def exporter_deck(deck_id):
             flash('Ce deck ne contient aucun mot')
             return redirect(url_for('langue', langue=deck['langue']))
         
-        # Créer le JSON
-        json_content = json.dumps(mots_dict, ensure_ascii=False, indent=2)
+        # Nom de base du fichier
+        base_filename = deck['nom'].replace(' ', '_')
         
-        # Créer un fichier en mémoire
-        buffer = BytesIO()
-        buffer.write(json_content.encode('utf-8'))
-        buffer.seek(0)
-        
-        # Nom du fichier à télécharger
-        filename = f"{deck['nom'].replace(' ', '_')}.json"
-        
-        return send_file(
-            buffer,
-            mimetype='application/json',
-            as_attachment=True,
-            download_name=filename
-        )
+        if format_export == 'csv':
+            # Créer le CSV
+            buffer = BytesIO()
+            # Écrire en UTF-8 avec BOM pour Excel
+            buffer.write('\ufeff'.encode('utf-8'))
+            
+            # Créer le writer CSV
+            wrapper = io.TextIOWrapper(buffer, encoding='utf-8', newline='', write_through=True)
+            writer = csv.writer(wrapper, delimiter=';')
+            
+            # Écrire l'en-tête
+            writer.writerow(['Français', deck['langue']])
+            
+            # Écrire les données
+            for mot_fr, traduction in mots_dict.items():
+                writer.writerow([mot_fr, traduction])
+            
+            # Détacher le wrapper pour récupérer le buffer
+            wrapper.detach()
+            buffer.seek(0)
+            
+            return send_file(
+                buffer,
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name=f"{base_filename}.csv"
+            )
+        else:
+            # Export JSON (par défaut)
+            json_content = json.dumps(mots_dict, ensure_ascii=False, indent=2)
+            buffer = BytesIO()
+            buffer.write(json_content.encode('utf-8'))
+            buffer.seek(0)
+            
+            return send_file(
+                buffer,
+                mimetype='application/json',
+                as_attachment=True,
+                download_name=f"{base_filename}.json"
+            )
         
     except Exception as e:
         flash(f'Erreur lors de l\'export: {str(e)}')
+        return redirect(url_for('index'))
+
+@app.route('/voir-deck/<int:deck_id>')
+def voir_deck(deck_id):
+    """Afficher le contenu d'un deck sous forme de tableau"""
+    try:
+        # Récupérer les infos du deck
+        deck = get_deck_by_id(deck_id)
+        if not deck:
+            flash('Deck non trouvé')
+            return redirect(url_for('index'))
+        
+        # Récupérer les mots (dans l'ordre alphabétique)
+        mots = get_mots_by_deck(deck_id)
+        # Trier par mot français
+        mots_sorted = sorted(mots, key=lambda x: x['mot_francais'].lower())
+        
+        return render_template('voir_deck.html', deck=deck, mots=mots_sorted)
+        
+    except Exception as e:
+        flash(f'Erreur: {str(e)}')
         return redirect(url_for('index'))
 
 @app.route('/apprendre/<int:deck_id>')
