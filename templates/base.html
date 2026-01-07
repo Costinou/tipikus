@@ -77,7 +77,7 @@
             margin-bottom: 20px;
         }
         
-        input[type="text"], input[type="file"] {
+        input[type="text"], input[type="file"], select {
             width: 100%;
             padding: 12px;
             border: 1px solid #444;
@@ -88,7 +88,7 @@
             transition: border-color 0.3s ease;
         }
         
-        input[type="text"]:focus, input[type="file"]:focus {
+        input[type="text"]:focus, input[type="file"]:focus, select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -138,7 +138,6 @@
             margin-bottom: 10px;
         }
         
-        /* Styles pour la page d'apprentissage plein écran */
         .learning-container {
             display: flex;
             flex-direction: column;
@@ -321,5 +320,16 @@
     <div class="container">
         {% block content %}{% endblock %}
     </div>
+    
+    <script>
+    // Synchroniser localStorage avec la session
+    (function() {
+        // Sur la page de sélection d'utilisateur, ne rien faire
+        if (window.location.pathname.includes('/select-user') || 
+            window.location.pathname.includes('/create-user')) {
+            return;
+        }
+    })();
+    </script>
 </body>
 </html>

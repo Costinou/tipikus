@@ -112,12 +112,17 @@ body { padding: 0; background: #0f0f0f; }
 
 <script>
 const mots = {{ mots|tojson }};
+const deckId = {{ deck_id }};
 let indexActuel = 0;
 let traductionVisible = false;
 let modeInverse = false; // false = FR→Étranger, true = Étranger→FR
 let historique = []; // Historique des indices visités
 let motHongroisActuel = ''; // Stocke le mot hongrois à prononcer
 let audioElement = null; // Élément audio pour la lecture
+
+// Variables pour le tracking de session
+let sessionStartTime = Date.now();
+let motsVus = 0;
 
 function prononcerMot(event) {
     event.stopPropagation(); // Empêcher le clic de se propager à la flashcard
@@ -207,9 +212,14 @@ function revelerTraduction() {
     const motActuel = document.getElementById('mot-actuel');
     
     if (indexActuel >= mots.length) {
+        // Session terminée - enregistrer les stats
+        enregistrerSession(true);
+        
         // Recommencer
         indexActuel = 0;
         historique = [];
+        motsVus = 0;
+        sessionStartTime = Date.now();
         melangerMots();
         afficherMot();
         updateBoutonPrecedent();
@@ -237,10 +247,38 @@ function revelerTraduction() {
         // Passer au mot suivant
         historique.push(indexActuel);
         indexActuel++;
+        motsVus++; // Incrémenter le compteur de mots vus
         afficherMot();
         updateBoutonPrecedent();
     }
 }
+
+function enregistrerSession(complete) {
+    const dureeSec = Math.floor((Date.now() - sessionStartTime) / 1000);
+    
+    // Envoyer les données au serveur
+    fetch('/api/session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            deck_id: deckId,
+            type_session: 'flashcard',
+            nombre_mots_vus: motsVus,
+            score: 0,
+            duree_secondes: dureeSec,
+            complete: complete
+        })
+    }).catch(err => console.error('Erreur enregistrement session:', err));
+}
+
+// Enregistrer la session si l'utilisateur quitte la page
+window.addEventListener('beforeunload', function() {
+    if (motsVus > 0) {
+        enregistrerSession(false);
+    }
+});
 
 function motPrecedent() {
     if (historique.length > 0) {

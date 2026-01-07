@@ -231,10 +231,14 @@ body { padding: 0; background: #0f0f0f; }
 
 <script>
 const mots = {{ mots|tojson }};
+const deckId = {{ deck_id }};
 let indexActuel = 0;
 let score = 0;
 let bonneReponse = 0;
 let reponduPourCetteQuestion = false;
+
+// Variables pour le tracking de session
+let sessionStartTime = Date.now();
 
 function melangerArray(array) {
     const arr = [...array];
@@ -356,6 +360,9 @@ function afficherResultats() {
     const quizCard = document.getElementById('quiz-card');
     const pourcentage = Math.round((score / mots.length) * 100);
     
+    // Enregistrer la session complète
+    enregistrerSession(true);
+    
     let emoji = '🎉';
     let message = 'Excellent !';
     
@@ -378,6 +385,33 @@ function afficherResultats() {
         </div>
     `;
 }
+
+function enregistrerSession(complete) {
+    const dureeSec = Math.floor((Date.now() - sessionStartTime) / 1000);
+    
+    // Envoyer les données au serveur
+    fetch('/api/session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            deck_id: deckId,
+            type_session: 'quiz',
+            nombre_mots_vus: indexActuel,
+            score: score,
+            duree_secondes: dureeSec,
+            complete: complete
+        })
+    }).catch(err => console.error('Erreur enregistrement session:', err));
+}
+
+// Enregistrer la session si l'utilisateur quitte la page
+window.addEventListener('beforeunload', function() {
+    if (indexActuel > 0 && indexActuel < mots.length) {
+        enregistrerSession(false);
+    }
+});
 
 // Initialiser
 melangerArray(mots);
