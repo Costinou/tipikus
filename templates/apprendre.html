@@ -8,7 +8,7 @@
         <a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
         <div class="controls">
             <button id="mode-toggle" class="mode-toggle" onclick="toggleMode()">
-                FR → Étranger
+                FR → Hongrois
             </button>
             <div class="counter">
                 Mot <span id="compteur">0</span> sur {{ mots|length }}
@@ -111,21 +111,22 @@ body { padding: 0; background: #0f0f0f; }
 </style>
 
 <script>
+    
 const mots = {{ mots|tojson }};
 const deckId = {{ deck_id }};
 let indexActuel = 0;
 let traductionVisible = false;
-let modeInverse = false; // false = FR→Étranger, true = Étranger→FR
-let historique = []; // Historique des indices visités
-let motHongroisActuel = ''; // Stocke le mot hongrois à prononcer
-let audioElement = null; // Élément audio pour la lecture
+let modeInverse = false; // false = FR→Hongrois, true = Hongrois→FR
+let historique = [];
+let motHongroisActuel = ''; // Stocke TOUJOURS le mot hongrois
+let audioElement = null;
 
 // Variables pour le tracking de session
 let sessionStartTime = Date.now();
 let motsVus = 0;
 
 function prononcerMot(event) {
-    event.stopPropagation(); // Empêcher le clic de se propager à la flashcard
+    event.stopPropagation();
     
     if (!motHongroisActuel) return;
     
@@ -147,14 +148,12 @@ function prononcerMot(event) {
     });
 }
 
-function afficherBoutonAudio(afficher, texte = '') {
+function afficherBoutonAudio(afficher) {
     const btnAudio = document.getElementById('btn-audio');
-    if (afficher) {
-        motHongroisActuel = texte;
+    if (afficher && motHongroisActuel) {
         btnAudio.style.display = 'flex';
     } else {
         btnAudio.style.display = 'none';
-        motHongroisActuel = '';
         // Arrêter la lecture si on cache le bouton
         if (audioElement) {
             audioElement.pause();
@@ -165,7 +164,7 @@ function afficherBoutonAudio(afficher, texte = '') {
 function toggleMode() {
     modeInverse = !modeInverse;
     const button = document.getElementById('mode-toggle');
-    button.textContent = modeInverse ? 'Étranger → FR' : 'FR → Étranger';
+    button.textContent = modeInverse ? 'Hongrois → FR' : 'FR → Hongrois';
     
     // Recommencer avec le nouveau mode
     indexActuel = 0;
@@ -173,7 +172,6 @@ function toggleMode() {
     melangerMots();
     afficherMot();
     updateBoutonPrecedent();
-    afficherBoutonAudio(false);
 }
 
 function melangerMots() {
@@ -192,10 +190,16 @@ function afficherMot() {
         flashcard.classList.remove('revealed');
         document.getElementById('compteur').textContent = mots.length;
         afficherBoutonAudio(false);
+        motHongroisActuel = '';
         return;
     }
     
     const mot = mots[indexActuel];
+    
+    // TOUJOURS stocker le mot hongrois (peu importe le mode)
+    motHongroisActuel = mot.traduction;
+    
+    // Afficher la question selon le mode
     const texteAffiche = modeInverse ? mot.traduction : mot.mot_francais;
     
     motActuel.textContent = texteAffiche;
@@ -203,8 +207,13 @@ function afficherMot() {
     document.getElementById('compteur').textContent = indexActuel + 1;
     traductionVisible = false;
     
-    // Cacher le bouton audio quand on affiche la question
-    afficherBoutonAudio(false);
+    // En mode inverse, on affiche du hongrois dès le début → bouton visible
+    // En mode normal, on affiche du français → bouton caché
+    if (modeInverse) {
+        afficherBoutonAudio(true);
+    } else {
+        afficherBoutonAudio(false);
+    }
 }
 
 function revelerTraduction() {
@@ -235,19 +244,14 @@ function revelerTraduction() {
         flashcard.classList.add('revealed');
         traductionVisible = true;
         
-        // Afficher le bouton audio si c'est du hongrois
-        if (!modeInverse) {
-            // Mode normal : on affiche le hongrois, donc on peut prononcer
-            afficherBoutonAudio(true, traduction);
-        } else {
-            // Mode inverse : on affiche le français, pas de prononciation
-            afficherBoutonAudio(false);
-        }
+        // En mode normal, on vient d'afficher du hongrois → bouton visible
+        // En mode inverse, on affiche du français → bouton reste visible (on peut toujours écouter la question)
+        afficherBoutonAudio(true);
     } else {
         // Passer au mot suivant
         historique.push(indexActuel);
         indexActuel++;
-        motsVus++; // Incrémenter le compteur de mots vus
+        motsVus++;
         afficherMot();
         updateBoutonPrecedent();
     }
@@ -256,7 +260,6 @@ function revelerTraduction() {
 function enregistrerSession(complete) {
     const dureeSec = Math.floor((Date.now() - sessionStartTime) / 1000);
     
-    // Envoyer les données au serveur
     fetch('/api/session', {
         method: 'POST',
         headers: {
@@ -282,11 +285,9 @@ window.addEventListener('beforeunload', function() {
 
 function motPrecedent() {
     if (historique.length > 0) {
-        // Récupérer le dernier index de l'historique
         indexActuel = historique.pop();
         afficherMot();
         updateBoutonPrecedent();
-        afficherBoutonAudio(false);
     }
 }
 
@@ -311,7 +312,7 @@ document.addEventListener('keydown', function(e) {
     } else if (e.code === 'ArrowLeft' || e.code === 'Backspace') {
         e.preventDefault();
         motPrecedent();
-    } else if (e.code === 'KeyP' && traductionVisible) {
+    } else if (e.code === 'KeyP') {
         e.preventDefault();
         prononcerMot(e);
     }

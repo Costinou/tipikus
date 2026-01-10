@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Tipikus - Choisir une langue{% endblock %}
+{% block title %}Tipikus - Apprentissage du hongrois{% endblock %}
 
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <h1>Tipikus</h1>
+    <h1>🇭🇺 Tipikus</h1>
     <a href="{{ url_for('stats_globales') }}" class="btn-stats-header">
         📊 Statistiques
     </a>
@@ -21,14 +21,14 @@
 </div>
 {% endif %}
 
-<h2>Choisir une langue</h2>
+<h2>Choisir un niveau</h2>
 
-{% for langue in langues_supportees %}
-    <a href="{{ url_for('langue', langue=langue) }}" class="btn langue-btn">
-        <span class="langue-nom">{{ langue }}</span>
-        {% if langue in langues_existantes %}
-            <span class="langue-info">
-                {{ langues_existantes[langue] }} deck{{ 's' if langues_existantes[langue] > 1 else '' }}
+{% for niveau in niveaux_disponibles %}
+    <a href="{{ url_for('niveau', niveau=niveau) }}" class="btn niveau-btn">
+        <span class="niveau-nom">{{ niveau }}</span>
+        {% if niveau in niveaux_counts %}
+            <span class="niveau-info">
+                {{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}
             </span>
         {% endif %}
     </a>
@@ -74,17 +74,17 @@
     background: rgba(102, 126, 234, 0.1);
 }
 
-.langue-btn {
+.niveau-btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.langue-nom {
+.niveau-nom {
     font-weight: 600;
 }
 
-.langue-info {
+.niveau-info {
     font-size: 14px;
     opacity: 0.7;
 }

@@ -6,11 +6,12 @@ import csv
 from io import BytesIO
 from functools import wraps
 from database import (
-    init_db, get_langues, get_decks_by_langue, get_deck_by_id,
+    init_db, get_niveaux_with_counts, get_decks_by_niveau, get_deck_by_id,
     create_deck, add_mots_to_deck, get_mots_by_deck, 
-    get_mots_by_deck_ordered, delete_deck,
-    create_session, get_stats_deck, get_stats_langue, get_stats_globales, calculer_streak,
-    get_all_users, get_user_by_id, create_user, delete_user
+    get_mots_by_deck_ordered, delete_deck, can_delete_deck,
+    create_session, get_stats_deck, get_stats_niveau, get_stats_globales, calculer_streak,
+    get_all_users, get_user_by_id, get_user_by_name, create_user, delete_user,
+    NIVEAUX_DISPONIBLES
 )
 
 # Import pour la synthèse vocale
@@ -19,29 +20,23 @@ try:
     GTTS_AVAILABLE = True
 except ImportError:
     GTTS_AVAILABLE = False
-    print("Warning: gTTS n'est pas installé. La prononciation audio ne sera pas disponible.")
-    print("Installez-le avec: pip install gtts")
+    print("Warning: gTTS n'est pas installé.")
 
 app = Flask(__name__)
-app.secret_key = 'tipikus_secret_key_2024'  # Pour les messages flash et sessions
+app.secret_key = 'tipikus_secret_key_2024'
 
-# Configuration des sessions - sessions permanentes pour 1 an
-app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 an en secondes
+# Configuration des sessions
+app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 an
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-# Langues supportées (constante)
-LANGUES_SUPPORTEES = ['Magyarul', 'Polonais', 'Espagnol']
-
-# Routes pour la sélection d'utilisateur
+# ========== ROUTES UTILISATEURS ==========
 
 @app.route('/api/select-user', methods=['POST'])
 def api_select_user():
     """API pour sélectionner un utilisateur"""
     user_id = request.form.get('user_id')
     user_name = request.form.get('user_name')
-    
-    print(f"[DEBUG] Sélection utilisateur - user_id: {user_id}, user_name: {user_name}")
     
     if not user_id:
         flash('Erreur: utilisateur non sélectionné')
@@ -53,26 +48,17 @@ def api_select_user():
         flash('Erreur: ID utilisateur invalide')
         return redirect(url_for('select_user'))
     
-    # Vérifier que l'utilisateur existe
     user = get_user_by_id(user_id)
     if not user:
         flash('Erreur: utilisateur introuvable')
         return redirect(url_for('select_user'))
     
-    print(f"[DEBUG] Utilisateur trouvé: {user}")
-    
-    # Nettoyer la session d'abord
     session.clear()
-    
-    # Stocker dans la session Flask (permanente)
     session.permanent = True
     session['user_id'] = user_id
     session['user_name'] = user_name
-    session.modified = True  # Forcer Flask à sauvegarder la session
+    session.modified = True
     
-    print(f"[DEBUG] Session après stockage: {dict(session)}")
-    
-    # Rediriger vers l'accueil
     return redirect(url_for('index'))
 
 @app.route('/select-user')
@@ -91,19 +77,17 @@ def create_user_post():
         return redirect(url_for('select_user', error='Le nom est obligatoire'))
     
     if len(nom) > 50:
-        return redirect(url_for('select_user', error='Le nom est trop long (max 50 caractères)'))
+        return redirect(url_for('select_user', error='Le nom est trop long'))
     
     user_id = create_user(nom)
     
     if user_id is None:
         return redirect(url_for('select_user', error='Ce nom existe déjà'))
     
-    # Stocker dans la session (permanente)
     session.permanent = True
     session['user_id'] = user_id
     session['user_name'] = nom
     
-    # Rediriger vers l'accueil
     return redirect(url_for('index'))
 
 @app.route('/change-user')
@@ -116,18 +100,14 @@ def change_user():
 def delete_user_route(user_id):
     """Supprimer un utilisateur"""
     try:
-        # Vérifier que l'utilisateur existe
         user = get_user_by_id(user_id)
         if not user:
             flash('Utilisateur non trouvé')
             return redirect(url_for('select_user'))
         
         nom_user = user['nom']
-        
-        # Supprimer l'utilisateur et toutes ses données
         delete_user(user_id)
         
-        # Si c'était l'utilisateur connecté, nettoyer la session
         if session.get('user_id') == user_id:
             session.clear()
         
@@ -138,108 +118,96 @@ def delete_user_route(user_id):
         flash(f'Erreur lors de la suppression: {str(e)}')
         return redirect(url_for('select_user'))
 
+# ========== ROUTES PRINCIPALES ==========
+
 @app.route('/')
 def index():
-    """Page d'accueil - Sélection de la langue"""
-    # Récupérer l'user_id depuis la session
+    """Page d'accueil - Sélection du niveau"""
     user_id = session.get('user_id')
     
-    print(f"[DEBUG] Index - user_id dans session: {user_id}")
-    print(f"[DEBUG] Index - session complète: {dict(session)}")
-    
     if not user_id:
-        print("[DEBUG] Pas d'utilisateur, redirection vers select_user")
         return redirect(url_for('select_user'))
     
-    # Vérifier que l'utilisateur existe
     user = get_user_by_id(user_id)
     if not user:
-        print("[DEBUG] Utilisateur introuvable, nettoyage session")
         session.clear()
         return redirect(url_for('select_user'))
     
-    print(f"[DEBUG] Utilisateur trouvé: {user}")
+    # Récupérer les niveaux avec compteur de decks
+    niveaux_counts = get_niveaux_with_counts(user_id)
     
-    # Récupérer les langues qui ont déjà des decks
-    langues_existantes = get_langues(user_id)
     return render_template('index.html', 
-                         langues_supportees=LANGUES_SUPPORTEES,
-                         langues_existantes=langues_existantes,
+                         niveaux_disponibles=NIVEAUX_DISPONIBLES,
+                         niveaux_counts=niveaux_counts,
                          user=user)
 
-@app.route('/langue/<langue>')
-def langue(langue):
-    """Page d'une langue - Liste des decks existants"""
+@app.route('/niveau/<niveau>')
+def niveau(niveau):
+    """Page d'un niveau - Liste des decks"""
     user_id = session.get('user_id')
-    
-    print(f"[DEBUG] Page langue - user_id: {user_id}, langue: {langue}")
     
     if not user_id:
         return redirect(url_for('select_user'))
     
-    if langue not in LANGUES_SUPPORTEES:
-        flash(f'Langue "{langue}" non supportée')
+    if niveau not in NIVEAUX_DISPONIBLES:
+        flash(f'Niveau "{niveau}" non supporté')
         return redirect(url_for('index'))
     
-    decks = get_decks_by_langue(langue, user_id)
-    print(f"[DEBUG] Decks trouvés pour user {user_id}: {len(decks)}")
+    # Récupérer tous les decks (communs + perso)
+    all_decks = get_decks_by_niveau(niveau, user_id)
+    
+    # Séparer decks communs et perso
+    decks_communs = [d for d in all_decks if d['is_commun']]
+    decks_perso = [d for d in all_decks if not d['is_commun']]
     
     user = get_user_by_id(user_id)
-    return render_template('langue.html', langue=langue, decks=decks, user=user)
+    
+    return render_template('niveau.html', 
+                         niveau=niveau, 
+                         decks_communs=decks_communs,
+                         decks_perso=decks_perso,
+                         user=user)
 
 @app.route('/nouveau-deck')
-@app.route('/nouveau-deck/<langue>')
-def nouveau_deck(langue=None):
+@app.route('/nouveau-deck/<niveau>')
+def nouveau_deck(niveau=None):
     """Afficher le formulaire de création de deck"""
     user_id = session.get('user_id')
     
-    print(f"[DEBUG] Page nouveau-deck - user_id: {user_id}")
-    
     if not user_id:
         return redirect(url_for('select_user'))
     
+    user = get_user_by_id(user_id)
+    
     return render_template('nouveau_deck.html', 
-                         langues=LANGUES_SUPPORTEES, 
-                         langue_preselect=langue)
+                         niveaux=NIVEAUX_DISPONIBLES, 
+                         niveau_preselect=niveau,
+                         user=user)
 
 @app.route('/creer-deck', methods=['POST'])
 def creer_deck():
     """Traiter la création d'un nouveau deck"""
-    import sys
-    
-    print("="*60, flush=True)
-    print("[DEBUG] !!!!! ENTRÉE DANS creer_deck !!!!!", flush=True)
-    print("="*60, flush=True)
-    sys.stdout.flush()
-    
     user_id = session.get('user_id')
     
-    print(f"[DEBUG] Création deck - user_id dans session: {user_id}", flush=True)
-    print(f"[DEBUG] Création deck - session complète: {dict(session)}", flush=True)
-    sys.stdout.flush()
-    
     if not user_id:
-        print("[DEBUG] Pas d'utilisateur, redirection", flush=True)
         return redirect(url_for('select_user'))
     
-    langue = request.form.get('langue', '').strip()
+    niveau = request.form.get('niveau', '').strip()
     nom_deck = request.form.get('nom_deck', '').strip()
+    is_commun = request.form.get('is_commun') == 'on'
     fichier = request.files.get('fichier')
     
-    print(f"[DEBUG] Langue: {langue}, Nom: {nom_deck}, User: {user_id}", flush=True)
-    sys.stdout.flush()
-    
-    if langue not in LANGUES_SUPPORTEES:
-        flash('Veuillez sélectionner une langue valide')
-        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES)
+    if niveau not in NIVEAUX_DISPONIBLES:
+        flash('Veuillez sélectionner un niveau valide')
+        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES)
     
     if not nom_deck:
         flash('Le nom du deck est obligatoire')
-        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
     
     if not fichier or fichier.filename == '':
         flash('Veuillez sélectionner un fichier')
-        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
     
     # Déterminer le type de fichier
     filename = fichier.filename.lower()
@@ -248,44 +216,35 @@ def creer_deck():
     
     if not (is_json or is_csv):
         flash('Format de fichier non supporté. Utilisez .json ou .csv')
-        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
     
     try:
-        # Lire le contenu du fichier
-        contenu = fichier.read().decode('utf-8-sig')  # utf-8-sig pour gérer le BOM
-        
+        contenu = fichier.read().decode('utf-8-sig')
         mots_dict = {}
         
         if is_json:
-            # Parser le JSON
             mots_dict = json.loads(contenu)
-            
             if not isinstance(mots_dict, dict):
                 flash('Le fichier JSON doit être un objet (dictionnaire)')
-                return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+                return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
         
         elif is_csv:
-            # Parser le CSV
             lignes = contenu.strip().split('\n')
             
             if len(lignes) < 2:
-                flash('Le fichier CSV doit contenir au moins 2 lignes (en-tête + données)')
-                return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+                flash('Le fichier CSV doit contenir au moins 2 lignes')
+                return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
             
-            # Détecter le séparateur (point-virgule ou virgule)
             premiere_ligne = lignes[0]
             separateur = ';' if ';' in premiere_ligne else ','
             
-            # Parser les lignes
             reader = csv.reader(lignes, delimiter=separateur)
             lignes_parsed = list(reader)
             
-            # Ignorer la première ligne si elle ressemble à un en-tête
             start_index = 0
             if lignes_parsed[0][0].lower() in ['francais', 'français', 'french', 'fr']:
                 start_index = 1
             
-            # Extraire les paires mot/traduction
             for ligne in lignes_parsed[start_index:]:
                 if len(ligne) >= 2:
                     mot_fr = ligne[0].strip()
@@ -295,47 +254,57 @@ def creer_deck():
         
         if not mots_dict:
             flash('Le fichier est vide ou ne contient pas de mots valides')
-            return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+            return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
         
-        # Créer le deck et ajouter les mots
-        print(f"[DEBUG] Appel create_deck avec nom={nom_deck}, langue={langue}, user_id={user_id}", flush=True)
-        sys.stdout.flush()
-        deck_id = create_deck(nom_deck, langue, user_id)
-        print(f"[DEBUG] Deck créé avec ID: {deck_id}", flush=True)
-        sys.stdout.flush()
+        # Créer le deck
+        deck_id = create_deck(nom_deck, niveau, user_id, is_commun)
         add_mots_to_deck(deck_id, mots_dict)
         
-        flash(f'Deck "{nom_deck}" créé avec {len(mots_dict)} mots!')
-        return redirect(url_for('langue', langue=langue))
+        type_deck = "commun" if is_commun else "personnel"
+        flash(f'Deck {type_deck} "{nom_deck}" créé avec {len(mots_dict)} mots!')
+        return redirect(url_for('niveau', niveau=niveau))
         
     except json.JSONDecodeError:
         flash('Erreur: Fichier JSON invalide')
-        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
-    except UnicodeDecodeError:
-        flash('Erreur: Problème d\'encodage du fichier. Assurez-vous qu\'il est en UTF-8')
-        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
     except Exception as e:
         flash(f'Erreur lors de la création du deck: {str(e)}')
-        return render_template('nouveau_deck.html', langues=LANGUES_SUPPORTEES, langue_preselect=langue)
+        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
 
 @app.route('/supprimer-deck/<int:deck_id>', methods=['POST'])
 def supprimer_deck(deck_id):
     """Supprimer un deck"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id:
+        return redirect(url_for('select_user'))
+    
     try:
-        # Récupérer les infos du deck avant suppression
         deck = get_deck_by_id(deck_id)
         if not deck:
             flash('Deck non trouvé')
             return redirect(url_for('index'))
         
-        langue = deck['langue']
+        # Vérifier les permissions
+        if deck['is_commun']:
+            # Deck commun : seul 'c' peut supprimer
+            if user_name != 'c':
+                flash('Seul l\'utilisateur "c" peut supprimer les decks communs')
+                return redirect(url_for('niveau', niveau=deck['niveau']))
+        else:
+            # Deck perso : seul le propriétaire peut supprimer
+            if deck['user_id'] != user_id:
+                flash('Vous ne pouvez pas supprimer ce deck')
+                return redirect(url_for('niveau', niveau=deck['niveau']))
+        
+        niveau = deck['niveau']
         nom_deck = deck['nom']
         
-        # Supprimer le deck
         delete_deck(deck_id)
         
         flash(f'Deck "{nom_deck}" supprimé avec succès')
-        return redirect(url_for('langue', langue=langue))
+        return redirect(url_for('niveau', niveau=niveau))
         
     except Exception as e:
         flash(f'Erreur lors de la suppression: {str(e)}')
@@ -347,40 +316,31 @@ def exporter_deck(deck_id):
     format_export = request.args.get('format', 'json').lower()
     
     try:
-        # Récupérer les infos du deck
         deck = get_deck_by_id(deck_id)
         if not deck:
             flash('Deck non trouvé')
             return redirect(url_for('index'))
         
-        # Récupérer les mots (triés alphabétiquement)
         mots_dict = get_mots_by_deck_ordered(deck_id)
         
         if not mots_dict:
             flash('Ce deck ne contient aucun mot')
-            return redirect(url_for('langue', langue=deck['langue']))
+            return redirect(url_for('niveau', niveau=deck['niveau']))
         
-        # Nom de base du fichier
         base_filename = deck['nom'].replace(' ', '_')
         
         if format_export == 'csv':
-            # Créer le CSV
             buffer = BytesIO()
-            # Écrire en UTF-8 avec BOM pour Excel
             buffer.write('\ufeff'.encode('utf-8'))
             
-            # Créer le writer CSV
             wrapper = io.TextIOWrapper(buffer, encoding='utf-8', newline='', write_through=True)
             writer = csv.writer(wrapper, delimiter=';')
             
-            # Écrire l'en-tête
-            writer.writerow(['Français', deck['langue']])
+            writer.writerow(['Français', 'Hongrois'])
             
-            # Écrire les données
             for mot_fr, traduction in mots_dict.items():
                 writer.writerow([mot_fr, traduction])
             
-            # Détacher le wrapper pour récupérer le buffer
             wrapper.detach()
             buffer.seek(0)
             
@@ -391,7 +351,6 @@ def exporter_deck(deck_id):
                 download_name=f"{base_filename}.csv"
             )
         else:
-            # Export JSON (par défaut)
             json_content = json.dumps(mots_dict, ensure_ascii=False, indent=2)
             buffer = BytesIO()
             buffer.write(json_content.encode('utf-8'))
@@ -410,17 +369,14 @@ def exporter_deck(deck_id):
 
 @app.route('/voir-deck/<int:deck_id>')
 def voir_deck(deck_id):
-    """Afficher le contenu d'un deck sous forme de tableau"""
+    """Afficher le contenu d'un deck"""
     try:
-        # Récupérer les infos du deck
         deck = get_deck_by_id(deck_id)
         if not deck:
             flash('Deck non trouvé')
             return redirect(url_for('index'))
         
-        # Récupérer les mots (dans l'ordre alphabétique)
         mots = get_mots_by_deck(deck_id)
-        # Trier par mot français
         mots_sorted = sorted(mots, key=lambda x: x['mot_francais'].lower())
         
         return render_template('voir_deck.html', deck=deck, mots=mots_sorted)
@@ -457,7 +413,7 @@ def quiz(deck_id):
 
 @app.route('/api/mots/<int:deck_id>')
 def api_mots(deck_id):
-    """API pour récupérer les mots d'un deck (pour l'AJAX)"""
+    """API pour récupérer les mots d'un deck"""
     mots = get_mots_by_deck(deck_id)
     return jsonify([{
         'id': mot['id'],
@@ -476,10 +432,7 @@ def text_to_speech():
         return jsonify({'error': 'Paramètre text manquant'}), 400
     
     try:
-        # Générer l'audio en hongrois
         tts = gTTS(text=texte, lang='hu', slow=False)
-        
-        # Sauvegarder dans un buffer en mémoire
         audio_buffer = BytesIO()
         tts.write_to_fp(audio_buffer)
         audio_buffer.seek(0)
@@ -529,11 +482,9 @@ def stats_deck(deck_id):
         
         stats = get_stats_deck(deck_id, days=30)
         
-        # Calculer le streak
         streak = calculer_streak(stats.get('jours_utilises', []))
         stats['streak'] = streak
         
-        # Calculer le taux de réussite au quiz
         total_quiz = stats.get('total_questions_quiz', 0) or 0
         if total_quiz > 0:
             stats['taux_reussite'] = round((stats['total_score'] / total_quiz) * 100, 1)
@@ -546,26 +497,24 @@ def stats_deck(deck_id):
         flash(f'Erreur: {str(e)}')
         return redirect(url_for('index'))
 
-@app.route('/stats/langue/<langue>')
-def stats_langue(langue):
-    """Afficher les statistiques d'une langue"""
+@app.route('/stats/niveau/<niveau>')
+def stats_niveau_route(niveau):
+    """Afficher les statistiques d'un niveau"""
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('select_user'))
     
     try:
-        if langue not in LANGUES_SUPPORTEES:
-            flash('Langue non trouvée')
+        if niveau not in NIVEAUX_DISPONIBLES:
+            flash('Niveau non trouvé')
             return redirect(url_for('index'))
         
-        stats = get_stats_langue(langue, user_id, days=30)
-        decks = get_decks_by_langue(langue, user_id)
+        stats = get_stats_niveau(niveau, user_id, days=30)
+        decks = get_decks_by_niveau(niveau, user_id)
         
-        # Calculer le streak
         streak = calculer_streak(stats.get('jours_utilises', []))
         stats['streak'] = streak
         
-        # Calculer le taux de réussite au quiz
         total_quiz = stats.get('total_questions_quiz', 0) or 0
         if total_quiz > 0:
             stats['taux_reussite'] = round((stats['total_score'] / total_quiz) * 100, 1)
@@ -574,7 +523,7 @@ def stats_langue(langue):
         
         user = get_user_by_id(user_id)
         
-        return render_template('stats_langue.html', langue=langue, stats=stats, decks=decks, user=user)
+        return render_template('stats_niveau.html', niveau=niveau, stats=stats, decks=decks, user=user)
         
     except Exception as e:
         flash(f'Erreur: {str(e)}')
@@ -590,30 +539,26 @@ def stats_globales():
     try:
         stats = get_stats_globales(user_id, days=30)
         
-        # Calculer le streak global
         streak = calculer_streak(stats.get('jours_utilises', []))
         stats['streak'] = streak
         
-        # Calculer le taux de réussite global
         total_quiz = stats.get('total_questions_quiz', 0) or 0
         if total_quiz > 0:
             stats['taux_reussite'] = round((stats['total_score'] / total_quiz) * 100, 1)
         else:
             stats['taux_reussite'] = None
         
-        # Formater la durée totale
         total_duree = stats.get('total_duree', 0) or 0
         stats['total_heures'] = total_duree // 3600
         stats['total_minutes'] = (total_duree % 3600) // 60
         
-        # Préparer les stats par langue
-        stats_par_langue = stats.get('stats_par_langue', {})
+        stats_par_niveau = stats.get('stats_par_niveau', {})
         
         user = get_user_by_id(user_id)
         
         return render_template('stats_globales.html', 
                              stats_totales=stats, 
-                             stats_par_langue=stats_par_langue,
+                             stats_par_niveau=stats_par_niveau,
                              user=user)
         
     except Exception as e:
@@ -625,21 +570,15 @@ def page_not_found(e):
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    # Initialiser la base de données au démarrage
     init_db()
     
     print("="*60)
     print("🚀 DÉMARRAGE DE L'APPLICATION TIPIKUS")
     print("="*60)
-    print(f"Mode debug: True")
-    print(f"Host: 0.0.0.0")
-    print(f"Port: 5000")
-    print("="*60)
     
-    # Lancer l'application
     app.run(
-        host='0.0.0.0',  # Accessible depuis le réseau local
+        host='0.0.0.0',
         port=5000,
         debug=True,
-        use_reloader=True  # Force le rechargement automatique du code
+        use_reloader=True
     )

@@ -6,22 +6,38 @@
 <a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
 
 <h1>Nouveau deck</h1>
-{% if langue_preselect %}
-    <h2>{{ langue_preselect }}</h2>
+{% if niveau_preselect %}
+    <h2>Niveau {{ niveau_preselect }}</h2>
 {% endif %}
 
 <form method="POST" action="/creer-deck" enctype="multipart/form-data">
     <div class="form-group">
-        <select name="langue" required style="width: 100%; padding: 12px; border: 1px solid #444; border-radius: 5px; font-size: 16px; background: #2a2a2a; color: #e0e0e0;">
-            <option value="">Choisir une langue</option>
-            {% for langue in langues %}
-                <option value="{{ langue }}" {% if langue == langue_preselect %}selected{% endif %}>{{ langue }}</option>
+        <label for="niveau" style="display: block; margin-bottom: 8px; color: #cccccc; font-weight: 500;">
+            Niveau
+        </label>
+        <select name="niveau" id="niveau" required>
+            <option value="">Choisir un niveau</option>
+            {% for niv in niveaux %}
+                <option value="{{ niv }}" {% if niv == niveau_preselect %}selected{% endif %}>{{ niv }}</option>
             {% endfor %}
         </select>
     </div>
     
     <div class="form-group">
-        <input type="text" name="nom_deck" placeholder="Nom du deck" required>
+        <label for="nom_deck" style="display: block; margin-bottom: 8px; color: #cccccc; font-weight: 500;">
+            Nom du deck
+        </label>
+        <input type="text" name="nom_deck" id="nom_deck" placeholder="Ex: Salutations de base" required>
+    </div>
+    
+    <div class="form-group checkbox-group">
+        <label class="checkbox-label">
+            <input type="checkbox" name="is_commun" id="is_commun">
+            <span class="checkbox-text">
+                <strong>Deck commun</strong>
+                <small>Visible par tous les utilisateurs</small>
+            </span>
+        </label>
     </div>
     
     <div class="form-group">
@@ -56,6 +72,62 @@ au revoir;viszlát</pre>
 </div>
 
 <style>
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    font-size: 16px;
+    background: #2a2a2a;
+    color: #e0e0e0;
+    transition: border-color 0.3s ease;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.checkbox-group {
+    background: #0f0f0f;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.checkbox-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.checkbox-text strong {
+    color: #ffffff;
+    font-size: 16px;
+}
+
+.checkbox-text small {
+    color: #888;
+    font-size: 13px;
+}
+
 .file-label {
     display: block;
     cursor: pointer;

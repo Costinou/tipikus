@@ -3,10 +3,10 @@
 {% block title %}{{ deck.nom }} - Tipikus{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('langue', langue=deck.langue) }}" class="back-link">← Retour à {{ deck.langue }}</a>
+<a href="{{ url_for('niveau', niveau=deck.niveau) }}" class="back-link">← Retour au niveau {{ deck.niveau }}</a>
 
 <h1>{{ deck.nom }}</h1>
-<p style="color: #888; margin-bottom: 30px;">{{ mots|length }} mots</p>
+<p style="color: #888; margin-bottom: 30px;">{{ mots|length }} mots - Niveau {{ deck.niveau }}</p>
 
 <div class="export-buttons">
     <a href="{{ url_for('exporter_deck', deck_id=deck.id, format='json') }}" class="btn btn-export">
@@ -23,7 +23,7 @@
             <tr>
                 <th>#</th>
                 <th>Français</th>
-                <th>{{ deck.langue }}</th>
+                <th>Hongrois</th>
             </tr>
         </thead>
         <tbody>

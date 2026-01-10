@@ -3,17 +3,20 @@ import os
 
 DATABASE = 'tipikus.db'
 
+# Niveaux disponibles
+NIVEAUX_DISPONIBLES = ['A1', 'A1+', 'A2', 'A2+', 'B1', 'B1+', 'Custom']
+
 def get_db():
     """Connexion à la base de données"""
     conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row  # Permet d'accéder aux colonnes par nom
+    conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
     """Initialise la base de données avec les tables nécessaires"""
     conn = get_db()
     
-    # Table des utilisateurs (nouveau)
+    # Table des utilisateurs
     conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,13 +25,14 @@ def init_db():
         )
     ''')
     
-    # Table des decks
+    # Table des decks (avec niveau et is_commun)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS decks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             nom TEXT NOT NULL,
-            langue TEXT NOT NULL,
+            niveau TEXT NOT NULL,
+            is_commun BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
@@ -80,6 +84,13 @@ def get_user_by_id(user_id):
     conn.close()
     return dict(user) if user else None
 
+def get_user_by_name(nom):
+    """Retourne un utilisateur par son nom"""
+    conn = get_db()
+    user = conn.execute('SELECT * FROM users WHERE nom = ?', (nom,)).fetchone()
+    conn.close()
+    return dict(user) if user else None
+
 def create_user(nom):
     """Crée un nouvel utilisateur"""
     conn = get_db()
@@ -91,7 +102,7 @@ def create_user(nom):
         return user_id
     except sqlite3.IntegrityError:
         conn.close()
-        return None  # L'utilisateur existe déjà
+        return None
 
 def delete_user(user_id):
     """Supprime un utilisateur et toutes ses données associées"""
@@ -118,34 +129,48 @@ def delete_user(user_id):
     conn.commit()
     conn.close()
 
-# ========== FONCTIONS MODIFIÉES POUR INCLURE USER_ID ==========
+# ========== FONCTIONS POUR LES NIVEAUX ==========
 
-def get_langues(user_id):
-    """Retourne un dictionnaire des langues avec le nombre de decks pour un utilisateur"""
+def get_niveaux_with_counts(user_id):
+    """Retourne un dictionnaire des niveaux avec le nombre de decks (communs + perso)"""
     conn = get_db()
-    langues = conn.execute(
-        'SELECT langue, COUNT(*) as count FROM decks WHERE user_id = ? GROUP BY langue ORDER BY langue', 
+    
+    # Compter les decks communs + decks personnels de l'user
+    niveaux = conn.execute(
+        '''SELECT niveau, COUNT(*) as count FROM decks 
+        WHERE is_commun = 1 OR user_id = ?
+        GROUP BY niveau ORDER BY niveau''', 
         (user_id,)
     ).fetchall()
+    
     conn.close()
-    return {langue['langue']: langue['count'] for langue in langues}
+    return {niveau['niveau']: niveau['count'] for niveau in niveaux}
 
-def get_decks_by_langue(langue, user_id):
-    """Retourne tous les decks d'une langue donnée pour un utilisateur"""
+# ========== FONCTIONS POUR LES DECKS ==========
+
+def get_decks_by_niveau(niveau, user_id):
+    """Retourne tous les decks d'un niveau (communs + perso de l'user)"""
     conn = get_db()
+    
+    # Récupérer les decks communs + decks perso de l'user
     decks = conn.execute(
-        'SELECT * FROM decks WHERE langue = ? AND user_id = ? ORDER BY nom', 
-        (langue, user_id)
+        '''SELECT d.*, u.nom as createur_nom 
+        FROM decks d
+        JOIN users u ON d.user_id = u.id
+        WHERE d.niveau = ? AND (d.is_commun = 1 OR d.user_id = ?)
+        ORDER BY d.is_commun DESC, d.nom''',
+        (niveau, user_id)
     ).fetchall()
+    
     conn.close()
-    return decks
+    return [dict(deck) for deck in decks]
 
-def create_deck(nom, langue, user_id):
-    """Crée un nouveau deck pour un utilisateur"""
+def create_deck(nom, niveau, user_id, is_commun=False):
+    """Crée un nouveau deck"""
     conn = get_db()
     cursor = conn.execute(
-        'INSERT INTO decks (nom, langue, user_id) VALUES (?, ?, ?)',
-        (nom, langue, user_id)
+        'INSERT INTO decks (nom, niveau, user_id, is_commun) VALUES (?, ?, ?, ?)',
+        (nom, niveau, user_id, 1 if is_commun else 0)
     )
     deck_id = cursor.lastrowid
     conn.commit()
@@ -160,13 +185,13 @@ def get_deck_by_id(deck_id):
         (deck_id,)
     ).fetchone()
     conn.close()
-    return deck
+    return dict(deck) if deck else None
 
 def add_mots_to_deck(deck_id, mots_dict):
     """Ajoute des mots à un deck depuis un dictionnaire"""
     conn = get_db()
     
-    # Vider les anciens mots du deck (pour éviter les doublons)
+    # Vider les anciens mots du deck
     conn.execute('DELETE FROM mots WHERE deck_id = ?', (deck_id,))
     
     # Ajouter les nouveaux mots
@@ -187,34 +212,47 @@ def get_mots_by_deck(deck_id):
         (deck_id,)
     ).fetchall()
     conn.close()
-
-    mots = [dict(row) for row in rows]
-    return mots
+    return [dict(row) for row in rows]
 
 def get_mots_by_deck_ordered(deck_id):
-    """Retourne tous les mots d'un deck dans l'ordre alphabétique (pour l'export)"""
+    """Retourne tous les mots d'un deck dans l'ordre alphabétique"""
     conn = get_db()
     rows = conn.execute(
         'SELECT mot_francais, traduction FROM mots WHERE deck_id = ? ORDER BY mot_francais',
         (deck_id,)
     ).fetchall()
     conn.close()
-    
-    # Retourner un dictionnaire pour l'export JSON
     return {row['mot_francais']: row['traduction'] for row in rows}
 
 def delete_deck(deck_id):
     """Supprime un deck et tous ses mots associés"""
     conn = get_db()
     
-    # Supprimer d'abord tous les mots du deck
+    # Supprimer les mots
     conn.execute('DELETE FROM mots WHERE deck_id = ?', (deck_id,))
     
-    # Supprimer ensuite le deck
+    # Supprimer les sessions
+    conn.execute('DELETE FROM sessions WHERE deck_id = ?', (deck_id,))
+    
+    # Supprimer le deck
     conn.execute('DELETE FROM decks WHERE id = ?', (deck_id,))
     
     conn.commit()
     conn.close()
+
+def can_delete_deck(deck_id, user_nom):
+    """Vérifie si un utilisateur peut supprimer un deck"""
+    deck = get_deck_by_id(deck_id)
+    if not deck:
+        return False
+    
+    # Si c'est un deck commun, seul l'user 'c' peut le supprimer
+    if deck['is_commun']:
+        return user_nom == 'c'
+    
+    # Sinon, on vérifie que c'est le propriétaire
+    # (cette vérification sera faite dans app.py)
+    return True
 
 # ========== FONCTIONS POUR LES SESSIONS ==========
 
@@ -232,38 +270,10 @@ def create_session(deck_id, type_session, nombre_mots_vus, score, duree_secondes
     conn.close()
     return session_id
 
-def get_sessions_by_deck(deck_id, days=30):
-    """Retourne les sessions d'un deck sur les N derniers jours"""
-    conn = get_db()
-    rows = conn.execute(
-        '''SELECT * FROM sessions 
-        WHERE deck_id = ? 
-        AND date_session >= datetime('now', '-' || ? || ' days')
-        ORDER BY date_session DESC''',
-        (deck_id, days)
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-def get_sessions_by_langue(langue, days=30):
-    """Retourne les sessions d'une langue sur les N derniers jours"""
-    conn = get_db()
-    rows = conn.execute(
-        '''SELECT s.* FROM sessions s
-        JOIN decks d ON s.deck_id = d.id
-        WHERE d.langue = ?
-        AND s.date_session >= datetime('now', '-' || ? || ' days')
-        ORDER BY s.date_session DESC''',
-        (langue, days)
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
 def get_stats_deck(deck_id, days=30):
     """Calcule les statistiques d'un deck"""
     conn = get_db()
     
-    # Stats générales
     stats = conn.execute(
         '''SELECT 
             COUNT(*) as total_sessions,
@@ -278,7 +288,6 @@ def get_stats_deck(deck_id, days=30):
         (deck_id, days)
     ).fetchone()
     
-    # 5 dernières sessions
     dernieres_sessions = conn.execute(
         '''SELECT type_session, duree_secondes, nombre_mots_vus, score, date_session
         FROM sessions
@@ -288,7 +297,6 @@ def get_stats_deck(deck_id, days=30):
         (deck_id,)
     ).fetchall()
     
-    # Jours d'utilisation uniques (pour le streak)
     jours = conn.execute(
         '''SELECT DISTINCT DATE(date_session) as jour
         FROM sessions
@@ -306,11 +314,10 @@ def get_stats_deck(deck_id, days=30):
     
     return result
 
-def get_stats_langue(langue, user_id, days=30):
-    """Calcule les statistiques d'une langue pour un utilisateur"""
+def get_stats_niveau(niveau, user_id, days=30):
+    """Calcule les statistiques d'un niveau pour un utilisateur"""
     conn = get_db()
     
-    # Stats générales
     stats = conn.execute(
         '''SELECT 
             COUNT(*) as total_sessions,
@@ -321,22 +328,21 @@ def get_stats_langue(langue, user_id, days=30):
             AVG(s.duree_secondes) as duree_moyenne
         FROM sessions s
         JOIN decks d ON s.deck_id = d.id
-        WHERE d.langue = ?
-        AND d.user_id = ?
+        WHERE d.niveau = ?
+        AND (d.is_commun = 1 OR d.user_id = ?)
         AND s.date_session >= datetime('now', '-' || ? || ' days')''',
-        (langue, user_id, days)
+        (niveau, user_id, days)
     ).fetchone()
     
-    # Jours d'utilisation uniques
     jours = conn.execute(
         '''SELECT DISTINCT DATE(s.date_session) as jour
         FROM sessions s
         JOIN decks d ON s.deck_id = d.id
-        WHERE d.langue = ?
-        AND d.user_id = ?
+        WHERE d.niveau = ?
+        AND (d.is_commun = 1 OR d.user_id = ?)
         AND s.date_session >= datetime('now', '-' || ? || ' days')
         ORDER BY jour DESC''',
-        (langue, user_id, days)
+        (niveau, user_id, days)
     ).fetchall()
     
     conn.close()
@@ -353,7 +359,6 @@ def calculer_streak(jours_utilises):
     
     from datetime import datetime, timedelta
     
-    # Convertir en objets date
     dates = [datetime.strptime(jour, '%Y-%m-%d').date() for jour in jours_utilises]
     dates.sort(reverse=True)
     
@@ -368,10 +373,9 @@ def calculer_streak(jours_utilises):
     return streak
 
 def get_stats_globales(user_id, days=30):
-    """Calcule les statistiques globales de toutes les langues pour un utilisateur"""
+    """Calcule les statistiques globales"""
     conn = get_db()
     
-    # Stats totales
     stats = conn.execute(
         '''SELECT 
             COUNT(*) as total_sessions,
@@ -381,35 +385,33 @@ def get_stats_globales(user_id, days=30):
             SUM(s.duree_secondes) as total_duree
         FROM sessions s
         JOIN decks d ON s.deck_id = d.id
-        WHERE d.user_id = ?
+        WHERE d.user_id = ? OR d.is_commun = 1
         AND s.date_session >= datetime('now', '-' || ? || ' days')''',
         (user_id, days)
     ).fetchone()
     
-    # Jours d'utilisation uniques
     jours = conn.execute(
         '''SELECT DISTINCT DATE(s.date_session) as jour
         FROM sessions s
         JOIN decks d ON s.deck_id = d.id
-        WHERE d.user_id = ?
+        WHERE d.user_id = ? OR d.is_commun = 1
         AND s.date_session >= datetime('now', '-' || ? || ' days')
         ORDER BY jour DESC''',
         (user_id, days)
     ).fetchall()
     
-    # Stats par langue
-    stats_langues = conn.execute(
+    stats_niveaux = conn.execute(
         '''SELECT 
-            d.langue,
+            d.niveau,
             COUNT(*) as total_sessions,
             SUM(s.nombre_mots_vus) as total_mots,
             SUM(CASE WHEN s.type_session = 'quiz' THEN s.score ELSE 0 END) as total_score,
             SUM(CASE WHEN s.type_session = 'quiz' THEN s.nombre_mots_vus ELSE 0 END) as total_questions_quiz
         FROM sessions s
         JOIN decks d ON s.deck_id = d.id
-        WHERE d.user_id = ?
+        WHERE d.user_id = ? OR d.is_commun = 1
         AND s.date_session >= datetime('now', '-' || ? || ' days')
-        GROUP BY d.langue''',
+        GROUP BY d.niveau''',
         (user_id, days)
     ).fetchall()
     
@@ -418,24 +420,21 @@ def get_stats_globales(user_id, days=30):
     result = dict(stats) if stats else {}
     result['jours_utilises'] = [row['jour'] for row in jours]
     
-    # Créer un dictionnaire par langue avec leurs stats et streak
-    stats_par_langue = {}
-    for row in stats_langues:
-        langue = row['langue']
-        # Récupérer les stats complètes pour calculer le streak
-        langue_stats = get_stats_langue(langue, user_id, days)
-        stats_par_langue[langue] = {
+    stats_par_niveau = {}
+    for row in stats_niveaux:
+        niveau = row['niveau']
+        niveau_stats = get_stats_niveau(niveau, user_id, days)
+        stats_par_niveau[niveau] = {
             'total_sessions': row['total_sessions'],
             'total_mots': row['total_mots'],
             'total_score': row['total_score'],
             'total_questions_quiz': row['total_questions_quiz'],
-            'streak': calculer_streak(langue_stats.get('jours_utilises', []))
+            'streak': calculer_streak(niveau_stats.get('jours_utilises', []))
         }
     
-    result['stats_par_langue'] = stats_par_langue
+    result['stats_par_niveau'] = stats_par_niveau
     
     return result
 
 if __name__ == '__main__':
-    # Initialiser la DB si on lance ce fichier directement
     init_db()
