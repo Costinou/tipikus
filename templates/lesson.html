@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.titre }} - Tipikus{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="back-link">← Retour au niveau {{ lesson.niveau }}</a>
+
+<div class="lesson-header">
+    <div>
+        <h1>📖 Lesson {{ lesson.numero }}: {{ lesson.titre }}</h1>
+        <p style="color: #888;">Niveau {{ lesson.niveau }}</p>
+    </div>
+    {% if user.nom == 'c' %}
+    <div class="admin-buttons">
+        <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn-admin">
+            ⚙️ Gérer les decks
+        </a>
+        <button onclick="confirmerSuppressionLesson('{{ lesson.titre }}', {{ lesson.id }})" class="btn-admin btn-delete-admin">
+            🗑️ Supprimer
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Contenu Markdown -->
+<div id="markdown-content" class="markdown-content"></div>
+
+<!-- Decks de la lesson -->
+{% if decks %}
+<div class="lesson-decks-section">
+    <h2>📚 Decks de cette lesson</h2>
+    <ul class="deck-list">
+        {% for deck in decks %}
+            <li class="deck-item-wrapper">
+                <div class="deck-item-content">
+                    <div class="deck-main-buttons">
+                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-btn deck-commun">
+                            📚 {{ deck.nom }}
+                        </a>
+                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn deck-btn btn-quiz quiz-commun">
+                            🎯 Quiz
+                        </a>
+                    </div>
+                    <div class="deck-actions">
+                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
+                           class="btn-action btn-view" 
+                           title="Voir le contenu">
+                            👁️
+                        </a>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<style>
+.lesson-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    gap: 20px;
+}
+
+.admin-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-admin {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-admin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-delete-admin {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.btn-delete-admin:hover {
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* Styles pour le contenu Markdown */
+.markdown-content {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 40px;
+    margin-bottom: 40px;
+    line-height: 1.8;
+    color: #e0e0e0;
+}
+
+.markdown-content h1 {
+    color: #ffffff;
+    font-size: 2em;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.3em;
+}
+
+.markdown-content h2 {
+    color: #ffffff;
+    font-size: 1.5em;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.markdown-content h3 {
+    color: #cccccc;
+    font-size: 1.2em;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.markdown-content p {
+    margin-bottom: 1em;
+}
+
+.markdown-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 20px 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.markdown-content ul, .markdown-content ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+.markdown-content li {
+    margin-bottom: 0.5em;
+}
+
+.markdown-content code {
+    background: #0f0f0f;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #4ade80;
+}
+
+.markdown-content pre {
+    background: #0f0f0f;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    border: 1px solid #2a2a2a;
+    margin: 1.5em 0;
+}
+
+.markdown-content pre code {
+    background: none;
+    padding: 0;
+    color: #e0e0e0;
+}
+
+.markdown-content blockquote {
+    border-left: 4px solid #667eea;
+    padding-left: 20px;
+    margin: 1.5em 0;
+    color: #cccccc;
+    font-style: italic;
+}
+
+.markdown-content a {
+    color: #667eea;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.markdown-content a:hover {
+    border-bottom-color: #667eea;
+}
+
+.markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+    padding: 12px;
+    border: 1px solid #333;
+    text-align: left;
+}
+
+.markdown-content th {
+    background: #0f0f0f;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.lesson-decks-section {
+    margin-top: 40px;
+}
+
+.lesson-decks-section h2 {
+    margin-bottom: 20px;
+}
+
+/* Styles des decks (repris de niveau.html) */
+.deck-item-wrapper {
+    margin-bottom: 15px;
+}
+
+.deck-item-content {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.deck-main-buttons {
+    flex: 1;
+    display: flex;
+    gap: 8px;
+}
+
+.deck-btn {
+    flex: 1;
+    margin: 0;
+    font-size: 15px;
+}
+
+.deck-commun {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+
+.deck-commun:hover {
+    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+}
+
+.btn-quiz {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.quiz-commun {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.quiz-commun:hover {
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.deck-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-action {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-view {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.btn-view:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+@media (max-width: 768px) {
+    .lesson-header {
+        flex-direction: column;
+    }
+    
+    .markdown-content {
+        padding: 20px;
+    }
+    
+    .admin-buttons {
+        width: 100%;
+    }
+    
+    .btn-admin {
+        flex: 1;
+        text-align: center;
+    }
+}
+</style>
+
+<!-- Bibliothèque Marked.js pour le rendu Markdown -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+
+<script>
+// Contenu markdown de la lesson
+const markdownContent = {{ lesson.content_markdown|tojson }};
+
+// Configurer marked pour gérer les images
+marked.use({
+    renderer: {
+        image(href, title, text) {
+            // Si l'image n'a pas de protocole (http/https), on assume que c'est dans /static/lessons/images/
+            if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('/')) {
+                href = '/static/lessons/images/' + href;
+            }
+            
+            const titleAttr = title ? ` title="${title}"` : '';
+            return `<img src="${href}" alt="${text}"${titleAttr}>`;
+        }
+    }
+});
+
+// Rendre le markdown
+document.getElementById('markdown-content').innerHTML = marked.parse(markdownContent);
+
+function confirmerSuppressionLesson(titre, lessonId) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la lesson "${titre}" ?\n\nLes decks associés ne seront PAS supprimés, ils redeviendront des decks libres.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/delete-lesson/' + lessonId;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Gérer les decks - {{ lesson.titre }}{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="back-link">← Retour à la lesson</a>
+
+<h1>⚙️ Gérer les decks</h1>
+<p style="color: #888; margin-bottom: 30px;">Lesson {{ lesson.numero }}: {{ lesson.titre }} ({{ lesson.niveau }})</p>
+
+<!-- Decks actuellement dans la lesson -->
+<div class="section-box">
+    <h2>📚 Decks actuellement dans cette lesson ({{ decks_in_lesson|length }})</h2>
+    
+    {% if decks_in_lesson %}
+    <ul class="deck-list">
+        {% for deck in decks_in_lesson %}
+        <li class="deck-item-wrapper">
+            <div class="deck-item-content">
+                <div class="deck-name">
+                    📚 {{ deck.nom }}
+                </div>
+                <form method="POST" action="{{ url_for('detach_deck_route', deck_id=deck.id) }}" style="margin: 0;">
+                    <button type="submit" class="btn-detach" onclick="return confirm('Retirer ce deck de la lesson ?')">
+                        ❌ Retirer
+                    </button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p style="color: #888; font-style: italic; padding: 20px 0;">
+        Aucun deck dans cette lesson pour le moment.
+    </p>
+    {% endif %}
+</div>
+
+<!-- Decks disponibles à ajouter -->
+<div class="section-box">
+    <h2>➕ Ajouter des decks à cette lesson</h2>
+    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
+        Decks communs du niveau {{ lesson.niveau }} disponibles
+    </p>
+    
+    {% if available_decks %}
+    <ul class="deck-list">
+        {% for deck in available_decks %}
+        <li class="deck-item-wrapper">
+            <div class="deck-item-content">
+                <div class="deck-name">
+                    📚 {{ deck.nom }}
+                </div>
+                <form method="POST" action="{{ url_for('associate_deck_route') }}" style="margin: 0;">
+                    <input type="hidden" name="deck_id" value="{{ deck.id }}">
+                    <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                    <button type="submit" class="btn-add">
+                        ✅ Ajouter
+                    </button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p style="color: #888; font-style: italic; padding: 20px 0;">
+        Aucun deck commun disponible pour le niveau {{ lesson.niveau }}.
+        <br>
+        <a href="{{ url_for('nouveau_deck', niveau=lesson.niveau) }}" style="color: #667eea;">
+            Créer un nouveau deck commun →
+        </a>
+    </p>
+    {% endif %}
+</div>
+
+<style>
+.section-box {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.section-box h2 {
+    margin-bottom: 20px;
+    color: #ffffff;
+    font-size: 18px;
+}
+
+.deck-list {
+    list-style: none;
+}
+
+.deck-item-wrapper {
+    margin-bottom: 10px;
+}
+
+.deck-item-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.deck-item-content:hover {
+    background: #1a1a1a;
+    border-color: #444;
+}
+
+.deck-name {
+    color: #e0e0e0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.btn-detach {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-detach:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.btn-add {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+@media (max-width: 600px) {
+    .deck-item-content {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .btn-detach,
+    .btn-add {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

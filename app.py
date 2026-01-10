@@ -11,6 +11,8 @@ from database import (
     get_mots_by_deck_ordered, delete_deck, can_delete_deck,
     create_session, get_stats_deck, get_stats_niveau, get_stats_globales, calculer_streak,
     get_all_users, get_user_by_id, get_user_by_name, create_user, delete_user,
+    get_lessons_by_niveau, get_lesson_by_id, create_lesson, update_lesson, delete_lesson,
+    get_decks_by_lesson, associate_deck_to_lesson, detach_deck_from_lesson,
     NIVEAUX_DISPONIBLES
 )
 
@@ -143,7 +145,7 @@ def index():
 
 @app.route('/niveau/<niveau>')
 def niveau(niveau):
-    """Page d'un niveau - Liste des decks"""
+    """Page d'un niveau - Liste des lessons et decks"""
     user_id = session.get('user_id')
     
     if not user_id:
@@ -153,8 +155,11 @@ def niveau(niveau):
         flash(f'Niveau "{niveau}" non supporté')
         return redirect(url_for('index'))
     
-    # Récupérer tous les decks (communs + perso)
-    all_decks = get_decks_by_niveau(niveau, user_id)
+    # Récupérer les lessons du niveau
+    lessons = get_lessons_by_niveau(niveau)
+    
+    # Récupérer les decks HORS lessons (communs + perso)
+    all_decks = get_decks_by_niveau(niveau, user_id, include_in_lessons=False)
     
     # Séparer decks communs et perso
     decks_communs = [d for d in all_decks if d['is_commun']]
@@ -163,10 +168,204 @@ def niveau(niveau):
     user = get_user_by_id(user_id)
     
     return render_template('niveau.html', 
-                         niveau=niveau, 
+                         niveau=niveau,
+                         lessons=lessons,
                          decks_communs=decks_communs,
                          decks_perso=decks_perso,
                          user=user)
+
+# ========== ROUTES POUR LES LESSONS ==========
+
+@app.route('/lesson/<int:lesson_id>')
+def view_lesson(lesson_id):
+    """Afficher une lesson avec son contenu markdown et ses decks"""
+    user_id = session.get('user_id')
+    
+    if not user_id:
+        return redirect(url_for('select_user'))
+    
+    lesson = get_lesson_by_id(lesson_id)
+    if not lesson:
+        flash('Lesson non trouvée')
+        return redirect(url_for('index'))
+    
+    # Récupérer les decks de cette lesson
+    decks = get_decks_by_lesson(lesson_id)
+    
+    user = get_user_by_id(user_id)
+    
+    return render_template('lesson.html', lesson=lesson, decks=decks, user=user)
+
+@app.route('/create-lesson', methods=['GET'])
+def create_lesson_form():
+    """Formulaire de création de lesson (admin uniquement)"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id:
+        return redirect(url_for('select_user'))
+    
+    # Vérifier que c'est l'admin
+    if user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut créer des lessons')
+        return redirect(url_for('index'))
+    
+    user = get_user_by_id(user_id)
+    return render_template('create_lesson.html', niveaux=NIVEAUX_DISPONIBLES, user=user)
+
+@app.route('/create-lesson', methods=['POST'])
+def create_lesson_post():
+    """Traiter la création d'une lesson"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id or user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut créer des lessons')
+        return redirect(url_for('index'))
+    
+    niveau = request.form.get('niveau', '').strip()
+    numero = request.form.get('numero', '').strip()
+    titre = request.form.get('titre', '').strip()
+    fichier_md = request.files.get('fichier_md')
+    
+    # Validations
+    if niveau not in NIVEAUX_DISPONIBLES:
+        flash('Niveau invalide')
+        return redirect(url_for('create_lesson_form'))
+    
+    try:
+        numero = int(numero)
+        if numero < 1:
+            raise ValueError()
+    except (ValueError, TypeError):
+        flash('Le numéro doit être un entier positif')
+        return redirect(url_for('create_lesson_form'))
+    
+    if not titre:
+        flash('Le titre est obligatoire')
+        return redirect(url_for('create_lesson_form'))
+    
+    if not fichier_md or not fichier_md.filename.endswith('.md'):
+        flash('Veuillez sélectionner un fichier .md')
+        return redirect(url_for('create_lesson_form'))
+    
+    try:
+        # Lire le contenu du fichier markdown
+        content_markdown = fichier_md.read().decode('utf-8')
+        
+        # Créer la lesson
+        lesson_id = create_lesson(niveau, numero, titre, content_markdown)
+        
+        if lesson_id is None:
+            flash(f'Une lesson {numero} existe déjà pour le niveau {niveau}')
+            return redirect(url_for('create_lesson_form'))
+        
+        flash(f'Lesson "{titre}" créée avec succès!')
+        return redirect(url_for('view_lesson', lesson_id=lesson_id))
+        
+    except Exception as e:
+        flash(f'Erreur lors de la création: {str(e)}')
+        return redirect(url_for('create_lesson_form'))
+
+@app.route('/delete-lesson/<int:lesson_id>', methods=['POST'])
+def delete_lesson_route(lesson_id):
+    """Supprimer une lesson (admin uniquement)"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut supprimer des lessons')
+        return redirect(url_for('index'))
+    
+    try:
+        lesson = get_lesson_by_id(lesson_id)
+        if not lesson:
+            flash('Lesson non trouvée')
+            return redirect(url_for('index'))
+        
+        niveau = lesson['niveau']
+        titre = lesson['titre']
+        
+        delete_lesson(lesson_id)
+        
+        flash(f'Lesson "{titre}" supprimée avec succès')
+        return redirect(url_for('niveau', niveau=niveau))
+        
+    except Exception as e:
+        flash(f'Erreur lors de la suppression: {str(e)}')
+        return redirect(url_for('index'))
+
+@app.route('/manage-lesson-decks/<int:lesson_id>')
+def manage_lesson_decks(lesson_id):
+    """Interface pour gérer les decks d'une lesson (admin uniquement)"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id or user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut gérer les lessons')
+        return redirect(url_for('index'))
+    
+    lesson = get_lesson_by_id(lesson_id)
+    if not lesson:
+        flash('Lesson non trouvée')
+        return redirect(url_for('index'))
+    
+    # Decks déjà dans la lesson
+    decks_in_lesson = get_decks_by_lesson(lesson_id)
+    
+    # Decks disponibles (communs, même niveau, pas encore dans une lesson)
+    all_decks = get_decks_by_niveau(lesson['niveau'], user_id, include_in_lessons=True)
+    available_decks = [d for d in all_decks if d['is_commun'] and d['lesson_id'] is None]
+    
+    user = get_user_by_id(user_id)
+    
+    return render_template('manage_lesson_decks.html', 
+                         lesson=lesson, 
+                         decks_in_lesson=decks_in_lesson,
+                         available_decks=available_decks,
+                         user=user)
+
+@app.route('/associate-deck-to-lesson', methods=['POST'])
+def associate_deck_route():
+    """Associer un deck à une lesson"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    deck_id = request.form.get('deck_id')
+    lesson_id = request.form.get('lesson_id')
+    
+    try:
+        associate_deck_to_lesson(int(deck_id), int(lesson_id))
+        return redirect(url_for('manage_lesson_decks', lesson_id=lesson_id))
+    except Exception as e:
+        flash(f'Erreur: {str(e)}')
+        return redirect(url_for('manage_lesson_decks', lesson_id=lesson_id))
+
+@app.route('/detach-deck-from-lesson/<int:deck_id>', methods=['POST'])
+def detach_deck_route(deck_id):
+    """Détacher un deck de sa lesson"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        flash('Non autorisé')
+        return redirect(url_for('index'))
+    
+    try:
+        deck = get_deck_by_id(deck_id)
+        lesson_id = deck['lesson_id'] if deck else None
+        
+        detach_deck_from_lesson(deck_id)
+        
+        if lesson_id:
+            return redirect(url_for('manage_lesson_decks', lesson_id=lesson_id))
+        else:
+            return redirect(url_for('index'))
+    except Exception as e:
+        flash(f'Erreur: {str(e)}')
+        return redirect(url_for('index'))
+
+# ========== ROUTES PRINCIPALES ==========
 
 @app.route('/nouveau-deck')
 @app.route('/nouveau-deck/<niveau>')

@@ -129,6 +129,90 @@ def delete_user(user_id):
     conn.commit()
     conn.close()
 
+# ========== FONCTIONS POUR LES LESSONS ==========
+
+def get_lessons_by_niveau(niveau):
+    """Retourne toutes les lessons d'un niveau, triées par numéro"""
+    conn = get_db()
+    lessons = conn.execute(
+        '''SELECT l.*, COUNT(d.id) as nb_decks
+        FROM lessons l
+        LEFT JOIN decks d ON l.id = d.lesson_id
+        WHERE l.niveau = ?
+        GROUP BY l.id
+        ORDER BY l.numero''',
+        (niveau,)
+    ).fetchall()
+    conn.close()
+    return [dict(lesson) for lesson in lessons]
+
+def get_lesson_by_id(lesson_id):
+    """Retourne une lesson par son ID"""
+    conn = get_db()
+    lesson = conn.execute('SELECT * FROM lessons WHERE id = ?', (lesson_id,)).fetchone()
+    conn.close()
+    return dict(lesson) if lesson else None
+
+def create_lesson(niveau, numero, titre, content_markdown):
+    """Crée une nouvelle lesson"""
+    conn = get_db()
+    try:
+        cursor = conn.execute(
+            'INSERT INTO lessons (niveau, numero, titre, content_markdown) VALUES (?, ?, ?, ?)',
+            (niveau, numero, titre, content_markdown)
+        )
+        lesson_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return lesson_id
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None  # Cette lesson existe déjà (niveau + numéro unique)
+
+def update_lesson(lesson_id, titre, content_markdown):
+    """Met à jour une lesson existante"""
+    conn = get_db()
+    conn.execute(
+        'UPDATE lessons SET titre = ?, content_markdown = ? WHERE id = ?',
+        (titre, content_markdown, lesson_id)
+    )
+    conn.commit()
+    conn.close()
+
+def delete_lesson(lesson_id):
+    """Supprime une lesson (et détache les decks associés)"""
+    conn = get_db()
+    # Détacher les decks de cette lesson
+    conn.execute('UPDATE decks SET lesson_id = NULL WHERE lesson_id = ?', (lesson_id,))
+    # Supprimer la lesson
+    conn.execute('DELETE FROM lessons WHERE id = ?', (lesson_id,))
+    conn.commit()
+    conn.close()
+
+def get_decks_by_lesson(lesson_id):
+    """Retourne tous les decks d'une lesson"""
+    conn = get_db()
+    decks = conn.execute(
+        'SELECT * FROM decks WHERE lesson_id = ? ORDER BY nom',
+        (lesson_id,)
+    ).fetchall()
+    conn.close()
+    return [dict(deck) for deck in decks]
+
+def associate_deck_to_lesson(deck_id, lesson_id):
+    """Associe un deck à une lesson"""
+    conn = get_db()
+    conn.execute('UPDATE decks SET lesson_id = ? WHERE id = ?', (lesson_id, deck_id))
+    conn.commit()
+    conn.close()
+
+def detach_deck_from_lesson(deck_id):
+    """Détache un deck de sa lesson"""
+    conn = get_db()
+    conn.execute('UPDATE decks SET lesson_id = NULL WHERE id = ?', (deck_id,))
+    conn.commit()
+    conn.close()
+
 # ========== FONCTIONS POUR LES NIVEAUX ==========
 
 def get_niveaux_with_counts(user_id):
@@ -148,19 +232,33 @@ def get_niveaux_with_counts(user_id):
 
 # ========== FONCTIONS POUR LES DECKS ==========
 
-def get_decks_by_niveau(niveau, user_id):
-    """Retourne tous les decks d'un niveau (communs + perso de l'user)"""
+def get_decks_by_niveau(niveau, user_id, include_in_lessons=False):
+    """Retourne tous les decks d'un niveau (communs + perso de l'user)
+    Par défaut, exclut les decks qui sont dans des lessons
+    """
     conn = get_db()
     
-    # Récupérer les decks communs + decks perso de l'user
-    decks = conn.execute(
-        '''SELECT d.*, u.nom as createur_nom 
-        FROM decks d
-        JOIN users u ON d.user_id = u.id
-        WHERE d.niveau = ? AND (d.is_commun = 1 OR d.user_id = ?)
-        ORDER BY d.is_commun DESC, d.nom''',
-        (niveau, user_id)
-    ).fetchall()
+    if include_in_lessons:
+        # Récupérer TOUS les decks (y compris ceux dans des lessons)
+        decks = conn.execute(
+            '''SELECT d.*, u.nom as createur_nom 
+            FROM decks d
+            JOIN users u ON d.user_id = u.id
+            WHERE d.niveau = ? AND (d.is_commun = 1 OR d.user_id = ?)
+            ORDER BY d.is_commun DESC, d.nom''',
+            (niveau, user_id)
+        ).fetchall()
+    else:
+        # Récupérer uniquement les decks HORS lessons
+        decks = conn.execute(
+            '''SELECT d.*, u.nom as createur_nom 
+            FROM decks d
+            JOIN users u ON d.user_id = u.id
+            WHERE d.niveau = ? AND (d.is_commun = 1 OR d.user_id = ?)
+            AND d.lesson_id IS NULL
+            ORDER BY d.is_commun DESC, d.nom''',
+            (niveau, user_id)
+        ).fetchall()
     
     conn.close()
     return [dict(deck) for deck in decks]
