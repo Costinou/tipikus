@@ -22,13 +22,14 @@
     {% endif %}
 </div>
 
-<!-- Contenu Markdown -->
-<div id="markdown-content" class="markdown-content"></div>
-
 <!-- Decks de la lesson -->
 {% if decks %}
 <div class="lesson-decks-section">
     <h2>📚 Decks de cette lesson</h2>
+    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
+        Pratiquez avec ces decks après avoir lu la théorie
+    </p>
+    <ul class="deck-list">
     <ul class="deck-list">
         {% for deck in decks %}
             <li class="deck-item-wrapper">
@@ -54,6 +55,9 @@
     </ul>
 </div>
 {% endif %}
+
+<!-- Contenu Markdown -->
+<div id="markdown-content" class="markdown-content"></div>
 
 <style>
 .lesson-header {
