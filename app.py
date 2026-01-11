@@ -11,6 +11,7 @@ from database import (
     get_mots_by_deck_ordered, delete_deck, can_delete_deck,
     create_session, get_stats_deck, get_stats_niveau, get_stats_globales, calculer_streak,
     get_all_users, get_user_by_id, get_user_by_name, create_user, delete_user,
+    verify_user_password, update_user_password,
     get_lessons_by_niveau, get_lesson_by_id, create_lesson, update_lesson, delete_lesson,
     get_decks_by_lesson, associate_deck_to_lesson, detach_deck_from_lesson,
     NIVEAUX_DISPONIBLES
@@ -32,93 +33,235 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 an
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-# ========== ROUTES UTILISATEURS ==========
+# ========== ROUTES AUTHENTIFICATION ==========
 
-@app.route('/api/select-user', methods=['POST'])
-def api_select_user():
-    """API pour sélectionner un utilisateur"""
-    user_id = request.form.get('user_id')
-    user_name = request.form.get('user_name')
+@app.route('/login', methods=['GET'])
+def login():
+    """Page de connexion"""
+    # Si déjà connecté, rediriger vers l'accueil
+    if session.get('user_id'):
+        return redirect(url_for('index'))
     
-    if not user_id:
-        flash('Erreur: utilisateur non sélectionné')
-        return redirect(url_for('select_user'))
+    return render_template('login.html')
+
+@app.route('/login', methods=['POST'])
+def login_post():
+    """Traiter la connexion"""
+    nom = request.form.get('nom', '').strip()
+    password = request.form.get('password', '').strip()
     
-    try:
-        user_id = int(user_id)
-    except (ValueError, TypeError):
-        flash('Erreur: ID utilisateur invalide')
-        return redirect(url_for('select_user'))
+    if not nom or not password:
+        flash('Nom et mot de passe requis')
+        return redirect(url_for('login'))
     
-    user = get_user_by_id(user_id)
+    # Vérifier les identifiants
+    user = verify_user_password(nom, password)
+    
     if not user:
-        flash('Erreur: utilisateur introuvable')
-        return redirect(url_for('select_user'))
+        flash('Nom d\'utilisateur ou mot de passe incorrect')
+        return redirect(url_for('login'))
     
+    # Connexion réussie
     session.clear()
     session.permanent = True
-    session['user_id'] = user_id
-    session['user_name'] = user_name
+    session['user_id'] = user['id']
+    session['user_name'] = user['nom']
     session.modified = True
     
     return redirect(url_for('index'))
 
+@app.route('/logout')
+def logout():
+    """Déconnexion"""
+    session.clear()
+    flash('Vous avez été déconnecté')
+    return redirect(url_for('login'))
+
+@app.route('/change-password', methods=['GET'])
+def change_password():
+    """Page de changement de mot de passe"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    user = get_user_by_id(user_id)
+    return render_template('change_password.html', user=user)
+
+@app.route('/change-password', methods=['POST'])
+def change_password_post():
+    """Traiter le changement de mot de passe"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    current_password = request.form.get('current_password', '')
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+    
+    # Vérifications
+    if not current_password or not new_password or not confirm_password:
+        flash('Tous les champs sont requis')
+        return redirect(url_for('change_password'))
+    
+    # Vérifier le mot de passe actuel
+    user = verify_user_password(user_name, current_password)
+    if not user:
+        flash('Mot de passe actuel incorrect')
+        return redirect(url_for('change_password'))
+    
+    # Vérifier que les nouveaux mots de passe correspondent
+    if new_password != confirm_password:
+        flash('Les nouveaux mots de passe ne correspondent pas')
+        return redirect(url_for('change_password'))
+    
+    # Vérifier la longueur
+    if len(new_password) < 4:
+        flash('Le mot de passe doit contenir au moins 4 caractères')
+        return redirect(url_for('change_password'))
+    
+    # Mettre à jour le mot de passe
+    update_user_password(user_id, new_password)
+    
+    flash('Mot de passe changé avec succès!')
+    return redirect(url_for('index'))
+
+# ========== ROUTES ADMIN (Gestion utilisateurs) ==========
+
+@app.route('/admin/users')
+def admin_users():
+    """Page de gestion des utilisateurs (admin uniquement)"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id or user_name != 'c':
+        flash('Accès refusé')
+        return redirect(url_for('index'))
+    
+    users = get_all_users()
+    user = get_user_by_id(user_id)
+    
+    return render_template('admin_users.html', users=users, user=user)
+
+@app.route('/admin/create-user', methods=['POST'])
+def admin_create_user():
+    """Créer un utilisateur (admin uniquement)"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        flash('Accès refusé')
+        return redirect(url_for('index'))
+    
+    nom = request.form.get('nom', '').strip()
+    password = request.form.get('password', '').strip()
+    
+    if not nom or not password:
+        flash('Nom et mot de passe requis')
+        return redirect(url_for('admin_users'))
+    
+    if len(nom) > 50:
+        flash('Le nom est trop long (max 50 caractères)')
+        return redirect(url_for('admin_users'))
+    
+    if len(password) < 4:
+        flash('Le mot de passe doit contenir au moins 4 caractères')
+        return redirect(url_for('admin_users'))
+    
+    user_id = create_user(nom, password)
+    
+    if user_id is None:
+        flash('Ce nom existe déjà')
+        return redirect(url_for('admin_users'))
+    
+    flash(f'Utilisateur "{nom}" créé avec succès')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/delete-user/<int:user_id>', methods=['POST'])
+def admin_delete_user(user_id):
+    """Supprimer un utilisateur (admin uniquement)"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        flash('Accès refusé')
+        return redirect(url_for('index'))
+    
+    # Empêcher de supprimer l'admin
+    user_to_delete = get_user_by_id(user_id)
+    if user_to_delete and user_to_delete['nom'] == 'c':
+        flash('Impossible de supprimer l\'administrateur')
+        return redirect(url_for('admin_users'))
+    
+    try:
+        if user_to_delete:
+            nom_user = user_to_delete['nom']
+            delete_user(user_id)
+            flash(f'Utilisateur "{nom_user}" supprimé avec succès')
+        else:
+            flash('Utilisateur non trouvé')
+    except Exception as e:
+        flash(f'Erreur lors de la suppression: {str(e)}')
+    
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/reset-password/<int:user_id>', methods=['POST'])
+def admin_reset_password(user_id):
+    """Réinitialiser le mot de passe d'un utilisateur (admin uniquement)"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        flash('Accès refusé')
+        return redirect(url_for('index'))
+    
+    new_password = request.form.get('new_password', '').strip()
+    
+    if not new_password:
+        flash('Mot de passe requis')
+        return redirect(url_for('admin_users'))
+    
+    if len(new_password) < 4:
+        flash('Le mot de passe doit contenir au moins 4 caractères')
+        return redirect(url_for('admin_users'))
+    
+    user_to_reset = get_user_by_id(user_id)
+    if not user_to_reset:
+        flash('Utilisateur non trouvé')
+        return redirect(url_for('admin_users'))
+    
+    try:
+        update_user_password(user_id, new_password)
+        flash(f'Mot de passe de "{user_to_reset["nom"]}" réinitialisé avec succès')
+    except Exception as e:
+        flash(f'Erreur lors de la réinitialisation: {str(e)}')
+    
+    return redirect(url_for('admin_users'))
+
+# ========== ROUTES UTILISATEURS (anciennes, simplifiées) ==========
+
+@app.route('/api/select-user', methods=['POST'])
+def api_select_user():
+    """Rediriger vers login (ancienne route, pour compatibilité)"""
+    return redirect(url_for('login'))
+
 @app.route('/select-user')
 def select_user():
-    """Page de sélection d'utilisateur"""
-    users = get_all_users()
-    error = request.args.get('error')
-    return render_template('select_user.html', users=users, error=error)
+    """Rediriger vers login"""
+    return redirect(url_for('login'))
 
 @app.route('/create-user', methods=['POST'])
 def create_user_post():
-    """Créer un nouvel utilisateur"""
-    nom = request.form.get('nom', '').strip()
-    
-    if not nom:
-        return redirect(url_for('select_user', error='Le nom est obligatoire'))
-    
-    if len(nom) > 50:
-        return redirect(url_for('select_user', error='Le nom est trop long'))
-    
-    user_id = create_user(nom)
-    
-    if user_id is None:
-        return redirect(url_for('select_user', error='Ce nom existe déjà'))
-    
-    session.permanent = True
-    session['user_id'] = user_id
-    session['user_name'] = nom
-    
-    return redirect(url_for('index'))
+    """Rediriger vers login"""
+    return redirect(url_for('login'))
 
 @app.route('/change-user')
 def change_user():
-    """Changer d'utilisateur"""
-    session.clear()
-    return redirect(url_for('select_user'))
+    """Déconnexion"""
+    return redirect(url_for('logout'))
 
 @app.route('/delete-user/<int:user_id>', methods=['POST'])
 def delete_user_route(user_id):
-    """Supprimer un utilisateur"""
-    try:
-        user = get_user_by_id(user_id)
-        if not user:
-            flash('Utilisateur non trouvé')
-            return redirect(url_for('select_user'))
-        
-        nom_user = user['nom']
-        delete_user(user_id)
-        
-        if session.get('user_id') == user_id:
-            session.clear()
-        
-        flash(f'Utilisateur "{nom_user}" supprimé avec succès')
-        return redirect(url_for('select_user'))
-        
-    except Exception as e:
-        flash(f'Erreur lors de la suppression: {str(e)}')
-        return redirect(url_for('select_user'))
+    """Rediriger vers admin"""
+    return redirect(url_for('admin_users'))
 
 # ========== ROUTES PRINCIPALES ==========
 
@@ -128,12 +271,12 @@ def index():
     user_id = session.get('user_id')
     
     if not user_id:
-        return redirect(url_for('select_user'))
+        return redirect(url_for('login'))
     
     user = get_user_by_id(user_id)
     if not user:
         session.clear()
-        return redirect(url_for('select_user'))
+        return redirect(url_for('login'))
     
     # Récupérer les niveaux avec compteur de decks
     niveaux_counts = get_niveaux_with_counts(user_id)

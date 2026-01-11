@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
 
 DATABASE = 'tipikus.db'
 
@@ -21,6 +22,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nom TEXT NOT NULL UNIQUE,
+            password_hash TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -91,18 +93,37 @@ def get_user_by_name(nom):
     conn.close()
     return dict(user) if user else None
 
-def create_user(nom):
-    """Crée un nouvel utilisateur"""
+def create_user(nom, password):
+    """Crée un nouvel utilisateur avec mot de passe"""
     conn = get_db()
     try:
-        cursor = conn.execute('INSERT INTO users (nom) VALUES (?)', (nom,))
+        password_hash = generate_password_hash(password)
+        cursor = conn.execute('INSERT INTO users (nom, password_hash) VALUES (?, ?)', (nom, password_hash))
         user_id = cursor.lastrowid
         conn.commit()
         conn.close()
         return user_id
     except sqlite3.IntegrityError:
         conn.close()
+        return None  # L'utilisateur existe déjà
+
+def verify_user_password(nom, password):
+    """Vérifie le nom d'utilisateur et le mot de passe"""
+    user = get_user_by_name(nom)
+    if not user:
         return None
+    
+    if check_password_hash(user['password_hash'], password):
+        return user
+    return None
+
+def update_user_password(user_id, new_password):
+    """Met à jour le mot de passe d'un utilisateur"""
+    conn = get_db()
+    password_hash = generate_password_hash(new_password)
+    conn.execute('UPDATE users SET password_hash = ? WHERE id = ?', (password_hash, user_id))
+    conn.commit()
+    conn.close()
 
 def delete_user(user_id):
     """Supprime un utilisateur et toutes ses données associées"""

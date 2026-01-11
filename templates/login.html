@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Tipikus</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #e0e0e0;
+            line-height: 1.4;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            width: 100%;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            border: 1px solid #333;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 48px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #ffffff;
+            font-weight: 300;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cccccc;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #444;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #2a2a2a;
+            color: #e0e0e0;
+            transition: border-color 0.3s ease;
+        }
+        
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .error {
+            background: #3a1a1a;
+            color: #f87171;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ef4444;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        
+        .flash {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .flash.success {
+            background: #1a3a1a;
+            color: #4ade80;
+            border: 1px solid #22c55e;
+        }
+        
+        .info-box {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .info-box p {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+        
+        @media (max-width: 600px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🇭🇺</div>
+        <h1>Tipikus</h1>
+        <p class="subtitle">Apprentissage du hongrois</p>
+        
+        {% if get_flashed_messages() %}
+        <div class="flash-messages">
+            {% for message in get_flashed_messages() %}
+                <div class="flash error">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <form method="POST" action="{{ url_for('login_post') }}">
+            <div class="form-group">
+                <label for="nom">Nom d'utilisateur</label>
+                <input type="text" name="nom" id="nom" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" name="password" id="password" required>
+            </div>
+            
+            <button type="submit" class="btn">Se connecter</button>
+        </form>
+        
+        <div class="info-box">
+            <p>Première connexion après migration ?<br>
+            Votre mot de passe temporaire est : <strong>[votre_nom]123</strong></p>
+        </div>
+    </div>
+</body>
+</html>

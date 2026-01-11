@@ -11,13 +11,28 @@
 </div>
 
 {% if user %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-    <p style="color: #888; font-size: 14px;">
-        👤 {{ user.nom }}
-    </p>
-    <button onclick="changeUser()" class="btn-change-user">
-        Changer
-    </button>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 15px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <p style="color: #888; font-size: 14px; margin: 0;">
+            👤 {{ user.nom }}
+        </p>
+        {% if user.nom == 'c' %}
+        <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">ADMIN</span>
+        {% endif %}
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="{{ url_for('change_password') }}" class="btn-user-action" title="Changer mon mot de passe">
+            🔐
+        </a>
+        {% if user.nom == 'c' %}
+        <a href="{{ url_for('admin_users') }}" class="btn-user-action" title="Gérer les utilisateurs">
+            👥
+        </a>
+        {% endif %}
+        <button onclick="logout()" class="btn-user-action" title="Déconnexion">
+            🚪
+        </button>
+    </div>
 </div>
 {% endif %}
 
@@ -57,21 +72,27 @@
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
-.btn-change-user {
-    padding: 6px 12px;
+.btn-user-action {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: transparent;
     color: #888;
     border: 1px solid #444;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
+    text-decoration: none;
 }
 
-.btn-change-user:hover {
+.btn-user-action:hover {
     color: #ffffff;
     border-color: #667eea;
     background: rgba(102, 126, 234, 0.1);
+    transform: translateY(-2px);
 }
 
 .niveau-btn {
@@ -98,9 +119,9 @@
 </style>
 
 <script>
-function changeUser() {
-    if (confirm('Voulez-vous vraiment changer d\'utilisateur ?')) {
-        window.location.href = '/change-user';
+function logout() {
+    if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
+        window.location.href = '/logout';
     }
 }
 </script>
