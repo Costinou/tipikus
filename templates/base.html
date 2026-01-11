@@ -20,14 +20,48 @@
             min-height: 100vh;
         }
         
+        /* Container responsive avec largeurs adaptatives */
         .container {
-            max-width: 600px;
+            max-width: 1400px; /* Augmenté de 600px à 1400px pour desktop */
             margin: 0 auto;
             background: #1a1a1a;
             border-radius: 12px;
             padding: 30px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.4);
             border: 1px solid #333;
+        }
+        
+        /* Largeur adaptative selon la taille d'écran */
+        @media (min-width: 1600px) {
+            .container {
+                max-width: 1600px; /* Encore plus large sur très grands écrans */
+            }
+        }
+        
+        @media (min-width: 1200px) and (max-width: 1599px) {
+            .container {
+                max-width: 1400px; /* Large sur grands écrans */
+            }
+        }
+        
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .container {
+                max-width: 1000px; /* Moyen sur tablettes */
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .container {
+                max-width: 100%; /* Pleine largeur sur mobile */
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+                padding: 20px;
+            }
+            
+            body {
+                padding: 0;
+            }
         }
         
         h1 {
@@ -138,6 +172,44 @@
             margin-bottom: 10px;
         }
         
+        /* Grilles responsives pour les cartes */
+        .stats-grid,
+        .lessons-grid {
+            display: grid;
+            gap: 15px;
+        }
+        
+        /* Desktop: 4 colonnes */
+        @media (min-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .lessons-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Tablette: 3 colonnes */
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .lessons-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* Mobile: 2 colonnes */
+        @media (max-width: 767px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .lessons-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Styles pour les pages d'apprentissage (flashcards/quiz) */
         .learning-container {
             display: flex;
             flex-direction: column;
@@ -291,20 +363,6 @@
             .instruction {
                 font-size: 14px;
                 bottom: 20px;
-            }
-        }
-        
-        @media (max-width: 600px) {
-            .container {
-                margin: 0;
-                border-radius: 0;
-                min-height: 100vh;
-                background: #1a1a1a;
-                border: none;
-            }
-            
-            body {
-                padding: 0;
             }
         }
     </style>

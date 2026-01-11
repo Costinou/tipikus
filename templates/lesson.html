@@ -33,7 +33,6 @@
         Pratiquez avec ces decks après avoir lu la théorie
     </p>
     <ul class="deck-list">
-    <ul class="deck-list">
         {% for deck in decks %}
             <li class="deck-item-wrapper">
                 <div class="deck-item-content">
@@ -219,6 +218,38 @@
     color: #ffffff;
 }
 
+/* 🎥 STYLES POUR LES VIDÉOS YOUTUBE */
+.markdown-content .youtube-container {
+    position: relative;
+    padding-bottom: 56.25%; /* Ratio 16:9 */
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    margin: 2em 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    background: #0f0f0f;
+}
+
+.markdown-content .youtube-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 12px;
+}
+
+.markdown-content .youtube-title {
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    font-style: italic;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
 .lesson-decks-section {
     margin-top: 40px;
 }
@@ -227,7 +258,7 @@
     margin-bottom: 20px;
 }
 
-/* Styles des decks (repris de niveau.html) */
+/* Styles des decks */
 .deck-item-wrapper {
     margin-bottom: 15px;
 }
@@ -325,19 +356,94 @@
 // Contenu markdown de la lesson
 const markdownContent = {{ lesson.content_markdown|tojson }};
 
-// Configurer marked pour gérer les images
+// 🎬 Fonction pour extraire l'ID YouTube de différents formats d'URL
+function extractYoutubeId(url) {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\s]+)/,
+        /youtube\.com\/watch\?.*v=([^&\s]+)/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+    return null;
+}
+
+// 🎬 Fonction pour créer un embed YouTube
+function createYoutubeEmbed(videoId, title = '') {
+    const titleHtml = title ? `<div class="youtube-title">🎥 ${title}</div>` : '';
+    return `
+        <div class="youtube-container">
+            <iframe 
+                src="https://www.youtube-nocookie.com/embed/${videoId}" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+        </div>
+        ${titleHtml}
+    `;
+}
+
+// Configurer marked avec support YouTube
 marked.use({
     renderer: {
+        // Gérer les images
         image(href, title, text) {
-            // Si l'image n'a pas de protocole (http/https), on assume que c'est dans /static/lessons/images/
+            // Vérifier si c'est une image YouTube (thumbnail)
+            if (href.includes('img.youtube.com')) {
+                const match = href.match(/\/vi\/([^\/]+)\//);
+                if (match && match[1]) {
+                    return createYoutubeEmbed(match[1], title || text);
+                }
+            }
+            
+            // Image normale
             if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('/')) {
                 href = '/static/lessons/images/' + href;
             }
             
             const titleAttr = title ? ` title="${title}"` : '';
             return `<img src="${href}" alt="${text}"${titleAttr}>`;
+        },
+        
+        // Gérer les liens
+        link(href, title, text) {
+            // Vérifier si c'est un lien YouTube
+            const videoId = extractYoutubeId(href);
+            if (videoId) {
+                return createYoutubeEmbed(videoId, title || text);
+            }
+            
+            // Lien normal
+            const titleAttr = title ? ` title="${title}"` : '';
+            return `<a href="${href}"${titleAttr}>${text}</a>`;
         }
-    }
+    },
+    
+    // 🎬 Extension pour la syntaxe personnalisée !youtube[VIDEO_ID]
+    extensions: [{
+        name: 'youtube',
+        level: 'block',
+        start(src) { return src.match(/^!youtube\[/)?.index; },
+        tokenizer(src) {
+            const rule = /^!youtube\[([^\]]+)\](?:\(([^)]+)\))?/;
+            const match = rule.exec(src);
+            if (match) {
+                return {
+                    type: 'youtube',
+                    raw: match[0],
+                    videoId: match[1],
+                    title: match[2] || ''
+                };
+            }
+        },
+        renderer(token) {
+            return createYoutubeEmbed(token.videoId, token.title);
+        }
+    }]
 });
 
 // Rendre le markdown

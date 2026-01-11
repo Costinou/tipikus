@@ -310,7 +310,7 @@ def niveau(niveau):
         flash(f'Niveau "{niveau}" non supporté')
         return redirect(url_for('index'))
     
-    # NOUVEAU: Vérifier si le niveau est débloqué
+    # Vérifier si le niveau est débloqué
     unlocked_niveaux = get_unlocked_niveaux(user_id)
     if niveau not in unlocked_niveaux:
         flash(f'⚠️ Le niveau {niveau} est verrouillé. Complétez le niveau précédent à 80% pour le débloquer.')
@@ -324,22 +324,34 @@ def niveau(niveau):
     for lesson in lessons:
         lessons_progress[lesson['id']] = calculate_lesson_progress(user_id, lesson['id'])
     
-    # Récupérer les decks HORS lessons (communs + perso)
+    # Récupérer les decks HORS lessons (communs + perso pour user normal, TOUS pour admin)
     all_decks = get_decks_by_niveau(niveau, user_id, include_in_lessons=False)
     
-    # Séparer decks communs et perso
-    decks_communs = [d for d in all_decks if d['is_commun']]
-    decks_perso = [d for d in all_decks if not d['is_commun']]
-    
     user = get_user_by_id(user_id)
+    is_admin = user['nom'] == 'c'
+    
+    # Séparer les decks
+    decks_communs = [d for d in all_decks if d['is_commun']]
+    
+    if is_admin:
+        # Pour l'admin : séparer decks perso admin + decks perso autres users
+        decks_perso_admin = [d for d in all_decks if not d['is_commun'] and d['user_id'] == user_id]
+        decks_perso_autres = [d for d in all_decks if not d['is_commun'] and d['user_id'] != user_id]
+    else:
+        # Pour user normal : seulement ses decks perso
+        decks_perso_admin = []
+        decks_perso_autres = []
+        decks_perso = [d for d in all_decks if not d['is_commun']]
     
     return render_template('niveau.html', 
                          niveau=niveau,
                          lessons=lessons,
                          lessons_progress=lessons_progress,
                          decks_communs=decks_communs,
-                         decks_perso=decks_perso,
-                         user=user)
+                         decks_perso=decks_perso if not is_admin else decks_perso_admin,
+                         decks_perso_autres=decks_perso_autres if is_admin else [],
+                         user=user,
+                         is_admin=is_admin)
 
 # ========== ROUTES POUR LES LESSONS ==========
 
@@ -996,11 +1008,20 @@ def page_not_found(e):
 
 def get_unlocked_niveaux(user_id):
     """Retourne la liste des niveaux débloqués pour un utilisateur
-    Un niveau est débloqué si le précédent a >= 80% de progression
+    
+    Pour l'admin 'c': TOUS les niveaux sont débloqués
+    Pour les autres: Un niveau est débloqué si le précédent a >= 80% de progression
     Le premier niveau (A1) est toujours débloqué
     """
-    from database import NIVEAUX_DISPONIBLES, calculate_niveau_progress
+    from database import NIVEAUX_DISPONIBLES, calculate_niveau_progress, get_user_by_id
     
+    # Vérifier si l'utilisateur est l'admin
+    user = get_user_by_id(user_id)
+    if user and user['nom'] == 'c':
+        # Admin a accès à TOUS les niveaux
+        return NIVEAUX_DISPONIBLES.copy()
+    
+    # Pour les autres utilisateurs, logique normale
     unlocked = []
     
     for i, niveau in enumerate(NIVEAUX_DISPONIBLES):

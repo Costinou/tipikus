@@ -40,9 +40,10 @@
 
 {% for niveau in niveaux_disponibles %}
     {% set is_locked = niveau not in unlocked_niveaux %}
+    {% set is_admin_unlock = user.nom == 'c' and is_locked %}
     
-    {% if is_locked %}
-        <!-- Niveau verrouillé -->
+    {% if is_locked and user.nom != 'c' %}
+        <!-- Niveau verrouillé (utilisateur normal) -->
         <div class="btn niveau-btn niveau-locked">
             <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -69,10 +70,15 @@
         </div>
     {% else %}
         <!-- Niveau débloqué -->
-        <a href="{{ url_for('niveau', niveau=niveau) }}" class="btn niveau-btn">
+        <a href="{{ url_for('niveau', niveau=niveau) }}" class="btn niveau-btn {% if is_admin_unlock %}niveau-admin-unlock{% endif %}">
             <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span class="niveau-nom">{{ niveau }}</span>
+                    <span class="niveau-nom">
+                        {{ niveau }}
+                        {% if is_admin_unlock %}
+                        <span class="admin-unlock-badge" title="Débloqué par privilèges admin">👑</span>
+                        {% endif %}
+                    </span>
                     {% if niveau in niveaux_counts %}
                         <span class="niveau-info">
                             {{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}
@@ -81,16 +87,19 @@
                 </div>
                 <div class="progress-bar-mini">
                     {% if niveau in niveaux_progress %}
-                    <div class="progress-fill-mini" style="width: {{ niveaux_progress[niveau] }}%"></div>
+                    <div class="progress-fill-mini {% if is_admin_unlock %}progress-fill-admin{% endif %}" style="width: {{ niveaux_progress[niveau] }}%"></div>
                     {% else %}
-                    <div class="progress-fill-mini" style="width: 0%"></div>
+                    <div class="progress-fill-mini {% if is_admin_unlock %}progress-fill-admin{% endif %}" style="width: 0%"></div>
                     {% endif %}
                 </div>
-                <div class="progress-text">
+                <div class="progress-text {% if is_admin_unlock %}progress-text-admin{% endif %}">
                     {% if niveau in niveaux_progress %}
                     {{ niveaux_progress[niveau]|int }}%
                     {% else %}
                     0%
+                    {% endif %}
+                    {% if is_admin_unlock %}
+                    <span style="margin-left: 5px; font-size: 10px;">(accès admin)</span>
                     {% endif %}
                 </div>
             </div>
@@ -174,6 +183,69 @@
         rgba(0, 0, 0, 0.1) 20px
     );
     pointer-events: none;
+}
+
+/* Styles pour les niveaux débloqués par l'admin */
+.niveau-admin-unlock {
+    border: 2px solid #667eea;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.niveau-admin-unlock::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(102, 126, 234, 0.1), 
+        transparent
+    );
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+.niveau-admin-unlock:hover {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    border-color: #8b9aff;
+}
+
+.admin-unlock-badge {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 16px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.15);
+    }
+}
+
+.progress-fill-admin {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.progress-text-admin {
+    color: #8b9aff !important;
 }
 
 .niveau-nom {

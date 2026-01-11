@@ -390,32 +390,64 @@ def get_niveaux_with_counts(user_id):
 # ========== FONCTIONS POUR LES DECKS ==========
 
 def get_decks_by_niveau(niveau, user_id, include_in_lessons=False):
-    """Retourne tous les decks d'un niveau (communs + perso de l'user)
+    """Retourne tous les decks d'un niveau
+    
+    Pour l'admin 'c': TOUS les decks (communs + tous les decks perso)
+    Pour les autres: decks communs + leurs decks perso uniquement
+    
     Par défaut, exclut les decks qui sont dans des lessons
     """
     conn = get_db()
     
+    # Vérifier si l'utilisateur est l'admin
+    user = get_user_by_id(user_id)
+    is_admin = user and user['nom'] == 'c'
+    
     if include_in_lessons:
         # Récupérer TOUS les decks (y compris ceux dans des lessons)
-        decks = conn.execute(
-            '''SELECT d.*, u.nom as createur_nom 
-            FROM decks d
-            JOIN users u ON d.user_id = u.id
-            WHERE d.niveau = ? AND (d.is_commun = 1 OR d.user_id = ?)
-            ORDER BY d.is_commun DESC, d.nom''',
-            (niveau, user_id)
-        ).fetchall()
+        if is_admin:
+            # Admin voit TOUS les decks
+            decks = conn.execute(
+                '''SELECT d.*, u.nom as createur_nom 
+                FROM decks d
+                JOIN users u ON d.user_id = u.id
+                WHERE d.niveau = ?
+                ORDER BY d.is_commun DESC, u.nom, d.nom''',
+                (niveau,)
+            ).fetchall()
+        else:
+            # Utilisateur normal voit seulement les decks communs + ses decks perso
+            decks = conn.execute(
+                '''SELECT d.*, u.nom as createur_nom 
+                FROM decks d
+                JOIN users u ON d.user_id = u.id
+                WHERE d.niveau = ? AND (d.is_commun = 1 OR d.user_id = ?)
+                ORDER BY d.is_commun DESC, d.nom''',
+                (niveau, user_id)
+            ).fetchall()
     else:
         # Récupérer uniquement les decks HORS lessons
-        decks = conn.execute(
-            '''SELECT d.*, u.nom as createur_nom 
-            FROM decks d
-            JOIN users u ON d.user_id = u.id
-            WHERE d.niveau = ? AND (d.is_commun = 1 OR d.user_id = ?)
-            AND d.lesson_id IS NULL
-            ORDER BY d.is_commun DESC, d.nom''',
-            (niveau, user_id)
-        ).fetchall()
+        if is_admin:
+            # Admin voit TOUS les decks hors lessons
+            decks = conn.execute(
+                '''SELECT d.*, u.nom as createur_nom 
+                FROM decks d
+                JOIN users u ON d.user_id = u.id
+                WHERE d.niveau = ? AND d.lesson_id IS NULL
+                ORDER BY d.is_commun DESC, u.nom, d.nom''',
+                (niveau,)
+            ).fetchall()
+        else:
+            # Utilisateur normal voit seulement les decks communs + ses decks perso (hors lessons)
+            decks = conn.execute(
+                '''SELECT d.*, u.nom as createur_nom 
+                FROM decks d
+                JOIN users u ON d.user_id = u.id
+                WHERE d.niveau = ? AND (d.is_commun = 1 OR d.user_id = ?)
+                AND d.lesson_id IS NULL
+                ORDER BY d.is_commun DESC, d.nom''',
+                (niveau, user_id)
+            ).fetchall()
     
     conn.close()
     return [dict(deck) for deck in decks]
