@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier la lesson - Tipikus{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="back-link">← Retour à la lesson</a>
+
+<h1>✏️ Modifier une lesson</h1>
+<p style="color: #888; margin-bottom: 30px;">
+    Niveau {{ lesson.niveau }} - Lesson {{ lesson.numero }}
+</p>
+
+<form method="POST" action="{{ url_for('edit_lesson_post', lesson_id=lesson.id) }}" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="titre" style="display: block; margin-bottom: 8px; color: #cccccc; font-weight: 500;">
+            Titre de la lesson
+        </label>
+        <input type="text" name="titre" id="titre" value="{{ lesson.titre }}" required>
+    </div>
+    
+    <div class="form-group">
+        <label style="display: block; margin-bottom: 8px; color: #cccccc; font-weight: 500;">
+            Fichier Markdown (.md) - Optionnel
+        </label>
+        <label class="file-label">
+            <input type="file" name="fichier_md" accept=".md" id="file-input">
+            <span class="file-button">Choisir un nouveau fichier .md (optionnel)</span>
+            <span class="file-name" id="file-name">Aucun fichier sélectionné</span>
+        </label>
+        <div class="info-box">
+            <strong>ℹ️ Modification du contenu :</strong>
+            <p style="margin: 10px 0 0 0; color: #888; font-size: 13px;">
+                Si vous ne sélectionnez pas de nouveau fichier, l'ancien contenu Markdown sera conservé.
+                <br>
+                Pour modifier le contenu, uploadez un nouveau fichier .md.
+            </p>
+        </div>
+    </div>
+    
+    <button type="submit" class="btn">Enregistrer les modifications</button>
+    <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary" style="margin-top: 10px;">
+        Annuler
+    </a>
+</form>
+
+<div class="info-section">
+    <h3>📝 Contenu actuel de la lesson</h3>
+    <div class="current-content">
+        <pre>{{ lesson.content_markdown[:500] }}{% if lesson.content_markdown|length > 500 %}...{% endif %}</pre>
+        <p style="color: #888; font-size: 12px; margin-top: 10px;">
+            Aperçu des 500 premiers caractères
+        </p>
+    </div>
+</div>
+
+<style>
+input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    font-size: 16px;
+    background: #2a2a2a;
+    color: #e0e0e0;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.file-label {
+    display: block;
+    cursor: pointer;
+}
+
+.file-label input[type="file"] {
+    display: none;
+}
+
+.file-button {
+    display: inline-block;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+
+.file-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.file-name {
+    display: block;
+    color: #888;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.info-box {
+    background: #0f0f0f;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.info-box strong {
+    color: #ffffff;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.info-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.info-section h3 {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.current-content {
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.current-content pre {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #e0e0e0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+</style>
+
+<script>
+document.getElementById('file-input').addEventListener('change', function(e) {
+    const fileName = e.target.files[0]?.name || 'Aucun fichier sélectionné';
+    document.getElementById('file-name').textContent = fileName;
+});
+</script>
+{% endblock %}

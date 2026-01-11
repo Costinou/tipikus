@@ -234,6 +234,142 @@ def detach_deck_from_lesson(deck_id):
     conn.commit()
     conn.close()
 
+# ========== FONCTIONS POUR LA PROGRESSION ==========
+
+def get_deck_total_words(deck_id):
+    """Retourne le nombre total de mots dans un deck"""
+    conn = get_db()
+    count = conn.execute('SELECT COUNT(*) FROM mots WHERE deck_id = ?', (deck_id,)).fetchone()[0]
+    conn.close()
+    return count
+
+def has_user_seen_all_cards(user_id, deck_id):
+    """Vérifie si un utilisateur a vu toutes les cartes d'un deck au moins une fois"""
+    total_words = get_deck_total_words(deck_id)
+    if total_words == 0:
+        return True  # Pas de mots = considéré comme "vu"
+    
+    conn = get_db()
+    # Vérifier s'il y a au moins une session flashcard complète avec toutes les cartes
+    complete_sessions = conn.execute(
+        '''SELECT COUNT(*) FROM sessions 
+        WHERE deck_id = ? 
+        AND type_session = 'flashcard' 
+        AND complete = 1 
+        AND nombre_mots_vus >= ?''',
+        (deck_id, total_words)
+    ).fetchone()[0]
+    conn.close()
+    
+    return complete_sessions > 0
+
+def get_quiz_success_rate(user_id, deck_id):
+    """Retourne le taux de réussite moyen aux quiz d'un deck (%)"""
+    conn = get_db()
+    stats = conn.execute(
+        '''SELECT 
+            SUM(score) as total_score,
+            SUM(nombre_mots_vus) as total_questions
+        FROM sessions
+        WHERE deck_id = ? AND type_session = 'quiz' ''',
+        (deck_id,)
+    ).fetchone()
+    conn.close()
+    
+    if not stats or not stats['total_questions'] or stats['total_questions'] == 0:
+        return 0.0
+    
+    return (stats['total_score'] / stats['total_questions']) * 100
+
+def calculate_lesson_progress(user_id, lesson_id):
+    """Calcule la progression d'une lesson (0-100%)
+    
+    50% = Toutes les cartes vues dans tous les decks
+    50% = Taux de réussite >80% aux quiz de tous les decks
+    """
+    decks = get_decks_by_lesson(lesson_id)
+    
+    if not decks:
+        return 100.0  # Lesson sans decks = 100%
+    
+    # 1. Vérifier si toutes les cartes ont été vues (50%)
+    all_cards_seen = all(has_user_seen_all_cards(user_id, deck['id']) for deck in decks)
+    cards_progress = 50.0 if all_cards_seen else 0.0
+    
+    # 2. Calculer le taux de réussite moyen aux quiz (50%)
+    quiz_rates = [get_quiz_success_rate(user_id, deck['id']) for deck in decks]
+    avg_quiz_rate = sum(quiz_rates) / len(quiz_rates) if quiz_rates else 0.0
+    
+    # Si le taux moyen est >80%, on obtient 50%
+    quiz_progress = 50.0 if avg_quiz_rate >= 80.0 else 0.0
+    
+    return cards_progress + quiz_progress
+
+def get_user_seen_cards_count(user_id, deck_id):
+    """Retourne le nombre de cartes vues par un utilisateur dans un deck
+    (basé sur le max de mots vus dans une session flashcard complète)"""
+    conn = get_db()
+    max_seen = conn.execute(
+        '''SELECT MAX(nombre_mots_vus) as max_seen
+        FROM sessions
+        WHERE deck_id = ? 
+        AND type_session = 'flashcard'
+        AND complete = 1''',
+        (deck_id,)
+    ).fetchone()
+    conn.close()
+    
+    if max_seen and max_seen['max_seen']:
+        return max_seen['max_seen']
+    return 0
+
+def calculate_niveau_progress(user_id, niveau):
+    """Calcule la progression globale d'un niveau (0-100%)
+    
+    50% = Progression moyenne des lessons (granulaire)
+    50% = Cartes vues dans les decks hors lessons (linéaire)
+    """
+    # 1. Récupérer toutes les lessons du niveau
+    lessons = get_lessons_by_niveau(niveau)
+    
+    lessons_progress = 0.0
+    if lessons:
+        # Calculer la progression moyenne de toutes les lessons
+        total_lessons_progress = sum(calculate_lesson_progress(user_id, lesson['id']) for lesson in lessons)
+        lessons_progress = (total_lessons_progress / len(lessons)) * 0.5  # 50% du total
+    else:
+        # Pas de lessons = 50% automatique
+        lessons_progress = 50.0
+    
+    # 2. Récupérer les decks HORS lessons
+    all_decks = get_decks_by_niveau(niveau, user_id, include_in_lessons=True)
+    decks_hors_lessons = [d for d in all_decks if d['lesson_id'] is None]
+    
+    cards_progress = 0.0
+    if decks_hors_lessons:
+        # Calculer le nombre total de cartes et le nombre vu
+        total_cards = 0
+        seen_cards = 0
+        
+        for deck in decks_hors_lessons:
+            deck_total = get_deck_total_words(deck['id'])
+            deck_seen = get_user_seen_cards_count(user_id, deck['id'])
+            
+            total_cards += deck_total
+            seen_cards += min(deck_seen, deck_total)  # Ne pas dépasser le total
+        
+        if total_cards > 0:
+            # Progression linéaire : (cartes vues / cartes totales) * 50%
+            cards_progress = (seen_cards / total_cards) * 50.0
+        else:
+            # Pas de cartes = 50% automatique
+            cards_progress = 50.0
+    else:
+        # Pas de decks hors lessons = 50% automatique
+        cards_progress = 50.0
+    
+    return lessons_progress + cards_progress
+
 # ========== FONCTIONS POUR LES NIVEAUX ==========
 
 def get_niveaux_with_counts(user_id):

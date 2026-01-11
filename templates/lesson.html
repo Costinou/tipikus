@@ -12,6 +12,9 @@
     </div>
     {% if user.nom == 'c' %}
     <div class="admin-buttons">
+        <a href="{{ url_for('edit_lesson_form', lesson_id=lesson.id) }}" class="btn-admin">
+            ✏️ Modifier
+        </a>
         <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn-admin">
             ⚙️ Gérer les decks
         </a>

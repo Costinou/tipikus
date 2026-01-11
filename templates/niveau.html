@@ -31,6 +31,12 @@
             <div class="lesson-info">
                 <div class="lesson-title">{{ lesson.titre }}</div>
                 <div class="lesson-meta">{{ lesson.nb_decks }} deck{{ 's' if lesson.nb_decks > 1 else '' }}</div>
+                {% if lesson.id in lessons_progress %}
+                <div class="progress-bar-lesson">
+                    <div class="progress-fill-lesson" style="width: {{ lessons_progress[lesson.id] }}%"></div>
+                </div>
+                <div class="progress-text-lesson">{{ lessons_progress[lesson.id]|int }}% complété</div>
+                {% endif %}
             </div>
             <div class="lesson-arrow">→</div>
         </a>
@@ -207,6 +213,30 @@
 .lesson-meta {
     color: #888;
     font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.progress-bar-lesson {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.progress-fill-lesson {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.5s ease;
+    border-radius: 3px;
+}
+
+.progress-text-lesson {
+    font-size: 11px;
+    color: #667eea;
+    font-weight: 600;
+    margin-top: 4px;
 }
 
 .lesson-arrow {

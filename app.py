@@ -14,6 +14,7 @@ from database import (
     verify_user_password, update_user_password,
     get_lessons_by_niveau, get_lesson_by_id, create_lesson, update_lesson, delete_lesson,
     get_decks_by_lesson, associate_deck_to_lesson, detach_deck_from_lesson,
+    calculate_lesson_progress, calculate_niveau_progress,
     NIVEAUX_DISPONIBLES
 )
 
@@ -281,9 +282,15 @@ def index():
     # Récupérer les niveaux avec compteur de decks
     niveaux_counts = get_niveaux_with_counts(user_id)
     
+    # Calculer la progression pour chaque niveau
+    niveaux_progress = {}
+    for niveau in NIVEAUX_DISPONIBLES:
+        niveaux_progress[niveau] = calculate_niveau_progress(user_id, niveau)
+    
     return render_template('index.html', 
                          niveaux_disponibles=NIVEAUX_DISPONIBLES,
                          niveaux_counts=niveaux_counts,
+                         niveaux_progress=niveaux_progress,
                          user=user)
 
 @app.route('/niveau/<niveau>')
@@ -301,6 +308,11 @@ def niveau(niveau):
     # Récupérer les lessons du niveau
     lessons = get_lessons_by_niveau(niveau)
     
+    # Calculer la progression pour chaque lesson
+    lessons_progress = {}
+    for lesson in lessons:
+        lessons_progress[lesson['id']] = calculate_lesson_progress(user_id, lesson['id'])
+    
     # Récupérer les decks HORS lessons (communs + perso)
     all_decks = get_decks_by_niveau(niveau, user_id, include_in_lessons=False)
     
@@ -313,6 +325,7 @@ def niveau(niveau):
     return render_template('niveau.html', 
                          niveau=niveau,
                          lessons=lessons,
+                         lessons_progress=lessons_progress,
                          decks_communs=decks_communs,
                          decks_perso=decks_perso,
                          user=user)
@@ -436,6 +449,64 @@ def delete_lesson_route(lesson_id):
     except Exception as e:
         flash(f'Erreur lors de la suppression: {str(e)}')
         return redirect(url_for('index'))
+
+@app.route('/edit-lesson/<int:lesson_id>', methods=['GET'])
+def edit_lesson_form(lesson_id):
+    """Formulaire de modification d'une lesson (admin uniquement)"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id or user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut modifier des lessons')
+        return redirect(url_for('index'))
+    
+    lesson = get_lesson_by_id(lesson_id)
+    if not lesson:
+        flash('Lesson non trouvée')
+        return redirect(url_for('index'))
+    
+    user = get_user_by_id(user_id)
+    return render_template('edit_lesson.html', lesson=lesson, user=user)
+
+@app.route('/edit-lesson/<int:lesson_id>', methods=['POST'])
+def edit_lesson_post(lesson_id):
+    """Traiter la modification d'une lesson"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut modifier des lessons')
+        return redirect(url_for('index'))
+    
+    lesson = get_lesson_by_id(lesson_id)
+    if not lesson:
+        flash('Lesson non trouvée')
+        return redirect(url_for('index'))
+    
+    titre = request.form.get('titre', '').strip()
+    fichier_md = request.files.get('fichier_md')
+    
+    # Validations
+    if not titre:
+        flash('Le titre est obligatoire')
+        return redirect(url_for('edit_lesson_form', lesson_id=lesson_id))
+    
+    try:
+        # Si un nouveau fichier est uploadé, le lire
+        if fichier_md and fichier_md.filename and fichier_md.filename.endswith('.md'):
+            content_markdown = fichier_md.read().decode('utf-8')
+        else:
+            # Sinon, garder l'ancien contenu
+            content_markdown = lesson['content_markdown']
+        
+        # Mettre à jour la lesson
+        update_lesson(lesson_id, titre, content_markdown)
+        
+        flash(f'Lesson "{titre}" modifiée avec succès!')
+        return redirect(url_for('view_lesson', lesson_id=lesson_id))
+        
+    except Exception as e:
+        flash(f'Erreur lors de la modification: {str(e)}')
+        return redirect(url_for('edit_lesson_form', lesson_id=lesson_id))
 
 @app.route('/manage-lesson-decks/<int:lesson_id>')
 def manage_lesson_decks(lesson_id):
