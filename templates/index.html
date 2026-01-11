@@ -39,32 +39,63 @@
 <h2>Choisir un niveau</h2>
 
 {% for niveau in niveaux_disponibles %}
-    <a href="{{ url_for('niveau', niveau=niveau) }}" class="btn niveau-btn">
-        <div style="flex: 1;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span class="niveau-nom">{{ niveau }}</span>
-                {% if niveau in niveaux_counts %}
-                    <span class="niveau-info">
-                        {{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}
+    {% set is_locked = niveau not in unlocked_niveaux %}
+    
+    {% if is_locked %}
+        <!-- Niveau verrouillé -->
+        <div class="btn niveau-btn niveau-locked">
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="niveau-nom">
+                        🔒 {{ niveau }}
                     </span>
-                {% endif %}
-            </div>
-            <div class="progress-bar-mini">
-                {% if niveau in niveaux_progress %}
-                <div class="progress-fill-mini" style="width: {{ niveaux_progress[niveau] }}%"></div>
-                {% else %}
-                <div class="progress-fill-mini" style="width: 0%"></div>
-                {% endif %}
-            </div>
-            <div class="progress-text">
-                {% if niveau in niveaux_progress %}
-                {{ niveaux_progress[niveau]|int }}%
-                {% else %}
-                0%
-                {% endif %}
+                    {% if niveau in niveaux_counts %}
+                        <span class="niveau-info">
+                            {{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="progress-bar-mini">
+                    {% if niveau in niveaux_progress %}
+                    <div class="progress-fill-mini" style="width: {{ niveaux_progress[niveau] }}%"></div>
+                    {% else %}
+                    <div class="progress-fill-mini" style="width: 0%"></div>
+                    {% endif %}
+                </div>
+                <div class="progress-text locked-text">
+                    Complétez le niveau précédent à 80%
+                </div>
             </div>
         </div>
-    </a>
+    {% else %}
+        <!-- Niveau débloqué -->
+        <a href="{{ url_for('niveau', niveau=niveau) }}" class="btn niveau-btn">
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="niveau-nom">{{ niveau }}</span>
+                    {% if niveau in niveaux_counts %}
+                        <span class="niveau-info">
+                            {{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="progress-bar-mini">
+                    {% if niveau in niveaux_progress %}
+                    <div class="progress-fill-mini" style="width: {{ niveaux_progress[niveau] }}%"></div>
+                    {% else %}
+                    <div class="progress-fill-mini" style="width: 0%"></div>
+                    {% endif %}
+                </div>
+                <div class="progress-text">
+                    {% if niveau in niveaux_progress %}
+                    {{ niveaux_progress[niveau]|int }}%
+                    {% else %}
+                    0%
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+    {% endif %}
 {% endfor %}
 
 <a href="{{ url_for('nouveau_deck') }}" class="btn btn-secondary" style="margin-top: 30px;">
@@ -120,6 +151,31 @@
     flex-direction: row;
 }
 
+.niveau-locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+    pointer-events: none;
+    position: relative;
+}
+
+.niveau-locked::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(0, 0, 0, 0.1) 10px,
+        rgba(0, 0, 0, 0.1) 20px
+    );
+    pointer-events: none;
+}
+
 .niveau-nom {
     font-weight: 600;
 }
@@ -145,11 +201,21 @@
     border-radius: 3px;
 }
 
+.niveau-locked .progress-fill-mini {
+    background: linear-gradient(90deg, #666 0%, #555 100%);
+}
+
 .progress-text {
     font-size: 12px;
     color: #4ade80;
     font-weight: 600;
     margin-top: 4px;
+}
+
+.locked-text {
+    color: #888 !important;
+    font-size: 11px;
+    font-weight: 500;
 }
 
 @media (max-width: 600px) {

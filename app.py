@@ -287,11 +287,16 @@ def index():
     for niveau in NIVEAUX_DISPONIBLES:
         niveaux_progress[niveau] = calculate_niveau_progress(user_id, niveau)
     
+    # NOUVEAU: Obtenir les niveaux débloqués
+    unlocked_niveaux = get_unlocked_niveaux(user_id)
+    
     return render_template('index.html', 
                          niveaux_disponibles=NIVEAUX_DISPONIBLES,
                          niveaux_counts=niveaux_counts,
                          niveaux_progress=niveaux_progress,
+                         unlocked_niveaux=unlocked_niveaux,  # NOUVEAU
                          user=user)
+
 
 @app.route('/niveau/<niveau>')
 def niveau(niveau):
@@ -303,6 +308,12 @@ def niveau(niveau):
     
     if niveau not in NIVEAUX_DISPONIBLES:
         flash(f'Niveau "{niveau}" non supporté')
+        return redirect(url_for('index'))
+    
+    # NOUVEAU: Vérifier si le niveau est débloqué
+    unlocked_niveaux = get_unlocked_niveaux(user_id)
+    if niveau not in unlocked_niveaux:
+        flash(f'⚠️ Le niveau {niveau} est verrouillé. Complétez le niveau précédent à 80% pour le débloquer.')
         return redirect(url_for('index'))
     
     # Récupérer les lessons du niveau
@@ -981,6 +992,46 @@ def stats_globales():
 @app.errorhandler(404)
 def page_not_found(e):
     return redirect(url_for('index'))
+
+
+def get_unlocked_niveaux(user_id):
+    """Retourne la liste des niveaux débloqués pour un utilisateur
+    Un niveau est débloqué si le précédent a >= 80% de progression
+    Le premier niveau (A1) est toujours débloqué
+    """
+    from database import NIVEAUX_DISPONIBLES, calculate_niveau_progress
+    
+    unlocked = []
+    
+    for i, niveau in enumerate(NIVEAUX_DISPONIBLES):
+        # A1 et Custom sont toujours débloqués
+        if niveau == 'A1' or niveau == 'Custom':
+            unlocked.append(niveau)
+            continue
+        
+        # Vérifier le niveau précédent
+        if i > 0:
+            niveau_precedent = NIVEAUX_DISPONIBLES[i - 1]
+            
+            # Si c'est Custom, on prend le niveau d'avant
+            if niveau_precedent == 'Custom':
+                if i > 1:
+                    niveau_precedent = NIVEAUX_DISPONIBLES[i - 2]
+                else:
+                    # Cas improbable mais sécurité
+                    unlocked.append(niveau)
+                    continue
+            
+            progression_precedent = calculate_niveau_progress(user_id, niveau_precedent)
+            
+            # Débloquer si >= 80%
+            if progression_precedent >= 80.0:
+                unlocked.append(niveau)
+        else:
+            # Cas de sécurité
+            unlocked.append(niveau)
+    
+    return unlocked
 
 if __name__ == '__main__':
     init_db()
