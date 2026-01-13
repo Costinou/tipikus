@@ -141,12 +141,21 @@
     </div>
 </div>
 
-<!-- Modal de réinitialisation de mot de passe -->
-<div id="reset-password-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+<!-- Actions -->
+<div class="card mt-2">
+    <div class="flex flex-between" style="gap: 0.875rem; flex-wrap: wrap;">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+            ← Retour à l'accueil
+        </a>
+    </div>
+</div>
+
+<!-- Modal de réinitialisation de mot de passe - DISPLAY NONE PAR DÉFAUT -->
+<div id="reset-password-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
     <div class="card" style="max-width: 500px; width: 90%; margin: 1rem;">
         <h3 class="card-title">🔑 Réinitialiser le mot de passe</h3>
         
-        <form id="reset-password-form" method="POST">
+        <form id="reset-password-form" method="POST" action="">
             <p class="text-muted">Utilisateur : <strong id="reset-username"></strong></p>
             
             <div class="form-group">
@@ -159,6 +168,7 @@
                     placeholder="Minimum 4 caractères"
                     required
                     minlength="4"
+                    autocomplete="new-password"
                 >
             </div>
             
@@ -179,23 +189,36 @@
 <script>
 const modal = document.getElementById('reset-password-modal');
 const form = document.getElementById('reset-password-form');
-const username = document.getElementById('reset-username');
+const usernameEl = document.getElementById('reset-username');
+const passwordInput = document.getElementById('new_password');
 
 function showResetPassword(userId, userName) {
-    username.textContent = userName;
-    form.action = '/admin/reset-password/' + userId;
-    modal.classList.remove('hidden');
-    document.getElementById('new_password').focus();
+    // Définir l'URL de l'action du formulaire
+    form.action = '{{ url_for("admin_reset_password", user_id=0) }}'.replace('0', userId);
+    
+    // Afficher le nom de l'utilisateur
+    usernameEl.textContent = userName;
+    
+    // Réinitialiser le formulaire
+    form.reset();
+    
+    // Afficher le modal (display: flex pour le centrage)
+    modal.style.display = 'flex';
+    
+    // Focus sur le champ mot de passe
+    setTimeout(() => {
+        passwordInput.focus();
+    }, 100);
 }
 
 function hideResetPassword() {
-    modal.classList.add('hidden');
+    modal.style.display = 'none';
     form.reset();
 }
 
 // Fermer avec Escape
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+    if (e.key === 'Escape' && modal.style.display === 'flex') {
         hideResetPassword();
     }
 });
