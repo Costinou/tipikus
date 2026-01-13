@@ -302,12 +302,19 @@ function afficherMot() {
     flashcard.style.transition = '';
     flashcard.classList.remove('revealed', 'swipe-out-left', 'swipe-out-right');
     
-    if (pileMots.length === 0) {
+    // Vérifier si tous les mots sont appris (pas juste si la pile est vide)
+    if (motsAppris.size === mots.length) {
         motActuel.innerHTML = '🎉<br>Terminé !<br><small>Tous les mots appris !</small>';
         document.getElementById('instruction-text').textContent = 'Félicitations !';
         afficherBoutonAudio(false);
         motHongroisActuel = '';
         enregistrerSession(true);
+        return;
+    }
+    
+    // Si la pile est vide mais tous les mots ne sont pas appris, erreur de logique
+    if (pileMots.length === 0) {
+        console.error('Pile vide mais tous les mots ne sont pas appris');
         return;
     }
     
@@ -330,7 +337,14 @@ function afficherMot() {
 }
 
 function revelerTraduction() {
-    if (pileMots.length === 0) return;
+    // Vérifier si tous les mots sont appris
+    if (motsAppris.size === mots.length) {
+        return;
+    }
+    
+    if (pileMots.length === 0) {
+        return;
+    }
     
     const flashcard = document.getElementById('flashcard');
     const motActuel = document.getElementById('mot-actuel');
@@ -350,7 +364,14 @@ function revelerTraduction() {
 }
 
 function marquerAppris() {
-    if (pileMots.length === 0) return;
+    // Vérifier si tous les mots sont appris
+    if (motsAppris.size === mots.length) {
+        return;
+    }
+    
+    if (pileMots.length === 0) {
+        return;
+    }
     
     if (!traductionVisible) {
         revelerTraduction();
@@ -372,7 +393,14 @@ function marquerAppris() {
 }
 
 function marquerRevoir() {
-    if (pileMots.length === 0) return;
+    // Vérifier si tous les mots sont appris
+    if (motsAppris.size === mots.length) {
+        return;
+    }
+    
+    if (pileMots.length === 0) {
+        return;
+    }
     
     if (!traductionVisible) {
         revelerTraduction();
