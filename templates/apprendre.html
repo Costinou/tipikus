@@ -191,7 +191,10 @@
     <div class="card mb-2">
         <div class="progress-info">
             <div class="progress-text">
-                Carte <span id="current-card">1</span> / <span id="total-cards">{{ mots|length }}</span>
+                Cartes restantes : <span id="remaining-cards">{{ mots|length }}</span>
+            </div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                Carte <span id="current-position">1</span> / <span id="total-in-deck">{{ mots|length }}</span>
             </div>
         </div>
         
@@ -224,17 +227,17 @@
     
     <!-- Instructions swipe -->
     <div class="swipe-instruction">
-        ⬅️ Swipe gauche : Précédente | Swipe droite : Suivante ➡️
+        ⬅️ Swipe gauche : À revoir | Swipe droite : Apprise ➡️
     </div>
     
     <!-- Contrôles -->
     <div class="controls">
-        <button class="btn btn-secondary" onclick="previousCard()" id="btn-prev" disabled>
-            ← Précédente
+        <button class="btn btn-secondary" onclick="rejectCard()" id="btn-reject">
+            ❌ À revoir
         </button>
         
-        <button class="btn btn-primary" onclick="nextCard()" id="btn-next">
-            Suivante →
+        <button class="btn btn-primary" onclick="acceptCard()" id="btn-accept">
+            ✅ Apprise
         </button>
     </div>
     
@@ -279,9 +282,11 @@
 {% block extra_js %}
 <script>
 // Données
-const mots = {{ mots|tojson }};
+const initialMots = {{ mots|tojson }};
+let cards = [...initialMots]; // Copie pour manipulation
 const deckId = {{ deck_id }};
 let currentIndex = 0;
+let remainingCount = cards.length;
 let isFlipped = false;
 let startTime = Date.now();
 
@@ -293,74 +298,91 @@ let touchEndY = 0;
 
 // Éléments DOM
 const flashcard = document.getElementById('flashcard');
-const currentCardEl = document.getElementById('current-card');
-const totalCardsEl = document.getElementById('total-cards');
+const remainingCardsEl = document.getElementById('remaining-cards');
+const currentPositionEl = document.getElementById('current-position');
+const totalInDeckEl = document.getElementById('total-in-deck');
 const progressFill = document.getElementById('progress-fill');
-const btnPrev = document.getElementById('btn-prev');
-const btnNext = document.getElementById('btn-next');
+const btnReject = document.getElementById('btn-reject');
+const btnAccept = document.getElementById('btn-accept');
 const motFrancais = document.getElementById('mot-francais');
 const traduction = document.getElementById('traduction');
 const completionModal = document.getElementById('completion-modal');
 
 // Init
-totalCardsEl.textContent = mots.length;
-showCard(0);
+totalInDeckEl.textContent = initialMots.length;
+showCard();
 
-// Afficher une carte
-function showCard(index) {
-    currentIndex = index;
+// Afficher la carte courante
+function showCard() {
+    if (currentIndex >= cards.length) {
+        // Plus de cartes
+        endSession();
+        return;
+    }
+    
     isFlipped = false;
     flashcard.classList.remove('flipped', 'swipe-left', 'swipe-right');
     
-    motFrancais.textContent = mots[index].mot_francais;
-    traduction.textContent = mots[index].traduction;
+    const currentCard = cards[currentIndex];
+    motFrancais.textContent = currentCard.mot_francais;
+    traduction.textContent = currentCard.traduction;
     
-    currentCardEl.textContent = index + 1;
-    const progress = ((index + 1) / mots.length) * 100;
+    // Mise à jour affichage
+    remainingCardsEl.textContent = remainingCount;
+    currentPositionEl.textContent = currentIndex + 1;
+    
+    // Progression basée sur les cartes apprises
+    const learnedCards = initialMots.length - remainingCount;
+    const progress = (learnedCards / initialMots.length) * 100;
     progressFill.style.width = progress + '%';
-    
-    btnPrev.disabled = index === 0;
-    btnNext.textContent = index === mots.length - 1 ? '✓ Terminer' : 'Suivante →';
 }
 
-// Retourner
+// Retourner la carte
 function flipCard() {
     isFlipped = !isFlipped;
     flashcard.classList.toggle('flipped');
 }
 
-// Navigation
-function previousCard() {
-    if (currentIndex > 0) {
-        flashcard.classList.add('swipe-right');
-        setTimeout(() => {
-            showCard(currentIndex - 1);
-        }, 300);
-    }
+// ✅ ACCEPTER la carte (apprise)
+function acceptCard() {
+    flashcard.classList.add('swipe-right');
+    
+    setTimeout(() => {
+        remainingCount--; // ✅ Décrémente car carte apprise
+        currentIndex++;
+        showCard();
+    }, 300);
 }
 
-function nextCard() {
-    if (currentIndex < mots.length - 1) {
-        flashcard.classList.add('swipe-left');
-        setTimeout(() => {
-            showCard(currentIndex + 1);
-        }, 300);
-    } else {
-        endSession();
-    }
+// ❌ REFUSER la carte (à revoir)
+function rejectCard() {
+    flashcard.classList.add('swipe-left');
+    
+    setTimeout(() => {
+        // Remettre la carte à la fin de la pile
+        const currentCard = cards[currentIndex];
+        cards.push(currentCard);
+        
+        // ⚠️ NE PAS décrémenter remainingCount
+        // La carte reste "à faire"
+        
+        currentIndex++;
+        showCard();
+    }, 300);
 }
 
 // Audio
 function playAudio(event) {
     event.stopPropagation();
-    const text = mots[currentIndex].traduction;
+    const text = cards[currentIndex].traduction;
     const audio = new Audio('/api/tts?text=' + encodeURIComponent(text));
     audio.play();
 }
 
-// Fin session
+// Fin de session
 function endSession() {
     const duration = Math.floor((Date.now() - startTime) / 1000);
+    const cardsLearned = initialMots.length - remainingCount;
     
     fetch('/api/session', {
         method: 'POST',
@@ -368,10 +390,10 @@ function endSession() {
         body: JSON.stringify({
             deck_id: deckId,
             type_session: 'flashcard',
-            nombre_mots_vus: mots.length,
+            nombre_mots_vus: cardsLearned,
             score: 0,
             duree_secondes: duration,
-            complete: true
+            complete: remainingCount === 0
         })
     }).then(() => {
         document.querySelector('.flashcard-container').classList.add('hidden');
@@ -383,8 +405,14 @@ function endSession() {
 function restartSession() {
     completionModal.classList.add('hidden');
     document.querySelector('.flashcard-container').classList.remove('hidden');
+    
+    // Reset
+    cards = [...initialMots];
+    currentIndex = 0;
+    remainingCount = cards.length;
     startTime = Date.now();
-    showCard(0);
+    
+    showCard();
 }
 
 // GESTION TACTILE (SWIPE)
@@ -405,14 +433,14 @@ function handleSwipe() {
     
     // Vérifier que le swipe est plus horizontal que vertical
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        // Seuil minimum de 50px
-        if (Math.abs(diffX) > 50) {
+        // Seuil minimum de 100px
+        if (Math.abs(diffX) > 100) {
             if (diffX > 0) {
-                // Swipe droite → Suivante
-                nextCard();
+                // Swipe DROITE → Carte apprise ✅
+                acceptCard();
             } else {
-                // Swipe gauche → Précédente
-                previousCard();
+                // Swipe GAUCHE → Carte à revoir ❌
+                rejectCard();
             }
         }
     } else {
@@ -434,9 +462,9 @@ flashcard.addEventListener('click', function(e) {
 // Raccourcis clavier
 document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowLeft') {
-        previousCard();
+        rejectCard();
     } else if (e.key === 'ArrowRight') {
-        nextCard();
+        acceptCard();
     } else if (e.key === ' ') {
         e.preventDefault();
         flipCard();
