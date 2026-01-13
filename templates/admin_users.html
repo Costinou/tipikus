@@ -2,355 +2,209 @@
 
 {% block title %}Gestion des utilisateurs - Tipikus{% endblock %}
 
-{% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+{% block page_header %}
+<div class="page-header text-center">
     <h1>👥 Gestion des utilisateurs</h1>
-    <a href="{{ url_for('index') }}" class="btn-secondary">← Retour</a>
+    <p class="text-muted">Administration des comptes utilisateurs</p>
 </div>
+{% endblock %}
 
-<!-- Tableau des statistiques des utilisateurs -->
-<div class="stats-table-container">
-    <h2>📊 Statistiques par utilisateur</h2>
-    <table class="users-stats-table">
-        <thead>
-            <tr>
-                <th>Utilisateur</th>
-                <th>Sessions</th>
-                <th>Mots vus</th>
-                <th>Quiz réussis</th>
-                <th>Taux réussite</th>
-                <th>Temps total</th>
-                <th>Streak</th>
-                <th>Decks perso</th>
-                <th>Dernière activité</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user_stat in users_stats %}
-            <tr>
-                <td class="user-name">
-                    {{ user_stat.nom }}
-                    {% if user_stat.nom == 'c' %}
-                    <span class="badge-admin">ADMIN</span>
-                    {% endif %}
-                </td>
-                <td>{{ user_stat.total_sessions or 0 }}</td>
-                <td>{{ user_stat.total_mots_vus or 0 }}</td>
-                <td>{{ user_stat.total_score or 0 }} / {{ user_stat.total_questions or 0 }}</td>
-                <td>
-                    {% if user_stat.taux_reussite %}
-                    <span class="taux-reussite" style="color: {% if user_stat.taux_reussite >= 80 %}#22c55e{% elif user_stat.taux_reussite >= 50 %}#f59e0b{% else %}#ef4444{% endif %}">
-                        {{ user_stat.taux_reussite|round(1) }}%
-                    </span>
-                    {% else %}
-                    <span style="color: #888;">-</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if user_stat.total_duree %}
-                        {% if user_stat.total_duree >= 3600 %}
-                            {{ (user_stat.total_duree // 3600) }}h {{ ((user_stat.total_duree % 3600) // 60) }}min
-                        {% else %}
-                            {{ (user_stat.total_duree // 60) }}min
-                        {% endif %}
-                    {% else %}
-                    <span style="color: #888;">-</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if user_stat.streak > 0 %}
-                    <span class="streak-badge">🔥 {{ user_stat.streak }}</span>
-                    {% else %}
-                    <span style="color: #888;">-</span>
-                    {% endif %}
-                </td>
-                <td>{{ user_stat.nb_decks_perso or 0 }}</td>
-                <td>
-                    {% if user_stat.derniere_activite %}
-                    <span class="date-activite">{{ user_stat.derniere_activite }}</span>
-                    {% else %}
-                    <span style="color: #888;">Jamais</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- Section de création d'utilisateur -->
-<div style="margin-top: 40px;">
-    <h2>➕ Créer un utilisateur</h2>
-    <form method="POST" action="{{ url_for('admin_create_user') }}" class="create-user-form">
-        <div class="form-group">
-            <label for="nom">Nom d'utilisateur</label>
-            <input type="text" id="nom" name="nom" required maxlength="50" placeholder="Ex: Pierre">
+{% block content %}
+<!-- Créer un utilisateur -->
+<div class="card mb-2">
+    <div class="card-header">
+        <h3 class="card-title">➕ Créer un nouvel utilisateur</h3>
+    </div>
+    
+    <form method="POST" action="{{ url_for('admin_create_user') }}">
+        <div class="flex gap-2" style="flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                <label for="nom" class="form-label">Nom d'utilisateur</label>
+                <input 
+                    type="text" 
+                    id="nom" 
+                    name="nom" 
+                    class="form-input" 
+                    placeholder="Ex: Pierre"
+                    required
+                    pattern="[A-Za-z0-9_-]+"
+                    title="Lettres, chiffres, - et _ uniquement"
+                >
+            </div>
+            
+            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                <label for="password" class="form-label">Mot de passe</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    class="form-input" 
+                    placeholder="Min. 4 caractères"
+                    required
+                    minlength="4"
+                >
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                ✅ Créer
+            </button>
         </div>
-        <div class="form-group">
-            <label for="password">Mot de passe</label>
-            <input type="password" id="password" name="password" required minlength="4" placeholder="Min. 4 caractères">
-        </div>
-        <button type="submit" class="btn">Créer l'utilisateur</button>
     </form>
 </div>
 
 <!-- Liste des utilisateurs -->
-<div style="margin-top: 40px;">
-    <h2>📝 Liste des utilisateurs</h2>
-    <div class="users-list">
-        {% for u in users %}
-        <div class="user-card">
-            <div class="user-info">
-                <div class="user-name-section">
-                    <strong>{{ u.nom }}</strong>
-                    {% if u.nom == 'c' %}
-                    <span class="badge-admin">ADMIN</span>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">📋 Utilisateurs existants ({{ users|length }})</h3>
+    </div>
+    
+    {% if users_stats %}
+    <div class="decks-list">
+        {% for user_stat in users_stats %}
+        <div class="deck-item" style="{% if user_stat.nom == 'c' %}border-left: 4px solid var(--accent);{% endif %}">
+            <div class="deck-info">
+                <div class="deck-name">
+                    {{ user_stat.nom }}
+                    {% if user_stat.nom == 'c' %}
+                        <span style="background: var(--accent); color: var(--black); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">ADMIN</span>
                     {% endif %}
                 </div>
-                <div class="user-meta">
-                    Créé le {{ u.created_at.split(' ')[0] }}
+                <div class="deck-meta">
+                    📊 {{ user_stat.total_sessions }} sessions • 
+                    📝 {{ user_stat.total_mots_vus }} mots vus • 
+                    🔥 {{ user_stat.streak }} jour{{ 's' if user_stat.streak > 1 else '' }}
+                    {% if user_stat.taux_reussite %}
+                        • 🎯 {{ "%.0f"|format(user_stat.taux_reussite) }}% réussite
+                    {% endif %}
                 </div>
+                {% if user_stat.derniere_activite %}
+                <div class="deck-meta">
+                    🕐 Dernière activité : {{ user_stat.derniere_activite }}
+                </div>
+                {% endif %}
             </div>
             
-            <div class="user-actions">
-                {% if u.nom != 'c' %}
-                <!-- Formulaire de réinitialisation de mot de passe -->
-                <form method="POST" action="{{ url_for('admin_reset_password', user_id=u.id) }}" style="display: inline;" onsubmit="return confirm('Réinitialiser le mot de passe de {{ u.nom }} ?');">
-                    <input type="password" name="new_password" placeholder="Nouveau mot de passe" required minlength="4" style="padding: 8px; border: 1px solid #444; background: #1a1a1a; color: white; border-radius: 4px; margin-right: 5px;">
-                    <button type="submit" class="btn-action btn-reset" title="Réinitialiser le mot de passe">
-                        🔐
-                    </button>
-                </form>
+            <div class="deck-actions">
+                {% if user_stat.nom != 'c' %}
+                <!-- Réinitialiser le mot de passe -->
+                <button class="btn btn-secondary btn-icon" 
+                        onclick="showResetPassword({{ user_stat.id }}, '{{ user_stat.nom }}')"
+                        title="Réinitialiser le mot de passe">
+                    🔑
+                </button>
                 
-                <!-- Bouton de suppression -->
-                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer {{ u.nom }} ? Toutes ses données seront perdues.');">
-                    <button type="submit" class="btn-action btn-delete" title="Supprimer l'utilisateur">
+                <!-- Supprimer l'utilisateur -->
+                <form method="POST" action="{{ url_for('admin_delete_user', user_id=user_stat.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('Supprimer {{ user_stat.nom }} ? Toutes ses données seront perdues !');">
+                    <button type="submit" class="btn btn-danger btn-icon" title="Supprimer">
                         🗑️
                     </button>
                 </form>
                 {% else %}
-                <span style="color: #888; font-size: 12px;">Administrateur protégé</span>
+                <span class="text-muted" style="font-size: 0.875rem;">Protégé</span>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem;">
+        <p class="text-muted">Aucun utilisateur trouvé</p>
+    </div>
+    {% endif %}
 </div>
 
-<style>
-.stats-table-container {
-    margin-bottom: 40px;
-    background: #1a1a1a;
-    border-radius: 12px;
-    padding: 20px;
-}
-
-.users-stats-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-
-.users-stats-table thead {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.users-stats-table th {
-    padding: 12px 15px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: white;
-}
-
-.users-stats-table tbody tr {
-    border-bottom: 1px solid #333;
-    transition: background 0.2s ease;
-}
-
-.users-stats-table tbody tr:hover {
-    background: rgba(102, 126, 234, 0.1);
-}
-
-.users-stats-table td {
-    padding: 15px;
-    font-size: 14px;
-}
-
-.user-name {
-    font-weight: 600;
-    color: #fff;
-}
-
-.badge-admin {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    margin-left: 8px;
-}
-
-.streak-badge {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.date-activite {
-    font-size: 12px;
-    color: #888;
-}
-
-.create-user-form {
-    display: flex;
-    gap: 15px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.form-group label {
-    font-size: 13px;
-    color: #888;
-    font-weight: 500;
-}
-
-.form-group input {
-    padding: 10px 15px;
-    border: 1px solid #444;
-    background: #1a1a1a;
-    color: white;
-    border-radius: 6px;
-    font-size: 14px;
-    min-width: 200px;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
-.users-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.user-card {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.3s ease;
-}
-
-.user-card:hover {
-    border-color: #667eea;
-    transform: translateX(5px);
-}
-
-.user-info {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.user-name-section {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.user-meta {
-    font-size: 12px;
-    color: #888;
-}
-
-.user-actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.btn-action {
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 18px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-reset {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.btn-reset:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-}
-
-.btn-delete {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
-
-.btn-delete:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-}
-
-@media (max-width: 768px) {
-    .stats-table-container {
-        overflow-x: auto;
-    }
+<!-- Statistiques globales -->
+<div class="card mt-2">
+    <h3 class="card-title">📊 Statistiques globales</h3>
     
-    .users-stats-table {
-        font-size: 12px;
-    }
-    
-    .users-stats-table th,
-    .users-stats-table td {
-        padding: 8px;
-    }
-    
-    .create-user-form {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .form-group input {
-        min-width: 100%;
-    }
-    
-    .user-card {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-    
-    .user-actions {
-        width: 100%;
-        justify-content: flex-end;
-    }
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">{{ users|length }}</div>
+            <div class="text-muted">Utilisateurs</div>
+        </div>
+        
+        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                {{ users_stats|sum(attribute='total_sessions') }}
+            </div>
+            <div class="text-muted">Sessions totales</div>
+        </div>
+        
+        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                {{ users_stats|sum(attribute='total_mots_vus') }}
+            </div>
+            <div class="text-muted">Mots vus</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de réinitialisation de mot de passe -->
+<div id="reset-password-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="card" style="max-width: 500px; width: 90%; margin: 1rem;">
+        <h3 class="card-title">🔑 Réinitialiser le mot de passe</h3>
+        
+        <form id="reset-password-form" method="POST">
+            <p class="text-muted">Utilisateur : <strong id="reset-username"></strong></p>
+            
+            <div class="form-group">
+                <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                <input 
+                    type="password" 
+                    id="new_password" 
+                    name="new_password" 
+                    class="form-input" 
+                    placeholder="Minimum 4 caractères"
+                    required
+                    minlength="4"
+                >
+            </div>
+            
+            <div class="flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    ✓ Réinitialiser
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="hideResetPassword()">
+                    Annuler
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const modal = document.getElementById('reset-password-modal');
+const form = document.getElementById('reset-password-form');
+const username = document.getElementById('reset-username');
+
+function showResetPassword(userId, userName) {
+    username.textContent = userName;
+    form.action = '/admin/reset-password/' + userId;
+    modal.classList.remove('hidden');
+    document.getElementById('new_password').focus();
 }
-</style>
+
+function hideResetPassword() {
+    modal.classList.add('hidden');
+    form.reset();
+}
+
+// Fermer avec Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        hideResetPassword();
+    }
+});
+
+// Fermer en cliquant sur le fond
+modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+        hideResetPassword();
+    }
+});
+</script>
 {% endblock %}

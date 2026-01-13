@@ -2,195 +2,219 @@
 
 {% block title %}Nouveau deck - Tipikus{% endblock %}
 
-{% block content %}
-<a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
-
-<h1>Nouveau deck</h1>
-{% if niveau_preselect %}
-    <h2>Niveau {{ niveau_preselect }}</h2>
-{% endif %}
-
-<form method="POST" action="/creer-deck" enctype="multipart/form-data">
-    <div class="form-group">
-        <label for="niveau" style="display: block; margin-bottom: 8px; color: #cccccc; font-weight: 500;">
-            Niveau
-        </label>
-        <select name="niveau" id="niveau" required>
-            <option value="">Choisir un niveau</option>
-            {% for niv in niveaux %}
-                <option value="{{ niv }}" {% if niv == niveau_preselect %}selected{% endif %}>{{ niv }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    
-    <div class="form-group">
-        <label for="nom_deck" style="display: block; margin-bottom: 8px; color: #cccccc; font-weight: 500;">
-            Nom du deck
-        </label>
-        <input type="text" name="nom_deck" id="nom_deck" placeholder="Ex: Salutations de base" required>
-    </div>
-    
-    <div class="form-group checkbox-group">
-        <label class="checkbox-label">
-            <input type="checkbox" name="is_commun" id="is_commun">
-            <span class="checkbox-text">
-                <strong>Deck commun</strong>
-                <small>Visible par tous les utilisateurs</small>
-            </span>
-        </label>
-    </div>
-    
-    <div class="form-group">
-        <label class="file-label">
-            <input type="file" name="fichier" accept=".json,.csv" required id="file-input">
-            <span class="file-button">Choisir un fichier (JSON ou CSV)</span>
-            <span class="file-name" id="file-name">Aucun fichier sélectionné</span>
-        </label>
-    </div>
-    
-    <button type="submit" class="btn">Créer le deck</button>
-</form>
-
-<div class="info-section">
-    <h3>Format JSON attendu :</h3>
-    <pre>{
-  "bonjour": "jó napot",
-  "merci": "köszönöm",
-  "au revoir": "viszlát"
-}</pre>
-
-    <h3 style="margin-top: 25px;">Format CSV attendu :</h3>
-    <pre>Français;Hongrois
-bonjour;jó napot
-merci;köszönöm
-au revoir;viszlát</pre>
-    <p style="font-size: 13px; color: #888; margin-top: 10px;">
-        • Séparateur : point-virgule (;)<br>
-        • Encodage : UTF-8<br>
-        • Première ligne : en-têtes (optionnel)
-    </p>
+{% block page_header %}
+<div class="page-header text-center">
+    <h1>➕ Créer un nouveau deck</h1>
+    <p class="text-muted">Importez vos mots depuis un fichier JSON ou CSV</p>
 </div>
+{% endblock %}
 
-<style>
-select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    font-size: 16px;
-    background: #2a2a2a;
-    color: #e0e0e0;
-    transition: border-color 0.3s ease;
-    cursor: pointer;
-}
+{% block content %}
+<div style="max-width: 700px; margin: 0 auto;">
+    <form method="POST" action="{{ url_for('creer_deck') }}" enctype="multipart/form-data">
+        <!-- Informations de base -->
+        <div class="card mb-2">
+            <h3 class="card-title">📝 Informations du deck</h3>
+            
+            <!-- Nom du deck -->
+            <div class="form-group">
+                <label for="nom_deck" class="form-label">
+                    Nom du deck <span style="color: var(--accent);">*</span>
+                </label>
+                <input 
+                    type="text" 
+                    id="nom_deck" 
+                    name="nom_deck" 
+                    class="form-input" 
+                    placeholder="Ex: Vocabulaire quotidien"
+                    required
+                    autofocus
+                >
+            </div>
+            
+            <!-- Niveau -->
+            <div class="form-group">
+                <label for="niveau" class="form-label">
+                    Niveau <span style="color: var(--accent);">*</span>
+                </label>
+                <select id="niveau" name="niveau" class="form-select" required>
+                    {% if niveau_preselect %}
+                        <option value="{{ niveau_preselect }}" selected>{{ niveau_preselect }}</option>
+                    {% else %}
+                        <option value="">Sélectionnez un niveau</option>
+                    {% endif %}
+                    
+                    {% for niv in niveaux %}
+                        {% if not niveau_preselect or niv != niveau_preselect %}
+                        <option value="{{ niv }}">{{ niv }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Type de deck (si admin) -->
+            {% if user.nom == 'c' %}
+            <div class="form-group">
+                <label class="flex" style="align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input 
+                        type="checkbox" 
+                        name="is_commun" 
+                        id="is_commun"
+                        style="width: 20px; height: 20px; cursor: pointer;"
+                    >
+                    <span class="form-label" style="margin: 0;">
+                        🌍 Deck commun (visible par tous les utilisateurs)
+                    </span>
+                </label>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Import du fichier -->
+        <div class="card mb-2">
+            <h3 class="card-title">📁 Importer les mots</h3>
+            
+            <div class="form-group">
+                <label for="fichier" class="form-label">
+                    Fichier de vocabulaire <span style="color: var(--accent);">*</span>
+                </label>
+                <input 
+                    type="file" 
+                    id="fichier" 
+                    name="fichier" 
+                    class="form-input" 
+                    accept=".json,.csv"
+                    required
+                    onchange="previewFile()"
+                >
+                <small class="text-muted">Formats acceptés : JSON, CSV (séparateur , ou ;)</small>
+            </div>
+            
+            <!-- Aperçu du fichier -->
+            <div id="file-preview" class="hidden mt-2" style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                <strong>📄 Aperçu :</strong>
+                <pre id="preview-content" style="margin-top: 0.5rem; overflow-x: auto; font-size: 0.875rem; color: var(--text-secondary);"></pre>
+            </div>
+        </div>
+        
+        <!-- Formats d'exemple -->
+        <div class="card mb-2">
+            <h3 class="card-title">💡 Formats de fichier</h3>
+            
+            <div style="margin-top: 1rem;">
+                <strong>Format JSON :</strong>
+                <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem;"><code>{
+  "Bonjour": "Jó napot",
+  "Merci": "Köszönöm",
+  "Au revoir": "Viszlát"
+}</code></pre>
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <strong>Format CSV :</strong>
+                <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem;"><code>Français;Hongrois
+Bonjour;Jó napot
+Merci;Köszönöm
+Au revoir;Viszlát</code></pre>
+                <small class="text-muted">
+                    Note : Le séparateur peut être <code>,</code> ou <code>;</code><br>
+                    La première ligne (en-tête) est optionnelle
+                </small>
+            </div>
+        </div>
+        
+        <!-- Boutons -->
+        <div class="card">
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    ✓ Créer le deck
+                </button>
+                
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                    Annuler
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
 
-select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.checkbox-group {
-    background: #0f0f0f;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 15px;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.checkbox-label input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    margin-top: 2px;
-    flex-shrink: 0;
-}
-
-.checkbox-text {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.checkbox-text strong {
-    color: #ffffff;
-    font-size: 16px;
-}
-
-.checkbox-text small {
-    color: #888;
-    font-size: 13px;
-}
-
-.file-label {
-    display: block;
-    cursor: pointer;
-}
-
-.file-label input[type="file"] {
-    display: none;
-}
-
-.file-button {
-    display: inline-block;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    margin-bottom: 10px;
-}
-
-.file-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.file-name {
-    display: block;
-    color: #888;
-    font-size: 14px;
-    margin-top: 5px;
-}
-
-.info-section {
-    margin-top: 30px;
-    padding: 20px;
-    background: #1a1a1a;
-    border-radius: 8px;
-    border: 1px solid #333;
-}
-
-.info-section h3 {
-    color: #ffffff;
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 10px;
-}
-
-.info-section pre {
-    background: #0f0f0f;
-    padding: 15px;
-    border-radius: 5px;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    color: #4ade80;
-    border: 1px solid #2a2a2a;
-    overflow-x: auto;
-}
-</style>
-
+{% block extra_js %}
 <script>
-document.getElementById('file-input').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name || 'Aucun fichier sélectionné';
-    document.getElementById('file-name').textContent = fileName;
+// Prévisualiser le fichier uploadé
+function previewFile() {
+    const fileInput = document.getElementById('fichier');
+    const preview = document.getElementById('file-preview');
+    const previewContent = document.getElementById('preview-content');
+    
+    if (!fileInput.files || !fileInput.files[0]) {
+        preview.classList.add('hidden');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const content = e.target.result;
+        
+        // Limiter l'aperçu aux 500 premiers caractères
+        let displayContent = content;
+        if (content.length > 500) {
+            displayContent = content.substring(0, 500) + '\n... (fichier tronqué)';
+        }
+        
+        previewContent.textContent = displayContent;
+        preview.classList.remove('hidden');
+        
+        // Compter les mots (estimation)
+        try {
+            let wordCount = 0;
+            
+            if (file.name.endsWith('.json')) {
+                const data = JSON.parse(content);
+                wordCount = Object.keys(data).length;
+            } else if (file.name.endsWith('.csv')) {
+                const lines = content.trim().split('\n');
+                wordCount = lines.length - 1; // -1 pour l'en-tête
+                if (wordCount < 0) wordCount = 0;
+            }
+            
+            if (wordCount > 0) {
+                previewContent.textContent = `📊 Environ ${wordCount} mot(s) détecté(s)\n\n` + displayContent;
+            }
+        } catch (err) {
+            console.error('Erreur parsing:', err);
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+// Validation du formulaire
+document.querySelector('form').addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('fichier');
+    
+    if (!fileInput.files || !fileInput.files[0]) {
+        e.preventDefault();
+        alert('Veuillez sélectionner un fichier');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const validExtensions = ['.json', '.csv'];
+    const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Format de fichier non valide. Utilisez .json ou .csv');
+        return;
+    }
+    
+    // Afficher un loader
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Création en cours...';
 });
 </script>
 {% endblock %}

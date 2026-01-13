@@ -1,589 +1,445 @@
 {% extends "base.html" %}
 
-{% block title %}Apprentissage - Tipikus{% endblock %}
+{% block title %}Apprendre - Tipikus{% endblock %}
 
-{% block content %}
-<div class="learning-container">
-    <div class="top-bar">
-        <a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
-        <div class="controls">
-            <button id="mode-toggle" class="mode-toggle" onclick="toggleMode()">
-                FR → Hongrois
-            </button>
-            <div class="counter">
-                <span id="compteur-appris">0</span> appris sur {{ mots|length }}
-            </div>
-        </div>
-    </div>
-
-    <div class="flashcard-container" id="card-container">
-        <div id="flashcard" class="flashcard">
-            <div id="mot-actuel" class="word-content">Cliquez pour commencer</div>
-            <button id="btn-audio" class="btn-audio" onclick="prononcerMot(event)" style="display: none;">
-                🔊
-            </button>
-            
-            <!-- Indicateurs de swipe -->
-            <div class="swipe-indicator swipe-left" id="swipe-left">
-                <div class="swipe-icon">↺</div>
-                <div class="swipe-text">Revoir</div>
-            </div>
-            <div class="swipe-indicator swipe-right" id="swipe-right">
-                <div class="swipe-icon">✓</div>
-                <div class="swipe-text">Appris</div>
-            </div>
-            
-            <div class="instruction">
-                <span id="instruction-text">Cliquez ou Swipe</span>
-                <br>
-                <small style="opacity: 0.7; font-size: 13px;">← Revoir | Appris →</small>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Boutons de contrôle en bas -->
-    <div class="bottom-controls">
-        <button class="control-btn btn-revoir" onclick="marquerRevoir()" title="Revoir ce mot (←)">
-            ↺ Revoir
-        </button>
-        <button class="control-btn btn-appris" onclick="marquerAppris()" title="Mot appris (→)">
-            ✓ Appris
-        </button>
-    </div>
-</div>
-
+{% block extra_css %}
 <style>
-/* Style spécifique pour annuler le container sur cette page */
-body { padding: 0; background: #0f0f0f; }
-
-.bottom-controls {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 15px;
-    z-index: 100;
+/* Container flashcards */
+.flashcard-container {
+    max-width: 700px;
+    margin: 1.5rem auto;
 }
 
-.control-btn {
-    padding: 15px 30px;
-    border: none;
-    border-radius: 25px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+.flashcard-wrapper {
+    perspective: 1000px;
+    min-height: 350px;
+    position: relative;
 }
 
-.btn-revoir {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-}
-
-.btn-revoir:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
-}
-
-.btn-appris {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    color: white;
-}
-
-.btn-appris:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
-}
-
-.btn-audio {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    font-size: 28px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-}
-
-.btn-audio:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.1);
-    border-color: rgba(255, 255, 255, 0.5);
-}
-
-.btn-audio:active {
-    transform: scale(0.95);
-}
-
-/* Indicateurs de swipe */
-.swipe-indicator {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+.flashcard {
+    background: var(--bg-card);
+    border: 3px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem 1.5rem;
+    min-height: 350px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
-    z-index: 5;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.6s, border-color 0.3s;
+    transform-style: preserve-3d;
+    position: relative;
+    box-shadow: 0 8px 30px var(--shadow);
+    touch-action: pan-y;
 }
 
-.swipe-left {
-    left: 30px;
-    color: #ef4444;
+.flashcard:hover {
+    border-color: var(--accent);
 }
 
-.swipe-right {
-    right: 30px;
-    color: #22c55e;
+.flashcard.flipped {
+    transform: rotateY(180deg);
 }
 
-.swipe-indicator.active {
-    opacity: 1;
+.flashcard.swipe-left {
+    animation: swipeLeft 0.3s ease-out forwards;
 }
 
-.swipe-icon {
-    font-size: 48px;
-    font-weight: bold;
+.flashcard.swipe-right {
+    animation: swipeRight 0.3s ease-out forwards;
 }
 
-.swipe-text {
-    font-size: 18px;
+@keyframes swipeLeft {
+    to {
+        transform: translateX(-150%) rotate(-20deg);
+        opacity: 0;
+    }
+}
+
+@keyframes swipeRight {
+    to {
+        transform: translateX(150%) rotate(20deg);
+        opacity: 0;
+    }
+}
+
+.flashcard-content {
+    text-align: center;
+    backface-visibility: hidden;
+    position: absolute;
+    width: 100%;
+    padding: 1.5rem;
+}
+
+.flashcard-front {
+    transform: rotateY(0deg);
+}
+
+.flashcard-back {
+    transform: rotateY(180deg);
+}
+
+.flashcard-text {
+    font-size: 2rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    word-wrap: break-word;
 }
 
-/* Animation de swipe */
-.flashcard.swipe-out-left {
-    animation: swipeOutLeft 0.3s ease-out forwards;
+.flashcard-hint {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
 }
 
-.flashcard.swipe-out-right {
-    animation: swipeOutRight 0.3s ease-out forwards;
+.flashcard-label {
+    display: inline-block;
+    padding: 0.4rem 0.875rem;
+    background: var(--accent);
+    color: var(--black);
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
 }
 
-@keyframes swipeOutLeft {
-    to {
-        transform: translateX(-150%) rotate(-30deg);
-        opacity: 0;
-    }
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.875rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
 }
 
-@keyframes swipeOutRight {
-    to {
-        transform: translateX(150%) rotate(30deg);
-        opacity: 0;
-    }
+.swipe-instruction {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.progress-info {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.progress-text {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.audio-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    z-index: 10;
+}
+
+.audio-btn:hover {
+    transform: scale(1.1);
+}
+
+.completion-card {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+}
+
+.completion-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: bounce 1s ease-in-out infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-15px); }
 }
 
 @media (max-width: 768px) {
-    .btn-audio {
-        width: 50px;
-        height: 50px;
-        font-size: 24px;
-        top: 15px;
-        right: 15px;
+    .flashcard-text {
+        font-size: 1.6rem;
     }
     
-    .bottom-controls {
-        bottom: 15px;
-        gap: 10px;
+    .flashcard {
+        min-height: 300px;
+        padding: 2rem 1rem;
     }
     
-    .control-btn {
-        padding: 12px 24px;
-        font-size: 14px;
-    }
-    
-    .swipe-indicator {
-        display: none;
+    .audio-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.125rem;
     }
 }
 </style>
+{% endblock %}
 
+{% block content %}
+<div class="flashcard-container">
+    <!-- Progression -->
+    <div class="card mb-2">
+        <div class="progress-info">
+            <div class="progress-text">
+                Carte <span id="current-card">1</span> / <span id="total-cards">{{ mots|length }}</span>
+            </div>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Flashcard -->
+    <div class="flashcard-wrapper">
+        <div class="card flashcard" id="flashcard">
+            <!-- Face avant (français) -->
+            <div class="flashcard-content flashcard-front" id="front-content">
+                <div class="flashcard-label">Français</div>
+                <div class="flashcard-text" id="mot-francais"></div>
+                <div class="flashcard-hint">👆 Cliquez ou swipez</div>
+            </div>
+            
+            <!-- Face arrière (hongrois) -->
+            <div class="flashcard-content flashcard-back" id="back-content">
+                <div class="flashcard-label">Hongrois</div>
+                <div class="flashcard-text" id="traduction"></div>
+                <button class="audio-btn" onclick="playAudio(event)" title="Écouter">🔊</button>
+                <div class="flashcard-hint">👆 Cliquez pour retourner</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Instructions swipe -->
+    <div class="swipe-instruction">
+        ⬅️ Swipe gauche : Précédente | Swipe droite : Suivante ➡️
+    </div>
+    
+    <!-- Contrôles -->
+    <div class="controls">
+        <button class="btn btn-secondary" onclick="previousCard()" id="btn-prev" disabled>
+            ← Précédente
+        </button>
+        
+        <button class="btn btn-primary" onclick="nextCard()" id="btn-next">
+            Suivante →
+        </button>
+    </div>
+    
+    <!-- Actions -->
+    <div class="card mt-2">
+        <div class="flex flex-between" style="gap: 0.875rem; flex-wrap: wrap;">
+            <a href="{{ url_for('niveau', niveau=mots[0].get('niveau', 'A1') if mots else 'A1') }}" class="btn btn-secondary">
+                ← Retour
+            </a>
+            
+            <a href="{{ url_for('quiz', deck_id=deck_id) }}" class="btn btn-primary">
+                🎯 Quiz
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de fin -->
+<div id="completion-modal" class="hidden">
+    <div class="card completion-card">
+        <div class="completion-icon">🎉</div>
+        <h2>Félicitations !</h2>
+        <p class="text-muted">Vous avez terminé toutes les cartes</p>
+        
+        <div class="flex flex-center gap-2 mt-3" style="flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="restartSession()">
+                🔄 Recommencer
+            </button>
+            
+            <a href="{{ url_for('quiz', deck_id=deck_id) }}" class="btn btn-primary">
+                🎯 Quiz
+            </a>
+            
+            <a href="{{ url_for('niveau', niveau=mots[0].get('niveau', 'A1') if mots else 'A1') }}" class="btn btn-secondary">
+                ← Retour
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
+// Données
 const mots = {{ mots|tojson }};
 const deckId = {{ deck_id }};
+let currentIndex = 0;
+let isFlipped = false;
+let startTime = Date.now();
 
-let traductionVisible = false;
-let modeInverse = false;
-let motHongroisActuel = '';
-let audioElement = null;
-
-// Gestion du système d'apprentissage
-let motsAppris = new Set();
-let pileMots = [];
-
-// Variables pour le tracking de session
-let sessionStartTime = Date.now();
-
-// Variables pour le swipe
+// Gestion tactile
 let touchStartX = 0;
 let touchStartY = 0;
-let currentX = 0;
-let currentY = 0;
-let isDragging = false;
+let touchEndX = 0;
+let touchEndY = 0;
 
-function prononcerMot(event) {
-    event.stopPropagation();
+// Éléments DOM
+const flashcard = document.getElementById('flashcard');
+const currentCardEl = document.getElementById('current-card');
+const totalCardsEl = document.getElementById('total-cards');
+const progressFill = document.getElementById('progress-fill');
+const btnPrev = document.getElementById('btn-prev');
+const btnNext = document.getElementById('btn-next');
+const motFrancais = document.getElementById('mot-francais');
+const traduction = document.getElementById('traduction');
+const completionModal = document.getElementById('completion-modal');
+
+// Init
+totalCardsEl.textContent = mots.length;
+showCard(0);
+
+// Afficher une carte
+function showCard(index) {
+    currentIndex = index;
+    isFlipped = false;
+    flashcard.classList.remove('flipped', 'swipe-left', 'swipe-right');
     
-    if (!motHongroisActuel) return;
+    motFrancais.textContent = mots[index].mot_francais;
+    traduction.textContent = mots[index].traduction;
     
-    if (audioElement) {
-        audioElement.pause();
-        audioElement.currentTime = 0;
+    currentCardEl.textContent = index + 1;
+    const progress = ((index + 1) / mots.length) * 100;
+    progressFill.style.width = progress + '%';
+    
+    btnPrev.disabled = index === 0;
+    btnNext.textContent = index === mots.length - 1 ? '✓ Terminer' : 'Suivante →';
+}
+
+// Retourner
+function flipCard() {
+    isFlipped = !isFlipped;
+    flashcard.classList.toggle('flipped');
+}
+
+// Navigation
+function previousCard() {
+    if (currentIndex > 0) {
+        flashcard.classList.add('swipe-right');
+        setTimeout(() => {
+            showCard(currentIndex - 1);
+        }, 300);
     }
+}
+
+function nextCard() {
+    if (currentIndex < mots.length - 1) {
+        flashcard.classList.add('swipe-left');
+        setTimeout(() => {
+            showCard(currentIndex + 1);
+        }, 300);
+    } else {
+        endSession();
+    }
+}
+
+// Audio
+function playAudio(event) {
+    event.stopPropagation();
+    const text = mots[currentIndex].traduction;
+    const audio = new Audio('/api/tts?text=' + encodeURIComponent(text));
+    audio.play();
+}
+
+// Fin session
+function endSession() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
     
-    const texteEncode = encodeURIComponent(motHongroisActuel);
-    const url = `/api/tts?text=${texteEncode}`;
-    
-    audioElement = new Audio(url);
-    audioElement.play().catch(err => {
-        console.error('Erreur de lecture audio:', err);
+    fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            deck_id: deckId,
+            type_session: 'flashcard',
+            nombre_mots_vus: mots.length,
+            score: 0,
+            duree_secondes: duration,
+            complete: true
+        })
+    }).then(() => {
+        document.querySelector('.flashcard-container').classList.add('hidden');
+        completionModal.classList.remove('hidden');
     });
 }
 
-function afficherBoutonAudio(afficher) {
-    const btnAudio = document.getElementById('btn-audio');
-    if (afficher && motHongroisActuel) {
-        btnAudio.style.display = 'flex';
+// Recommencer
+function restartSession() {
+    completionModal.classList.add('hidden');
+    document.querySelector('.flashcard-container').classList.remove('hidden');
+    startTime = Date.now();
+    showCard(0);
+}
+
+// GESTION TACTILE (SWIPE)
+flashcard.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+}, false);
+
+flashcard.addEventListener('touchend', function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
+    handleSwipe();
+}, false);
+
+function handleSwipe() {
+    const diffX = touchEndX - touchStartX;
+    const diffY = touchEndY - touchStartY;
+    
+    // Vérifier que le swipe est plus horizontal que vertical
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+        // Seuil minimum de 50px
+        if (Math.abs(diffX) > 50) {
+            if (diffX > 0) {
+                // Swipe droite → Suivante
+                nextCard();
+            } else {
+                // Swipe gauche → Précédente
+                previousCard();
+            }
+        }
     } else {
-        btnAudio.style.display = 'none';
-        if (audioElement) {
-            audioElement.pause();
+        // Swipe vertical → Flip
+        if (Math.abs(diffY) > 50) {
+            flipCard();
         }
     }
 }
 
-function toggleMode() {
-    modeInverse = !modeInverse;
-    const button = document.getElementById('mode-toggle');
-    button.textContent = modeInverse ? 'Hongrois → FR' : 'FR → Hongrois';
-    
-    initialiserSession();
-}
-
-function initialiserSession() {
-    motsAppris.clear();
-    pileMots = [...Array(mots.length).keys()];
-    melangerPile();
-    traductionVisible = false;
-    afficherMot();
-    updateCompteur();
-}
-
-function melangerPile() {
-    for (let i = pileMots.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pileMots[i], pileMots[j]] = [pileMots[j], pileMots[i]];
-    }
-}
-
-function afficherMot() {
-    const flashcard = document.getElementById('flashcard');
-    const motActuel = document.getElementById('mot-actuel');
-    
-    // Réinitialiser les styles
-    flashcard.style.transform = '';
-    flashcard.style.transition = '';
-    flashcard.classList.remove('revealed', 'swipe-out-left', 'swipe-out-right');
-    
-    // Vérifier si tous les mots sont appris (pas juste si la pile est vide)
-    if (motsAppris.size === mots.length) {
-        motActuel.innerHTML = '🎉<br>Terminé !<br><small>Tous les mots appris !</small>';
-        document.getElementById('instruction-text').textContent = 'Félicitations !';
-        afficherBoutonAudio(false);
-        motHongroisActuel = '';
-        enregistrerSession(true);
-        return;
-    }
-    
-    // Si la pile est vide mais tous les mots ne sont pas appris, erreur de logique
-    if (pileMots.length === 0) {
-        console.error('Pile vide mais tous les mots ne sont pas appris');
-        return;
-    }
-    
-    const motIndex = pileMots[0];
-    const mot = mots[motIndex];
-    
-    motHongroisActuel = mot.traduction;
-    const texteAffiche = modeInverse ? mot.traduction : mot.mot_francais;
-    
-    motActuel.textContent = texteAffiche;
-    traductionVisible = false;
-    
-    if (modeInverse) {
-        afficherBoutonAudio(true);
-    } else {
-        afficherBoutonAudio(false);
-    }
-    
-    document.getElementById('instruction-text').textContent = 'Cliquez ou Swipe';
-}
-
-function revelerTraduction() {
-    // Vérifier si tous les mots sont appris
-    if (motsAppris.size === mots.length) {
-        return;
-    }
-    
-    if (pileMots.length === 0) {
-        return;
-    }
-    
-    const flashcard = document.getElementById('flashcard');
-    const motActuel = document.getElementById('mot-actuel');
-    
-    if (!traductionVisible) {
-        const motIndex = pileMots[0];
-        const mot = mots[motIndex];
-        const traduction = modeInverse ? mot.mot_francais : mot.traduction;
-        
-        motActuel.textContent = traduction;
-        flashcard.classList.add('revealed');
-        traductionVisible = true;
-        
-        afficherBoutonAudio(true);
-        document.getElementById('instruction-text').textContent = 'Swipe pour évaluer';
-    }
-}
-
-function marquerAppris() {
-    // Vérifier si tous les mots sont appris
-    if (motsAppris.size === mots.length) {
-        return;
-    }
-    
-    if (pileMots.length === 0) {
-        return;
-    }
-    
-    if (!traductionVisible) {
-        revelerTraduction();
-        return;
-    }
-    
-    const flashcard = document.getElementById('flashcard');
-    const motIndex = pileMots[0];
-    
-    flashcard.classList.add('swipe-out-right');
-    
-    setTimeout(() => {
-        motsAppris.add(motIndex);
-        pileMots.shift();
-        
-        updateCompteur();
-        afficherMot();
-    }, 300);
-}
-
-function marquerRevoir() {
-    // Vérifier si tous les mots sont appris
-    if (motsAppris.size === mots.length) {
-        return;
-    }
-    
-    if (pileMots.length === 0) {
-        return;
-    }
-    
-    if (!traductionVisible) {
-        revelerTraduction();
-        return;
-    }
-    
-    const flashcard = document.getElementById('flashcard');
-    const motIndex = pileMots[0];
-    
-    flashcard.classList.add('swipe-out-left');
-    
-    setTimeout(() => {
-        pileMots.shift();
-        pileMots.push(motIndex);
-        
-        afficherMot();
-    }, 300);
-}
-
-function updateCompteur() {
-    document.getElementById('compteur-appris').textContent = motsAppris.size;
-}
-
-function enregistrerSession(complete) {
-    const dureeSec = Math.floor((Date.now() - sessionStartTime) / 1000);
-    
-    fetch('/api/session', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            deck_id: deckId,
-            type_session: 'flashcard',
-            nombre_mots_vus: motsAppris.size,
-            score: 0,
-            duree_secondes: dureeSec,
-            complete: complete
-        })
-    }).catch(err => console.error('Erreur enregistrement session:', err));
-}
-
-window.addEventListener('beforeunload', function() {
-    if (motsAppris.size > 0) {
-        enregistrerSession(false);
+// Click pour flip
+flashcard.addEventListener('click', function(e) {
+    // Ne pas flip si on clique sur le bouton audio
+    if (!e.target.closest('.audio-btn')) {
+        flipCard();
     }
 });
 
-// ===== GESTION DU SWIPE =====
-
-const flashcard = document.getElementById('flashcard');
-const swipeLeft = document.getElementById('swipe-left');
-const swipeRight = document.getElementById('swipe-right');
-
-// Touch events
-flashcard.addEventListener('touchstart', handleTouchStart, { passive: true });
-flashcard.addEventListener('touchmove', handleTouchMove, { passive: false });
-flashcard.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-// Mouse events
-flashcard.addEventListener('mousedown', handleMouseDown);
-document.addEventListener('mousemove', handleMouseMove);
-document.addEventListener('mouseup', handleMouseUp);
-
-function handleTouchStart(e) {
-    if (e.target.closest('.btn-audio')) return;
-    
-    if (!traductionVisible) {
-        revelerTraduction();
-        return;
-    }
-    
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    isDragging = true;
-}
-
-function handleTouchMove(e) {
-    if (!isDragging || !traductionVisible) return;
-    
-    e.preventDefault();
-    
-    currentX = e.touches[0].clientX - touchStartX;
-    currentY = e.touches[0].clientY - touchStartY;
-    
-    updateSwipeVisual();
-}
-
-function handleTouchEnd(e) {
-    if (!isDragging || !traductionVisible) return;
-    
-    isDragging = false;
-    handleSwipeEnd();
-}
-
-function handleMouseDown(e) {
-    if (e.target.closest('.btn-audio')) return;
-    
-    if (!traductionVisible) {
-        revelerTraduction();
-        return;
-    }
-    
-    touchStartX = e.clientX;
-    touchStartY = e.clientY;
-    isDragging = true;
-    flashcard.style.cursor = 'grabbing';
-}
-
-function handleMouseMove(e) {
-    if (!isDragging || !traductionVisible) return;
-    
-    currentX = e.clientX - touchStartX;
-    currentY = e.clientY - touchStartY;
-    
-    updateSwipeVisual();
-}
-
-function handleMouseUp(e) {
-    if (!isDragging || !traductionVisible) return;
-    
-    isDragging = false;
-    flashcard.style.cursor = 'grab';
-    handleSwipeEnd();
-}
-
-function updateSwipeVisual() {
-    const threshold = 50;
-    
-    flashcard.style.transform = `translateX(${currentX}px) rotate(${currentX * 0.1}deg)`;
-    flashcard.style.transition = 'none';
-    
-    if (currentX < -threshold) {
-        swipeLeft.classList.add('active');
-        swipeRight.classList.remove('active');
-    } else if (currentX > threshold) {
-        swipeRight.classList.add('active');
-        swipeLeft.classList.remove('active');
-    } else {
-        swipeLeft.classList.remove('active');
-        swipeRight.classList.remove('active');
-    }
-}
-
-function handleSwipeEnd() {
-    const swipeThreshold = 100;
-    
-    swipeLeft.classList.remove('active');
-    swipeRight.classList.remove('active');
-    
-    if (currentX < -swipeThreshold) {
-        marquerRevoir();
-    } else if (currentX > swipeThreshold) {
-        marquerAppris();
-    } else {
-        flashcard.style.transition = 'transform 0.3s ease';
-        flashcard.style.transform = '';
-    }
-    
-    currentX = 0;
-    currentY = 0;
-}
-
-// Initialiser
-initialiserSession();
-
-// Support des touches clavier
+// Raccourcis clavier
 document.addEventListener('keydown', function(e) {
-    if (e.code === 'Space' || e.code === 'Enter') {
+    if (e.key === 'ArrowLeft') {
+        previousCard();
+    } else if (e.key === 'ArrowRight') {
+        nextCard();
+    } else if (e.key === ' ') {
         e.preventDefault();
-        revelerTraduction();
-    } else if (e.code === 'ArrowRight') {
-        e.preventDefault();
-        marquerAppris();
-    } else if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        marquerRevoir();
-    } else if (e.code === 'KeyM') {
-        e.preventDefault();
-        toggleMode();
-    } else if (e.code === 'KeyP') {
-        e.preventDefault();
-        prononcerMot(e);
+        flipCard();
     }
 });
 </script>

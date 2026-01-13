@@ -1,458 +1,264 @@
 {% extends "base.html" %}
 
-{% block title %}{{ niveau }} - Tipikus{% endblock %}
+{% block title %}Niveau {{ niveau }} - Tipikus{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="flex flex-between" style="align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1>📚 Niveau {{ niveau }}</h1>
+            <p class="text-muted">Explorez les lessons et decks de ce niveau</p>
+        </div>
+        
+        <div class="flex gap-1">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                ← Retour aux niveaux
+            </a>
+            
+            {% if is_admin %}
+            <a href="{{ url_for('nouveau_deck', niveau=niveau) }}" class="btn btn-primary">
+                ➕ Nouveau deck
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('index') }}" class="back-link">← Retour aux niveaux</a>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-    <h1>📚 Niveau {{ niveau }}</h1>
-    <div style="display: flex; gap: 10px;">
-        <a href="{{ url_for('stats_niveau_route', niveau=niveau) }}" class="btn-stats-mini">
-            📊 Stats
+<!-- ========== LESSONS ========== -->
+{% if lessons %}
+<section class="decks-section">
+    <div class="decks-header">
+        <h2>📖 Lessons structurées</h2>
+        {% if is_admin %}
+        <a href="{{ url_for('create_lesson_form') }}" class="btn btn-primary">
+            ➕ Nouvelle lesson
         </a>
-        {% if user.nom == 'c' %}
-        <a href="{{ url_for('create_lesson_form') }}" class="btn-create-lesson">
-            ➕ Lesson
+        {% endif %}
+    </div>
+    
+    <div class="lessons-grid">
+        {% for lesson in lessons %}
+        <div class="card lesson-card">
+            <!-- Numéro de la lesson -->
+            <div class="lesson-number">{{ lesson.numero }}</div>
+            
+            <!-- Contenu -->
+            <div class="lesson-content">
+                <h3 class="lesson-title">{{ lesson.titre }}</h3>
+                <p class="lesson-meta">
+                    {{ lesson.nb_decks }} deck{{ 's' if lesson.nb_decks > 1 else '' }} associé{{ 's' if lesson.nb_decks > 1 else '' }}
+                </p>
+                
+                <!-- Progression -->
+                {% if lesson.id in lessons_progress and lessons_progress[lesson.id] > 0 %}
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ lessons_progress[lesson.id] }}%"></div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Complété</span>
+                        <span><strong>{{ "%.0f"|format(lessons_progress[lesson.id]) }}%</strong></span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Actions -->
+            <div class="deck-actions">
+                <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-primary">
+                    👁️ Voir
+                </a>
+                
+                {% if is_admin %}
+                <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn btn-secondary btn-icon" title="Gérer les decks">
+                    ⚙️
+                </a>
+                <a href="{{ url_for('edit_lesson_form', lesson_id=lesson.id) }}" class="btn btn-secondary btn-icon" title="Modifier">
+                    ✏️
+                </a>
+                <form method="POST" action="{{ url_for('delete_lesson_route', lesson_id=lesson.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('Supprimer cette lesson ?');">
+                    <button type="submit" class="btn btn-danger btn-icon" title="Supprimer">
+                        🗑️
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- ========== DECKS COMMUNS ========== -->
+{% if decks_communs %}
+<section class="decks-section mt-3">
+    <div class="decks-header">
+        <h2>🌍 Decks communs</h2>
+        {% if is_admin %}
+        <a href="{{ url_for('nouveau_deck', niveau=niveau) }}" class="btn btn-primary">
+            ➕ Ajouter
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="decks-list">
+        {% for deck in decks_communs %}
+        <div class="deck-item">
+            <div class="deck-info">
+                <div class="deck-name">{{ deck.nom }}</div>
+                <div class="deck-meta">
+                    🌍 Commun • 
+                    {% if deck.lesson_id %}
+                        📖 Dans une lesson
+                    {% else %}
+                        📚 Libre
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="deck-actions">
+                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="Voir le contenu">
+                    👁️
+                </a>
+                <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn btn-primary btn-icon" title="Apprendre">
+                    🎴
+                </a>
+                <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn btn-primary btn-icon" title="Quiz">
+                    🎯
+                </a>
+                
+                {% if is_admin %}
+                <a href="{{ url_for('exporter_deck', deck_id=deck.id, format='json') }}" class="btn btn-secondary btn-icon" title="Exporter">
+                    💾
+                </a>
+                <form method="POST" action="{{ url_for('supprimer_deck', deck_id=deck.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('Supprimer ce deck ?');">
+                    <button type="submit" class="btn btn-danger btn-icon" title="Supprimer">
+                        🗑️
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- ========== DECKS PERSONNELS ========== -->
+{% if decks_perso %}
+<section class="decks-section mt-3">
+    <div class="decks-header">
+        <h2>👤 Mes decks personnels</h2>
+        <a href="{{ url_for('nouveau_deck', niveau=niveau) }}" class="btn btn-primary">
+            ➕ Créer un deck
+        </a>
+    </div>
+    
+    <div class="decks-list">
+        {% for deck in decks_perso %}
+        <div class="deck-item">
+            <div class="deck-info">
+                <div class="deck-name">{{ deck.nom }}</div>
+                <div class="deck-meta">👤 Personnel</div>
+            </div>
+            
+            <div class="deck-actions">
+                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="Voir">
+                    👁️
+                </a>
+                <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn btn-primary btn-icon" title="Apprendre">
+                    🎴
+                </a>
+                <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn btn-primary btn-icon" title="Quiz">
+                    🎯
+                </a>
+                <a href="{{ url_for('exporter_deck', deck_id=deck.id, format='json') }}" class="btn btn-secondary btn-icon" title="Exporter">
+                    💾
+                </a>
+                <form method="POST" action="{{ url_for('supprimer_deck', deck_id=deck.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('Supprimer ce deck ?');">
+                    <button type="submit" class="btn btn-danger btn-icon" title="Supprimer">
+                        🗑️
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- ========== DECKS PERSO AUTRES USERS (Admin uniquement) ========== -->
+{% if is_admin and decks_perso_autres %}
+<section class="decks-section mt-3">
+    <div class="decks-header">
+        <h2>👥 Decks personnels des autres utilisateurs</h2>
+    </div>
+    
+    <div class="decks-list">
+        {% for deck in decks_perso_autres %}
+        <div class="deck-item">
+            <div class="deck-info">
+                <div class="deck-name">{{ deck.nom }}</div>
+                <div class="deck-meta">👤 {{ deck.createur_nom }}</div>
+            </div>
+            
+            <div class="deck-actions">
+                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="Voir">
+                    👁️
+                </a>
+                <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn btn-primary btn-icon" title="Apprendre">
+                    🎴
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- ========== MESSAGE SI VIDE ========== -->
+{% if not lessons and not decks_communs and not decks_perso %}
+<div class="card text-center">
+    <div style="padding: 3rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📚</div>
+        <h3>Aucun contenu pour ce niveau</h3>
+        <p class="text-muted">Commencez par créer un deck ou une lesson !</p>
+        
+        {% if is_admin %}
+        <div class="flex flex-center gap-2 mt-3">
+            <a href="{{ url_for('nouveau_deck', niveau=niveau) }}" class="btn btn-primary">
+                ➕ Créer un deck
+            </a>
+            <a href="{{ url_for('create_lesson_form') }}" class="btn btn-primary">
+                📖 Créer une lesson
+            </a>
+        </div>
+        {% else %}
+        <a href="{{ url_for('nouveau_deck', niveau=niveau) }}" class="btn btn-primary mt-3">
+            ➕ Créer mon premier deck personnel
         </a>
         {% endif %}
     </div>
 </div>
-
-{% if lessons %}
-    <h2>📖 Lessons du niveau</h2>
-    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        Parcours d'apprentissage structuré
-    </p>
-    <div class="lessons-grid">
-        {% for lesson in lessons %}
-        <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="lesson-card">
-            <div class="lesson-number">{{ lesson.numero }}</div>
-            <div class="lesson-info">
-                <div class="lesson-title">{{ lesson.titre }}</div>
-                <div class="lesson-meta">{{ lesson.nb_decks }} deck{{ 's' if lesson.nb_decks > 1 else '' }}</div>
-                {% if lesson.id in lessons_progress %}
-                <div class="progress-bar-lesson">
-                    <div class="progress-fill-lesson" style="width: {{ lessons_progress[lesson.id] }}%"></div>
-                </div>
-                <div class="progress-text-lesson">{{ lessons_progress[lesson.id]|int }}% complété</div>
-                {% endif %}
-            </div>
-            <div class="lesson-arrow">→</div>
-        </a>
-        {% endfor %}
-    </div>
 {% endif %}
 
-{% if decks_communs %}
-    <h2 style="{% if lessons %}margin-top: 40px;{% endif %}">🌍 Decks de base (hors lessons)</h2>
-    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        Decks partagés avec tous les utilisateurs
-    </p>
-    <ul class="deck-list">
-        {% for deck in decks_communs %}
-            <li class="deck-item-wrapper">
-                <div class="deck-item-content">
-                    <div class="deck-main-buttons">
-                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-btn deck-commun">
-                            📚 {{ deck.nom }}
-                        </a>
-                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn deck-btn btn-quiz quiz-commun">
-                            🎯 Quiz
-                        </a>
-                    </div>
-                    <div class="deck-actions">
-                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
-                           class="btn-action btn-view" 
-                           title="Voir le contenu">
-                            👁️
-                        </a>
-                        {% if user.nom == 'c' %}
-                        <button onclick="confirmerSuppression('{{ deck.nom }}', {{ deck.id }})" 
-                                class="btn-action btn-delete" 
-                                title="Supprimer le deck (admin)">
-                            🗑️
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
-{% endif %}
+<!-- ========== STATISTIQUES DU NIVEAU ========== -->
+<section class="mt-3">
+    <a href="{{ url_for('stats_niveau_route', niveau=niveau) }}" class="card" style="display: block; text-decoration: none;">
+        <div class="card-header">
+            <h3 class="card-title">📊 Voir les statistiques de ce niveau</h3>
+            <span class="card-badge">→</span>
+        </div>
+    </a>
+</section>
 
-{% if decks_perso %}
-    <h2 style="margin-top: 40px;">👤 Mes decks personnels</h2>
-    <ul class="deck-list">
-        {% for deck in decks_perso %}
-            <li class="deck-item-wrapper">
-                <div class="deck-item-content">
-                    <div class="deck-main-buttons">
-                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-btn deck-perso">
-                            📚 {{ deck.nom }}
-                        </a>
-                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn deck-btn btn-quiz quiz-perso">
-                            🎯 Quiz
-                        </a>
-                    </div>
-                    <div class="deck-actions">
-                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
-                           class="btn-action btn-view" 
-                           title="Voir le contenu">
-                            👁️
-                        </a>
-                        <button onclick="confirmerSuppression('{{ deck.nom }}', {{ deck.id }})" 
-                                class="btn-action btn-delete" 
-                                title="Supprimer le deck">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
-{% endif %}
-
-{% if is_admin and decks_perso_autres %}
-    <h2 style="margin-top: 40px;">👥 Decks personnels des autres utilisateurs</h2>
-    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        Visible uniquement par l'administrateur
-    </p>
-    <ul class="deck-list">
-        {% for deck in decks_perso_autres %}
-            <li class="deck-item-wrapper">
-                <div class="deck-item-content">
-                    <div class="deck-main-buttons">
-                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-btn deck-autre-user">
-                            📚 {{ deck.nom }}
-                            <span class="user-badge">👤 {{ deck.createur_nom }}</span>
-                        </a>
-                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn deck-btn btn-quiz quiz-autre-user">
-                            🎯 Quiz
-                        </a>
-                    </div>
-                    <div class="deck-actions">
-                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
-                           class="btn-action btn-view" 
-                           title="Voir le contenu">
-                            👁️
-                        </a>
-                        <button onclick="confirmerSuppression('{{ deck.nom }}', {{ deck.id }})" 
-                                class="btn-action btn-delete" 
-                                title="Supprimer le deck (admin)">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
-{% endif %}
-
-{% if not decks_communs and not decks_perso and not decks_perso_autres %}
-    <div class="empty-state">
-        <div style="font-size: 64px; margin-bottom: 20px;">📚</div>
-        <h2>Aucun deck pour ce niveau</h2>
-        <p style="color: #888; margin-bottom: 30px;">Créez votre premier deck !</p>
-    </div>
-{% endif %}
-
-<a href="{{ url_for('nouveau_deck', niveau=niveau) }}" class="btn btn-secondary">
-    + Nouveau deck
-</a>
-
-<style>
-.btn-stats-mini {
-    display: inline-block;
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 13px;
-    transition: all 0.3s ease;
-}
-
-.btn-stats-mini:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
-
-.btn-create-lesson {
-    display: inline-block;
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 13px;
-    transition: all 0.3s ease;
-}
-
-.btn-create-lesson:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
-
-.lessons-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
-    margin-bottom: 40px;
-}
-
-.lesson-card {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 20px;
-    background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
-    border: 2px solid #667eea;
-    border-radius: 12px;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.lesson-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-    border-color: #8b9aff;
-}
-
-.lesson-number {
-    width: 50px;
-    height: 50px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    font-weight: 700;
-    color: white;
-    flex-shrink: 0;
-}
-
-.lesson-info {
-    flex: 1;
-}
-
-.lesson-title {
-    color: #ffffff;
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.lesson-meta {
-    color: #888;
-    font-size: 13px;
-    margin-bottom: 8px;
-}
-
-.progress-bar-lesson {
-    width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 8px;
-}
-
-.progress-fill-lesson {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    transition: width 0.5s ease;
-    border-radius: 3px;
-}
-
-.progress-text-lesson {
-    font-size: 11px;
-    color: #667eea;
-    font-weight: 600;
-    margin-top: 4px;
-}
-
-.lesson-arrow {
-    font-size: 24px;
-    color: #667eea;
-    flex-shrink: 0;
-}
-
-.deck-item-wrapper {
-    margin-bottom: 15px;
-}
-
-.deck-item-content {
-    display: flex;
-    gap: 8px;
-    align-items: stretch;
-}
-
-.deck-main-buttons {
-    flex: 1;
-    display: flex;
-    gap: 8px;
-}
-
-.deck-btn {
-    flex: 1;
-    margin: 0;
-    font-size: 15px;
-}
-
-.deck-perso {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.deck-perso:hover {
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.deck-commun {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-}
-
-.deck-commun:hover {
-    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
-}
-
-.deck-autre-user {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    position: relative;
-}
-
-.deck-autre-user:hover {
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-}
-
-.user-badge {
-    display: inline-block;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    margin-left: 8px;
-    font-weight: 400;
-}
-
-.btn-quiz {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
-
-.btn-quiz:hover {
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-}
-
-.quiz-perso {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
-
-.quiz-perso:hover {
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-}
-
-.quiz-commun {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.quiz-commun:hover {
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
-
-.quiz-autre-user {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
-
-.quiz-autre-user:hover {
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-}
-
-.deck-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.btn-action {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: 8px;
-    font-size: 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-}
-
-.btn-view {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.btn-view:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
-
-.btn-delete {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
-
-.btn-delete:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-}
-
-.empty-state h2 {
-    color: #ffffff;
-    margin-bottom: 10px;
-}
-
-@media (max-width: 600px) {
-    .deck-item-content {
-        flex-wrap: wrap;
-    }
-    
-    .deck-main-buttons {
-        width: 100%;
-        gap: 6px;
-    }
-    
-    .deck-btn {
-        font-size: 13px;
-        padding: 12px 8px;
-    }
-    
-    .btn-action {
-        width: 45px;
-        height: 45px;
-        font-size: 18px;
-    }
-    
-    .deck-actions {
-        gap: 6px;
-    }
-}
-</style>
-
-<script>
-function confirmerSuppression(nomDeck, deckId) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le deck "${nomDeck}" ?\n\nCette action est irréversible.`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/supprimer-deck/${deckId}`;
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-</script>
 {% endblock %}

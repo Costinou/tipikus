@@ -2,461 +2,243 @@
 
 {% block title %}{{ lesson.titre }} - Tipikus{% endblock %}
 
-{% block content %}
-<a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="back-link">← Retour au niveau {{ lesson.niveau }}</a>
-
-<div class="lesson-header">
-    <div>
-        <h1>📖 Lesson {{ lesson.numero }}: {{ lesson.titre }}</h1>
-        <p style="color: #888;">Niveau {{ lesson.niveau }}</p>
-    </div>
-    {% if user.nom == 'c' %}
-    <div class="admin-buttons">
-        <a href="{{ url_for('edit_lesson_form', lesson_id=lesson.id) }}" class="btn-admin">
-            ✏️
-        </a>
-        <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn-admin">
-            ⚙️
-        </a>
-        <button onclick="confirmerSuppressionLesson('{{ lesson.titre }}', {{ lesson.id }})" class="btn-admin btn-delete-admin">
-            🗑️
-        </button>
-    </div>
-    {% endif %}
-</div>
-
-<!-- Decks de la lesson -->
-{% if decks %}
-<div class="lesson-decks-section">
-    <h2>📚 Decks de cette lesson</h2>
-    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        Pratiquez avec ces decks après avoir lu la théorie
-    </p>
-    <ul class="deck-list">
-        {% for deck in decks %}
-            <li class="deck-item-wrapper">
-                <div class="deck-item-content">
-                    <div class="deck-main-buttons">
-                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-btn deck-commun">
-                            📚 {{ deck.nom }}
-                        </a>
-                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn deck-btn btn-quiz quiz-commun">
-                            🎯 Quiz
-                        </a>
-                    </div>
-                    <div class="deck-actions">
-                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
-                           class="btn-action btn-view" 
-                           title="Voir le contenu">
-                            👁️
-                        </a>
-                    </div>
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-<!-- Contenu Markdown -->
-<div id="markdown-content" class="markdown-content"></div>
-
+{% block extra_css %}
 <style>
-.lesson-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 30px;
-    gap: 20px;
+/* Styles pour le contenu Markdown de la lesson */
+.lesson-content-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-.admin-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.btn-admin {
-    padding: 10px 16px;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    text-decoration: none;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-admin:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
-
-.btn-delete-admin {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
-
-.btn-delete-admin:hover {
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-}
-
-/* Styles pour le contenu Markdown */
 .markdown-content {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 40px;
-    margin-bottom: 40px;
     line-height: 1.8;
-    color: #e0e0e0;
 }
 
-.markdown-content h1 {
-    color: #ffffff;
-    font-size: 2em;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-    border-bottom: 2px solid #667eea;
-    padding-bottom: 0.3em;
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
 }
 
-.markdown-content h2 {
-    color: #ffffff;
-    font-size: 1.5em;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-}
-
-.markdown-content h3 {
-    color: #cccccc;
-    font-size: 1.2em;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-}
+.markdown-content h1 { font-size: 2.5rem; }
+.markdown-content h2 { font-size: 2rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+.markdown-content h3 { font-size: 1.5rem; }
+.markdown-content h4 { font-size: 1.25rem; }
 
 .markdown-content p {
-    margin-bottom: 1em;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
 }
 
-.markdown-content img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 20px 0;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.markdown-content ul, .markdown-content ol {
-    margin: 1em 0;
-    padding-left: 2em;
+.markdown-content ul,
+.markdown-content ol {
+    margin-left: 2rem;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
 }
 
 .markdown-content li {
-    margin-bottom: 0.5em;
+    margin-bottom: 0.5rem;
 }
 
 .markdown-content code {
-    background: #0f0f0f;
-    padding: 2px 6px;
+    background: var(--bg-secondary);
+    padding: 0.2rem 0.5rem;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 0.9em;
-    color: #4ade80;
+    color: var(--accent);
 }
 
 .markdown-content pre {
-    background: #0f0f0f;
-    padding: 20px;
+    background: var(--bg-secondary);
+    padding: 1.5rem;
     border-radius: 8px;
     overflow-x: auto;
-    border: 1px solid #2a2a2a;
-    margin: 1.5em 0;
+    margin: 1rem 0;
+    border-left: 4px solid var(--accent);
 }
 
 .markdown-content pre code {
     background: none;
     padding: 0;
-    color: #e0e0e0;
+    color: var(--text-primary);
+}
+
+.markdown-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 2rem 0;
+    box-shadow: 0 4px 12px var(--shadow);
 }
 
 .markdown-content blockquote {
-    border-left: 4px solid #667eea;
-    padding-left: 20px;
-    margin: 1.5em 0;
-    color: #cccccc;
+    border-left: 4px solid var(--accent);
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+    color: var(--text-secondary);
     font-style: italic;
-}
-
-.markdown-content a {
-    color: #667eea;
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
-    transition: border-color 0.3s ease;
-}
-
-.markdown-content a:hover {
-    border-bottom-color: #667eea;
 }
 
 .markdown-content table {
     width: 100%;
     border-collapse: collapse;
-    margin: 1.5em 0;
+    margin: 1.5rem 0;
 }
 
 .markdown-content th,
 .markdown-content td {
-    padding: 12px;
-    border: 1px solid #333;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
     text-align: left;
 }
 
 .markdown-content th {
-    background: #0f0f0f;
+    background: var(--bg-secondary);
     font-weight: 600;
-    color: #ffffff;
+    color: var(--text-primary);
 }
 
-/* 🎥 STYLES POUR LES VIDÉOS YOUTUBE */
-.markdown-content .youtube-container {
-    position: relative;
-    padding-bottom: 56.25%; /* Ratio 16:9 */
-    height: 0;
-    overflow: hidden;
-    max-width: 100%;
-    margin: 2em 0;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    background: #0f0f0f;
+.markdown-content td {
+    color: var(--text-secondary);
 }
 
-.markdown-content .youtube-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 12px;
+.markdown-content a {
+    color: var(--accent);
+    text-decoration: underline;
 }
 
-.markdown-content .youtube-title {
-    text-align: center;
-    color: #888;
-    font-size: 14px;
-    font-style: italic;
-    margin-top: 10px;
-    margin-bottom: 20px;
-}
-
-.lesson-decks-section {
-    margin-top: 40px;
-}
-
-.lesson-decks-section h2 {
-    margin-bottom: 20px;
-}
-
-/* Styles des decks */
-.deck-item-wrapper {
-    margin-bottom: 15px;
-}
-
-.deck-item-content {
-    display: flex;
-    gap: 8px;
-    align-items: stretch;
-}
-
-.deck-main-buttons {
-    flex: 1;
-    display: flex;
-    gap: 8px;
-}
-
-.deck-btn {
-    flex: 1;
-    margin: 0;
-    font-size: 15px;
-}
-
-.deck-commun {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-}
-
-.deck-commun:hover {
-    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
-}
-
-.btn-quiz {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
-
-.quiz-commun {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.quiz-commun:hover {
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
-
-.deck-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.btn-action {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: 8px;
-    font-size: 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-}
-
-.btn-view {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.btn-view:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
-
-@media (max-width: 768px) {
-    .lesson-header {
-        flex-direction: column;
-    }
-    
-    .markdown-content {
-        padding: 20px;
-    }
-    
-    .admin-buttons {
-        width: 100%;
-    }
-    
-    .btn-admin {
-        flex: 1;
-        text-align: center;
-    }
+.markdown-content strong {
+    color: var(--text-primary);
+    font-weight: 600;
 }
 </style>
+{% endblock %}
 
-<!-- Bibliothèque Marked.js pour le rendu Markdown -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
-
-<script>
-// Contenu markdown de la lesson
-const markdownContent = {{ lesson.content_markdown|tojson }};
-
-// 🎬 Fonction pour extraire l'ID YouTube de différents formats d'URL
-function extractYoutubeId(url) {
-    const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\s]+)/,
-        /youtube\.com\/watch\?.*v=([^&\s]+)/
-    ];
-    
-    for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match && match[1]) {
-            return match[1];
-        }
-    }
-    return null;
-}
-
-// 🎬 Fonction pour créer un embed YouTube
-function createYoutubeEmbed(videoId, title = '') {
-    const titleHtml = title ? `<div class="youtube-title">🎥 ${title}</div>` : '';
-    return `
-        <div class="youtube-container">
-            <iframe 
-                src="https://www.youtube-nocookie.com/embed/${videoId}" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowfullscreen>
-            </iframe>
+{% block page_header %}
+<div class="page-header">
+    <div class="flex flex-between" style="align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <div style="width: 60px; height: 60px; background: var(--accent); color: var(--black); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700;">
+                    {{ lesson.numero }}
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.875rem;">Lesson {{ lesson.numero }} • {{ lesson.niveau }}</div>
+                    <h1 style="margin: 0;">{{ lesson.titre }}</h1>
+                </div>
+            </div>
         </div>
-        ${titleHtml}
-    `;
-}
-
-// Configurer marked avec support YouTube
-marked.use({
-    renderer: {
-        // Gérer les images
-        image(href, title, text) {
-            // Vérifier si c'est une image YouTube (thumbnail)
-            if (href.includes('img.youtube.com')) {
-                const match = href.match(/\/vi\/([^\/]+)\//);
-                if (match && match[1]) {
-                    return createYoutubeEmbed(match[1], title || text);
-                }
-            }
-            
-            // Image normale
-            if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('/')) {
-                href = '/static/lessons/images/' + href;
-            }
-            
-            const titleAttr = title ? ` title="${title}"` : '';
-            return `<img src="${href}" alt="${text}"${titleAttr}>`;
-        },
         
-        // Gérer les liens
-        link(href, title, text) {
-            // Vérifier si c'est un lien YouTube
-            const videoId = extractYoutubeId(href);
-            if (videoId) {
-                return createYoutubeEmbed(videoId, title || text);
-            }
+        <div class="flex gap-1" style="flex-wrap: wrap;">
+            {% if user.nom == 'c' %}
+            <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn btn-secondary">
+                ⚙️ Gérer les decks
+            </a>
             
-            // Lien normal
-            const titleAttr = title ? ` title="${title}"` : '';
-            return `<a href="${href}"${titleAttr}>${text}</a>`;
-        }
-    },
+            <a href="{{ url_for('edit_lesson_form', lesson_id=lesson.id) }}" class="btn btn-secondary">
+                ✏️ Modifier
+            </a>
+            
+            <form method="POST" action="{{ url_for('delete_lesson_route', lesson_id=lesson.id) }}" 
+                  style="display: inline;"
+                  onsubmit="return confirm('Supprimer cette lesson ?');">
+                <button type="submit" class="btn btn-danger">
+                    🗑️ Supprimer
+                </button>
+            </form>
+            {% endif %}
+            
+            <a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="btn btn-secondary">
+                ← Retour
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="lesson-content-wrapper">
+    <!-- Contenu Markdown de la lesson -->
+    <div class="card">
+        <div class="markdown-content">
+            {{ lesson.content_markdown|safe }}
+        </div>
+    </div>
     
-    // 🎬 Extension pour la syntaxe personnalisée !youtube[VIDEO_ID]
-    extensions: [{
-        name: 'youtube',
-        level: 'block',
-        start(src) { return src.match(/^!youtube\[/)?.index; },
-        tokenizer(src) {
-            const rule = /^!youtube\[([^\]]+)\](?:\(([^)]+)\))?/;
-            const match = rule.exec(src);
-            if (match) {
-                return {
-                    type: 'youtube',
-                    raw: match[0],
-                    videoId: match[1],
-                    title: match[2] || ''
-                };
-            }
-        },
-        renderer(token) {
-            return createYoutubeEmbed(token.videoId, token.title);
+    <!-- Decks associés -->
+    {% if decks %}
+    <div class="card mt-2">
+        <h2 class="card-title">📚 Decks associés à cette lesson</h2>
+        <p class="text-muted">Pratiquez avec ces decks pour maîtriser le vocabulaire</p>
+        
+        <div class="decks-list mt-2">
+            {% for deck in decks %}
+            <div class="deck-item">
+                <div class="deck-info">
+                    <div class="deck-name">{{ deck.nom }}</div>
+                    <div class="deck-meta">🌍 Deck commun</div>
+                </div>
+                
+                <div class="deck-actions">
+                    <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="Voir les mots">
+                        👁️
+                    </a>
+                    <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn btn-primary btn-icon" title="Flashcards">
+                        🎴
+                    </a>
+                    <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn btn-primary btn-icon" title="Quiz">
+                        🎯
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card mt-2 text-center" style="padding: 2rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+        <h3>Aucun deck associé</h3>
+        <p class="text-muted">Cette lesson n'a pas encore de decks pour pratiquer</p>
+        
+        {% if user.nom == 'c' %}
+        <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn btn-primary mt-2">
+            ⚙️ Associer des decks
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+// Convertir le Markdown en HTML si nécessaire
+document.addEventListener('DOMContentLoaded', function() {
+    const markdownContent = document.querySelector('.markdown-content');
+    
+    // Si le contenu n'est pas déjà en HTML, le convertir
+    if (markdownContent && !markdownContent.querySelector('h1, h2, h3, p, ul, ol, table')) {
+        const rawMarkdown = markdownContent.textContent;
+        if (rawMarkdown.trim()) {
+            markdownContent.innerHTML = marked.parse(rawMarkdown);
         }
-    }]
-});
-
-// Rendre le markdown
-document.getElementById('markdown-content').innerHTML = marked.parse(markdownContent);
-
-function confirmerSuppressionLesson(titre, lessonId) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer la lesson "${titre}" ?\n\nLes decks associés ne seront PAS supprimés, ils redeviendront des decks libres.`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/delete-lesson/' + lessonId;
-        document.body.appendChild(form);
-        form.submit();
     }
-}
+    
+    // Adapter les chemins des images
+    const images = markdownContent.querySelectorAll('img');
+    images.forEach(img => {
+        const src = img.getAttribute('src');
+        // Si l'image n'a pas de chemin complet, ajouter le préfixe
+        if (src && !src.startsWith('http') && !src.startsWith('/')) {
+            img.setAttribute('src', '/static/lessons/images/' + src);
+        }
+    });
+});
 </script>
 {% endblock %}

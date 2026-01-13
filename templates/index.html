@@ -1,308 +1,94 @@
 {% extends "base.html" %}
 
-{% block title %}Tipikus - Apprentissage du hongrois{% endblock %}
+{% block title %}Accueil - Tipikus{% endblock %}
+
+{% block page_header %}
+<div class="page-header text-center">
+    <h1>🇭🇺 Choisissez votre niveau</h1>
+    <p class="text-muted">Sélectionnez un niveau pour commencer à apprendre le hongrois</p>
+</div>
+{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <h1>🇭🇺 Tipikus</h1>
-    <a href="{{ url_for('stats_globales') }}" class="btn-stats-header">
-        📊 Statistiques
+<!-- Grille des niveaux -->
+<div class="niveaux-grid">
+    {% for niveau in niveaux_disponibles %}
+    <a href="{{ url_for('niveau', niveau=niveau) }}" 
+       class="card niveau-card {% if niveau not in unlocked_niveaux %}locked{% endif %}"
+       style="text-decoration: none;">
+        
+        <div class="card-header">
+            <h3 class="card-title">{{ niveau }}</h3>
+            
+            {% if niveau in niveaux_counts %}
+                <span class="card-badge">{{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}</span>
+            {% else %}
+                <span class="card-badge">0 deck</span>
+            {% endif %}
+        </div>
+        
+        <!-- Barre de progression -->
+        {% if niveau in niveaux_progress and niveaux_progress[niveau] > 0 %}
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ niveaux_progress[niveau] }}%"></div>
+            </div>
+            <div class="progress-label">
+                <span>Progression</span>
+                <span><strong>{{ "%.1f"|format(niveaux_progress[niveau]) }}%</strong></span>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Badge verrouillé -->
+        {% if niveau not in unlocked_niveaux %}
+        <p class="text-muted mt-2" style="font-size: 0.875rem;">
+            ⚠️ Complétez {{ niveaux_disponibles[niveaux_disponibles.index(niveau) - 1] }} à 80% pour débloquer
+        </p>
+        {% endif %}
     </a>
+    {% endfor %}
 </div>
 
-{% if user %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 15px; flex-wrap: wrap;">
-    <div style="display: flex; align-items: center; gap: 10px;">
-        <p style="color: #888; font-size: 14px; margin: 0;">
-            👤 {{ user.nom }}
-        </p>
-        {% if user.nom == 'c' %}
-        <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">ADMIN</span>
-        {% endif %}
+<!-- Section actions rapides (pour admin) -->
+{% if user.nom == 'c' %}
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">⚡ Actions rapides (Admin)</h3>
     </div>
-    <div style="display: flex; gap: 8px;">
-        <a href="{{ url_for('change_password') }}" class="btn-user-action" title="Changer mon mot de passe">
-            🔐
+    
+    <div class="flex gap-2" style="flex-wrap: wrap;">
+        <a href="{{ url_for('nouveau_deck') }}" class="btn btn-primary">
+            ➕ Nouveau deck commun
         </a>
-        {% if user.nom == 'c' %}
-        <a href="{{ url_for('admin_users') }}" class="btn-user-action" title="Gérer les utilisateurs">
-            👥
+        
+        <a href="{{ url_for('create_lesson_form') }}" class="btn btn-primary">
+            📖 Nouvelle lesson
         </a>
-        {% endif %}
-        <button onclick="logout()" class="btn-user-action" title="Déconnexion">
-            🚪
-        </button>
+        
+        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+            👥 Gérer les utilisateurs
+        </a>
     </div>
 </div>
 {% endif %}
 
-<h2>Choisir un niveau</h2>
-
-{% for niveau in niveaux_disponibles %}
-    {% set is_locked = niveau not in unlocked_niveaux %}
-    {% set is_admin_unlock = user.nom == 'c' and is_locked %}
+<!-- Section informations -->
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">ℹ️ À propos de Tipikus</h3>
+    </div>
     
-    {% if is_locked and user.nom != 'c' %}
-        <!-- Niveau verrouillé (utilisateur normal) -->
-        <div class="btn niveau-btn niveau-locked">
-            <div style="flex: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span class="niveau-nom">
-                        🔒 {{ niveau }}
-                    </span>
-                    {% if niveau in niveaux_counts %}
-                        <span class="niveau-info">
-                            {{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}
-                        </span>
-                    {% endif %}
-                </div>
-                <div class="progress-bar-mini">
-                    {% if niveau in niveaux_progress %}
-                    <div class="progress-fill-mini" style="width: {{ niveaux_progress[niveau] }}%"></div>
-                    {% else %}
-                    <div class="progress-fill-mini" style="width: 0%"></div>
-                    {% endif %}
-                </div>
-                <div class="progress-text locked-text">
-                    Complétez le niveau précédent à 80%
-                </div>
-            </div>
-        </div>
-    {% else %}
-        <!-- Niveau débloqué -->
-        <a href="{{ url_for('niveau', niveau=niveau) }}" class="btn niveau-btn {% if is_admin_unlock %}niveau-admin-unlock{% endif %}">
-            <div style="flex: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span class="niveau-nom">
-                        {{ niveau }}
-                        {% if is_admin_unlock %}
-                        <span class="admin-unlock-badge" title="Débloqué par privilèges admin">👑</span>
-                        {% endif %}
-                    </span>
-                    {% if niveau in niveaux_counts %}
-                        <span class="niveau-info">
-                            {{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}
-                        </span>
-                    {% endif %}
-                </div>
-                <div class="progress-bar-mini">
-                    {% if niveau in niveaux_progress %}
-                    <div class="progress-fill-mini {% if is_admin_unlock %}progress-fill-admin{% endif %}" style="width: {{ niveaux_progress[niveau] }}%"></div>
-                    {% else %}
-                    <div class="progress-fill-mini {% if is_admin_unlock %}progress-fill-admin{% endif %}" style="width: 0%"></div>
-                    {% endif %}
-                </div>
-                <div class="progress-text {% if is_admin_unlock %}progress-text-admin{% endif %}">
-                    {% if niveau in niveaux_progress %}
-                    {{ niveaux_progress[niveau]|int }}%
-                    {% else %}
-                    0%
-                    {% endif %}
-                    {% if is_admin_unlock %}
-                    <span style="margin-left: 5px; font-size: 10px;">(accès admin)</span>
-                    {% endif %}
-                </div>
-            </div>
-        </a>
-    {% endif %}
-{% endfor %}
-
-<a href="{{ url_for('nouveau_deck') }}" class="btn btn-secondary" style="margin-top: 30px;">
-    + Nouveau deck
-</a>
-
-<style>
-.btn-stats-header {
-    display: inline-block;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
-
-.btn-stats-header:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
-
-.btn-user-action {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    color: #888;
-    border: 1px solid #444;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-}
-
-.btn-user-action:hover {
-    color: #ffffff;
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
-    transform: translateY(-2px);
-}
-
-.niveau-btn {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-direction: row;
-}
-
-.niveau-locked {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
-    pointer-events: none;
-    position: relative;
-}
-
-.niveau-locked::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(0, 0, 0, 0.1) 10px,
-        rgba(0, 0, 0, 0.1) 20px
-    );
-    pointer-events: none;
-}
-
-/* Styles pour les niveaux débloqués par l'admin */
-.niveau-admin-unlock {
-    border: 2px solid #667eea;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-.niveau-admin-unlock::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, 
-        transparent, 
-        rgba(102, 126, 234, 0.1), 
-        transparent
-    );
-    animation: shimmer 3s infinite;
-}
-
-@keyframes shimmer {
-    0% {
-        left: -100%;
-    }
-    100% {
-        left: 100%;
-    }
-}
-
-.niveau-admin-unlock:hover {
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-    border-color: #8b9aff;
-}
-
-.admin-unlock-badge {
-    display: inline-block;
-    margin-left: 8px;
-    font-size: 16px;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 0.7;
-        transform: scale(1.15);
-    }
-}
-
-.progress-fill-admin {
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
-}
-
-.progress-text-admin {
-    color: #8b9aff !important;
-}
-
-.niveau-nom {
-    font-weight: 600;
-}
-
-.niveau-info {
-    font-size: 14px;
-    opacity: 0.7;
-}
-
-.progress-bar-mini {
-    width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 8px;
-}
-
-.progress-fill-mini {
-    height: 100%;
-    background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
-    transition: width 0.5s ease;
-    border-radius: 3px;
-}
-
-.niveau-locked .progress-fill-mini {
-    background: linear-gradient(90deg, #666 0%, #555 100%);
-}
-
-.progress-text {
-    font-size: 12px;
-    color: #4ade80;
-    font-weight: 600;
-    margin-top: 4px;
-}
-
-.locked-text {
-    color: #888 !important;
-    font-size: 11px;
-    font-weight: 500;
-}
-
-@media (max-width: 600px) {
-    .btn-stats-header {
-        padding: 8px 15px;
-        font-size: 13px;
-    }
-}
-</style>
-
-<script>
-function logout() {
-    if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
-        window.location.href = '/logout';
-    }
-}
-</script>
+    <div class="markdown-content">
+        <p>Tipikus est une application d'apprentissage du hongrois basée sur :</p>
+        <ul>
+            <li><strong>Flashcards</strong> : Mémorisez le vocabulaire efficacement</li>
+            <li><strong>Quiz</strong> : Testez vos connaissances</li>
+            <li><strong>Lessons</strong> : Suivez un parcours structuré</li>
+            <li><strong>Progression</strong> : Débloquez les niveaux progressivement</li>
+        </ul>
+        
+        <p><strong>💡 Astuce</strong> : Complétez un niveau à 80% minimum pour débloquer le suivant !</p>
+    </div>
+</div>
 {% endblock %}
