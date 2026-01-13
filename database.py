@@ -723,5 +723,73 @@ def get_stats_globales(user_id, days=30):
     
     return result
 
+def get_all_users_stats():
+    """Retourne les statistiques de tous les utilisateurs pour l'admin"""
+    conn = get_db()
+    
+    # Récupérer tous les utilisateurs
+    users = conn.execute('SELECT * FROM users ORDER BY nom').fetchall()
+    
+    users_stats = []
+    
+    for user in users:
+        user_id = user['id']
+        
+        # Statistiques globales de cet utilisateur
+        stats = conn.execute(
+            '''SELECT 
+                COUNT(*) as total_sessions,
+                SUM(s.nombre_mots_vus) as total_mots_vus,
+                SUM(CASE WHEN s.type_session = 'quiz' THEN s.score ELSE 0 END) as total_score,
+                SUM(CASE WHEN s.type_session = 'quiz' THEN s.nombre_mots_vus ELSE 0 END) as total_questions,
+                SUM(s.duree_secondes) as total_duree,
+                MAX(DATE(s.date_session)) as derniere_activite
+            FROM sessions s
+            JOIN decks d ON s.deck_id = d.id
+            WHERE d.user_id = ? OR d.is_commun = 1''',
+            (user_id,)
+        ).fetchone()
+        
+        # Nombre de decks personnels
+        nb_decks = conn.execute(
+            'SELECT COUNT(*) as count FROM decks WHERE user_id = ? AND is_commun = 0',
+            (user_id,)
+        ).fetchone()['count']
+        
+        # Jours d'activité pour calculer le streak
+        jours = conn.execute(
+            '''SELECT DISTINCT DATE(s.date_session) as jour
+            FROM sessions s
+            JOIN decks d ON s.deck_id = d.id
+            WHERE d.user_id = ? OR d.is_commun = 1
+            ORDER BY jour DESC''',
+            (user_id,)
+        ).fetchall()
+        
+        jours_liste = [row['jour'] for row in jours]
+        streak = calculer_streak(jours_liste)
+        
+        # Calculer le taux de réussite
+        taux_reussite = None
+        if stats['total_questions'] and stats['total_questions'] > 0:
+            taux_reussite = (stats['total_score'] / stats['total_questions']) * 100
+        
+        users_stats.append({
+            'id': user['id'],
+            'nom': user['nom'],
+            'total_sessions': stats['total_sessions'] or 0,
+            'total_mots_vus': stats['total_mots_vus'] or 0,
+            'total_score': stats['total_score'] or 0,
+            'total_questions': stats['total_questions'] or 0,
+            'taux_reussite': taux_reussite,
+            'total_duree': stats['total_duree'] or 0,
+            'streak': streak,
+            'nb_decks_perso': nb_decks,
+            'derniere_activite': stats['derniere_activite']
+        })
+    
+    conn.close()
+    return users_stats
+
 if __name__ == '__main__':
     init_db()

@@ -14,7 +14,7 @@ from database import (
     verify_user_password, update_user_password,
     get_lessons_by_niveau, get_lesson_by_id, create_lesson, update_lesson, delete_lesson,
     get_decks_by_lesson, associate_deck_to_lesson, detach_deck_from_lesson,
-    calculate_lesson_progress, calculate_niveau_progress,
+    calculate_lesson_progress, calculate_niveau_progress, get_all_users_stats,
     NIVEAUX_DISPONIBLES
 )
 
@@ -141,9 +141,13 @@ def admin_users():
         return redirect(url_for('index'))
     
     users = get_all_users()
+    users_stats = get_all_users_stats()  # NOUVEAU
     user = get_user_by_id(user_id)
     
-    return render_template('admin_users.html', users=users, user=user)
+    return render_template('admin_users.html', 
+                         users=users, 
+                         users_stats=users_stats,  # NOUVEAU
+                         user=user)
 
 @app.route('/admin/create-user', methods=['POST'])
 def admin_create_user():
