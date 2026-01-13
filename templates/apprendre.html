@@ -11,8 +11,7 @@
                 FR → Hongrois
             </button>
             <div class="counter">
-                <span id="compteur-appris">0</span> / {{ mots|length }}
-                <span style="color: #4ade80; margin-left: 10px;">✓</span>
+                <span id="compteur-appris">0</span> appris sur {{ mots|length }}
             </div>
         </div>
     </div>
@@ -169,16 +168,6 @@ body { padding: 0; background: #0f0f0f; }
 }
 
 /* Animation de swipe */
-.flashcard.swiping-left {
-    transform: translateX(-100px) rotate(-10deg);
-    opacity: 0.7;
-}
-
-.flashcard.swiping-right {
-    transform: translateX(100px) rotate(10deg);
-    opacity: 0.7;
-}
-
 .flashcard.swipe-out-left {
     animation: swipeOutLeft 0.3s ease-out forwards;
 }
@@ -221,7 +210,7 @@ body { padding: 0; background: #0f0f0f; }
     }
     
     .swipe-indicator {
-        display: none; /* Masquer sur mobile pour ne pas encombrer */
+        display: none;
     }
 }
 </style>
@@ -230,20 +219,17 @@ body { padding: 0; background: #0f0f0f; }
 const mots = {{ mots|tojson }};
 const deckId = {{ deck_id }};
 
-let indexActuel = 0;
 let traductionVisible = false;
-let modeInverse = false; // false = FR→Hongrois, true = Hongrois→FR
+let modeInverse = false;
 let motHongroisActuel = '';
 let audioElement = null;
 
 // Gestion du système d'apprentissage
-let motsAppris = new Set(); // Mots marqués comme appris
-let pileMots = []; // Pile des mots à revoir
-let ordreOriginal = []; // Ordre original pour statistiques
+let motsAppris = new Set();
+let pileMots = [];
 
 // Variables pour le tracking de session
 let sessionStartTime = Date.now();
-let totalMotsVus = 0;
 
 // Variables pour le swipe
 let touchStartX = 0;
@@ -268,7 +254,6 @@ function prononcerMot(event) {
     audioElement = new Audio(url);
     audioElement.play().catch(err => {
         console.error('Erreur de lecture audio:', err);
-        alert('Impossible de lire l\'audio. Le serveur TTS n\'est peut-être pas disponible.');
     });
 }
 
@@ -289,17 +274,14 @@ function toggleMode() {
     const button = document.getElementById('mode-toggle');
     button.textContent = modeInverse ? 'Hongrois → FR' : 'FR → Hongrois';
     
-    // Réinitialiser
     initialiserSession();
 }
 
 function initialiserSession() {
     motsAppris.clear();
-    pileMots = [...Array(mots.length).keys()]; // Indices 0 à mots.length-1
-    ordreOriginal = [...pileMots];
+    pileMots = [...Array(mots.length).keys()];
     melangerPile();
-    indexActuel = 0;
-    totalMotsVus = 0;
+    traductionVisible = false;
     afficherMot();
     updateCompteur();
 }
@@ -315,27 +297,27 @@ function afficherMot() {
     const flashcard = document.getElementById('flashcard');
     const motActuel = document.getElementById('mot-actuel');
     
+    // Réinitialiser les styles
+    flashcard.style.transform = '';
+    flashcard.style.transition = '';
+    flashcard.classList.remove('revealed', 'swipe-out-left', 'swipe-out-right');
+    
     if (pileMots.length === 0) {
-        // Tous les mots sont appris !
         motActuel.innerHTML = '🎉<br>Terminé !<br><small>Tous les mots appris !</small>';
-        flashcard.classList.remove('revealed');
         document.getElementById('instruction-text').textContent = 'Félicitations !';
         afficherBoutonAudio(false);
         motHongroisActuel = '';
-        
-        // Enregistrer la session
         enregistrerSession(true);
         return;
     }
     
-    const motIndex = pileMots[indexActuel % pileMots.length];
+    const motIndex = pileMots[0];
     const mot = mots[motIndex];
     
     motHongroisActuel = mot.traduction;
     const texteAffiche = modeInverse ? mot.traduction : mot.mot_francais;
     
     motActuel.textContent = texteAffiche;
-    flashcard.classList.remove('revealed', 'swiping-left', 'swiping-right');
     traductionVisible = false;
     
     if (modeInverse) {
@@ -354,14 +336,13 @@ function revelerTraduction() {
     const motActuel = document.getElementById('mot-actuel');
     
     if (!traductionVisible) {
-        const motIndex = pileMots[indexActuel % pileMots.length];
+        const motIndex = pileMots[0];
         const mot = mots[motIndex];
         const traduction = modeInverse ? mot.mot_francais : mot.traduction;
         
         motActuel.textContent = traduction;
         flashcard.classList.add('revealed');
         traductionVisible = true;
-        totalMotsVus++;
         
         afficherBoutonAudio(true);
         document.getElementById('instruction-text').textContent = 'Swipe pour évaluer';
@@ -369,28 +350,21 @@ function revelerTraduction() {
 }
 
 function marquerAppris() {
-    if (pileMots.length === 0 || !traductionVisible) {
-        if (!traductionVisible) {
-            revelerTraduction();
-        }
+    if (pileMots.length === 0) return;
+    
+    if (!traductionVisible) {
+        revelerTraduction();
         return;
     }
     
     const flashcard = document.getElementById('flashcard');
-    const motIndex = pileMots[indexActuel % pileMots.length];
+    const motIndex = pileMots[0];
     
-    // Animation de swipe vers la droite
     flashcard.classList.add('swipe-out-right');
     
     setTimeout(() => {
-        // Marquer comme appris et retirer de la pile
         motsAppris.add(motIndex);
-        pileMots.splice(indexActuel % pileMots.length, 1);
-        
-        // Ajuster l'index si nécessaire
-        if (indexActuel >= pileMots.length && pileMots.length > 0) {
-            indexActuel = 0;
-        }
+        pileMots.shift();
         
         updateCompteur();
         afficherMot();
@@ -398,30 +372,21 @@ function marquerAppris() {
 }
 
 function marquerRevoir() {
-    if (pileMots.length === 0 || !traductionVisible) {
-        if (!traductionVisible) {
-            revelerTraduction();
-        }
+    if (pileMots.length === 0) return;
+    
+    if (!traductionVisible) {
+        revelerTraduction();
         return;
     }
     
     const flashcard = document.getElementById('flashcard');
-    const motIndex = pileMots[indexActuel % pileMots.length];
+    const motIndex = pileMots[0];
     
-    // Animation de swipe vers la gauche
     flashcard.classList.add('swipe-out-left');
     
     setTimeout(() => {
-        // Retirer de la position actuelle
-        pileMots.splice(indexActuel % pileMots.length, 1);
-        
-        // Remettre à la fin de la pile (pour le revoir plus tard)
+        pileMots.shift();
         pileMots.push(motIndex);
-        
-        // Ajuster l'index si nécessaire
-        if (indexActuel >= pileMots.length && pileMots.length > 0) {
-            indexActuel = 0;
-        }
         
         afficherMot();
     }, 300);
@@ -442,7 +407,7 @@ function enregistrerSession(complete) {
         body: JSON.stringify({
             deck_id: deckId,
             type_session: 'flashcard',
-            nombre_mots_vus: motsAppris.size, // Nombre de mots appris
+            nombre_mots_vus: motsAppris.size,
             score: 0,
             duree_secondes: dureeSec,
             complete: complete
@@ -450,7 +415,6 @@ function enregistrerSession(complete) {
     }).catch(err => console.error('Erreur enregistrement session:', err));
 }
 
-// Enregistrer la session si l'utilisateur quitte la page
 window.addEventListener('beforeunload', function() {
     if (motsAppris.size > 0) {
         enregistrerSession(false);
@@ -459,7 +423,6 @@ window.addEventListener('beforeunload', function() {
 
 // ===== GESTION DU SWIPE =====
 
-const cardContainer = document.getElementById('card-container');
 const flashcard = document.getElementById('flashcard');
 const swipeLeft = document.getElementById('swipe-left');
 const swipeRight = document.getElementById('swipe-right');
@@ -467,14 +430,16 @@ const swipeRight = document.getElementById('swipe-right');
 // Touch events
 flashcard.addEventListener('touchstart', handleTouchStart, { passive: true });
 flashcard.addEventListener('touchmove', handleTouchMove, { passive: false });
-flashcard.addEventListener('touchend', handleTouchEnd);
+flashcard.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-// Mouse events (pour desktop)
+// Mouse events
 flashcard.addEventListener('mousedown', handleMouseDown);
 document.addEventListener('mousemove', handleMouseMove);
 document.addEventListener('mouseup', handleMouseUp);
 
 function handleTouchStart(e) {
+    if (e.target.closest('.btn-audio')) return;
+    
     if (!traductionVisible) {
         revelerTraduction();
         return;
@@ -504,6 +469,8 @@ function handleTouchEnd(e) {
 }
 
 function handleMouseDown(e) {
+    if (e.target.closest('.btn-audio')) return;
+    
     if (!traductionVisible) {
         revelerTraduction();
         return;
@@ -533,13 +500,11 @@ function handleMouseUp(e) {
 }
 
 function updateSwipeVisual() {
-    const threshold = 50; // Distance minimale pour activer les indicateurs
+    const threshold = 50;
     
-    // Appliquer la transformation
     flashcard.style.transform = `translateX(${currentX}px) rotate(${currentX * 0.1}deg)`;
     flashcard.style.transition = 'none';
     
-    // Afficher les indicateurs
     if (currentX < -threshold) {
         swipeLeft.classList.add('active');
         swipeRight.classList.remove('active');
@@ -553,21 +518,17 @@ function updateSwipeVisual() {
 }
 
 function handleSwipeEnd() {
-    const swipeThreshold = 100; // Distance minimale pour valider le swipe
+    const swipeThreshold = 100;
     
     swipeLeft.classList.remove('active');
     swipeRight.classList.remove('active');
     
-    flashcard.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-    
     if (currentX < -swipeThreshold) {
-        // Swipe vers la gauche - Revoir
         marquerRevoir();
     } else if (currentX > swipeThreshold) {
-        // Swipe vers la droite - Appris
         marquerAppris();
     } else {
-        // Retour à la position normale
+        flashcard.style.transition = 'transform 0.3s ease';
         flashcard.style.transform = '';
     }
     
