@@ -888,6 +888,11 @@ def text_to_speech():
 @app.route('/api/session', methods=['POST'])
 def enregistrer_session():
     """API pour enregistrer une session d'apprentissage"""
+    user_id = session.get('user_id')  # NOUVEAU: récupérer l'user connecté
+    
+    if not user_id:
+        return jsonify({'error': 'Utilisateur non connecté'}), 401
+    
     try:
         data = request.get_json()
         
@@ -901,9 +906,10 @@ def enregistrer_session():
         if not deck_id or not type_session:
             return jsonify({'error': 'Paramètres manquants'}), 400
         
+        # MODIFIÉ: Passer user_id à create_session
         session_id = create_session(
             deck_id, type_session, nombre_mots_vus, 
-            score, duree_secondes, complete
+            score, duree_secondes, complete, user_id  # NOUVEAU
         )
         
         return jsonify({'success': True, 'session_id': session_id})

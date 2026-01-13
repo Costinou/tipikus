@@ -543,14 +543,31 @@ def can_delete_deck(deck_id, user_nom):
 
 # ========== FONCTIONS POUR LES SESSIONS ==========
 
-def create_session(deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete):
-    """Enregistre une nouvelle session d'apprentissage"""
+def create_session(deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete, user_id=None):
+    """Enregistre une nouvelle session d'apprentissage
+    
+    Args:
+        deck_id: ID du deck
+        type_session: 'flashcard' ou 'quiz'
+        nombre_mots_vus: Nombre de mots vus/traités
+        score: Score obtenu (pour les quiz)
+        duree_secondes: Durée de la session
+        complete: Session complétée ou non
+        user_id: ID de l'utilisateur (NOUVEAU)
+    """
     conn = get_db()
+    
+    # Si user_id n'est pas fourni, essayer de le déduire du propriétaire du deck
+    if user_id is None:
+        deck = conn.execute('SELECT user_id FROM decks WHERE id = ?', (deck_id,)).fetchone()
+        if deck:
+            user_id = deck['user_id']
+    
     cursor = conn.execute(
         '''INSERT INTO sessions 
-        (deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete) 
-        VALUES (?, ?, ?, ?, ?, ?)''',
-        (deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete)
+        (deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete, user_id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)''',
+        (deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete, user_id)
     )
     session_id = cursor.lastrowid
     conn.commit()
@@ -724,7 +741,11 @@ def get_stats_globales(user_id, days=30):
     return result
 
 def get_all_users_stats():
-    """Retourne les statistiques de tous les utilisateurs pour l'admin"""
+    """Retourne les statistiques de tous les utilisateurs pour l'admin
+    
+    Compte uniquement les sessions faites par chaque utilisateur
+    (grâce à la colonne user_id dans sessions)
+    """
     conn = get_db()
     
     # Récupérer tous les utilisateurs
@@ -735,18 +756,17 @@ def get_all_users_stats():
     for user in users:
         user_id = user['id']
         
-        # Statistiques globales de cet utilisateur
+        # Statistiques des sessions de cet utilisateur uniquement
         stats = conn.execute(
             '''SELECT 
                 COUNT(*) as total_sessions,
-                SUM(s.nombre_mots_vus) as total_mots_vus,
-                SUM(CASE WHEN s.type_session = 'quiz' THEN s.score ELSE 0 END) as total_score,
-                SUM(CASE WHEN s.type_session = 'quiz' THEN s.nombre_mots_vus ELSE 0 END) as total_questions,
-                SUM(s.duree_secondes) as total_duree,
-                MAX(DATE(s.date_session)) as derniere_activite
-            FROM sessions s
-            JOIN decks d ON s.deck_id = d.id
-            WHERE d.user_id = ? OR d.is_commun = 1''',
+                SUM(nombre_mots_vus) as total_mots_vus,
+                SUM(CASE WHEN type_session = 'quiz' THEN score ELSE 0 END) as total_score,
+                SUM(CASE WHEN type_session = 'quiz' THEN nombre_mots_vus ELSE 0 END) as total_questions,
+                SUM(duree_secondes) as total_duree,
+                MAX(DATE(date_session)) as derniere_activite
+            FROM sessions
+            WHERE user_id = ?''',
             (user_id,)
         ).fetchone()
         
@@ -758,10 +778,9 @@ def get_all_users_stats():
         
         # Jours d'activité pour calculer le streak
         jours = conn.execute(
-            '''SELECT DISTINCT DATE(s.date_session) as jour
-            FROM sessions s
-            JOIN decks d ON s.deck_id = d.id
-            WHERE d.user_id = ? OR d.is_commun = 1
+            '''SELECT DISTINCT DATE(date_session) as jour
+            FROM sessions
+            WHERE user_id = ?
             ORDER BY jour DESC''',
             (user_id,)
         ).fetchall()
