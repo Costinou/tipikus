@@ -11,56 +11,91 @@
                 FR → Hongrois
             </button>
             <div class="counter">
-                Mot <span id="compteur">0</span> sur {{ mots|length }}
+                <span id="compteur-appris">0</span> / {{ mots|length }}
+                <span style="color: #4ade80; margin-left: 10px;">✓</span>
             </div>
         </div>
     </div>
 
-    <div class="flashcard-container" onclick="revelerTraduction()">
+    <div class="flashcard-container" id="card-container">
         <div id="flashcard" class="flashcard">
             <div id="mot-actuel" class="word-content">Cliquez pour commencer</div>
             <button id="btn-audio" class="btn-audio" onclick="prononcerMot(event)" style="display: none;">
                 🔊
             </button>
-            <div class="instruction">Cliquez ou appuyez sur Espace</div>
+            
+            <!-- Indicateurs de swipe -->
+            <div class="swipe-indicator swipe-left" id="swipe-left">
+                <div class="swipe-icon">↺</div>
+                <div class="swipe-text">Revoir</div>
+            </div>
+            <div class="swipe-indicator swipe-right" id="swipe-right">
+                <div class="swipe-icon">✓</div>
+                <div class="swipe-text">Appris</div>
+            </div>
+            
+            <div class="instruction">
+                <span id="instruction-text">Cliquez ou Swipe</span>
+                <br>
+                <small style="opacity: 0.7; font-size: 13px;">← Revoir | Appris →</small>
+            </div>
         </div>
     </div>
     
-    <button id="btn-precedent" class="btn-precedent" onclick="motPrecedent()" disabled>
-        ← Précédent
-    </button>
+    <!-- Boutons de contrôle en bas -->
+    <div class="bottom-controls">
+        <button class="control-btn btn-revoir" onclick="marquerRevoir()" title="Revoir ce mot (←)">
+            ↺ Revoir
+        </button>
+        <button class="control-btn btn-appris" onclick="marquerAppris()" title="Mot appris (→)">
+            ✓ Appris
+        </button>
+    </div>
 </div>
 
 <style>
 /* Style spécifique pour annuler le container sur cette page */
 body { padding: 0; background: #0f0f0f; }
 
-.btn-precedent {
+.bottom-controls {
     position: fixed;
-    bottom: 30px;
-    left: 30px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
     z-index: 100;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+}
+
+.control-btn {
+    padding: 15px 30px;
     border: none;
-    padding: 12px 20px;
     border-radius: 25px;
-    cursor: pointer;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
+    cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-.btn-precedent:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+.btn-revoir {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
 }
 
-.btn-precedent:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    background: linear-gradient(135deg, #4a4a4a 0%, #2d2d2d 100%);
+.btn-revoir:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+.btn-appris {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+}
+
+.btn-appris:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
 }
 
 .btn-audio {
@@ -92,14 +127,81 @@ body { padding: 0; background: #0f0f0f; }
     transform: scale(0.95);
 }
 
-@media (max-width: 768px) {
-    .btn-precedent {
-        bottom: 20px;
-        left: 20px;
-        padding: 10px 16px;
-        font-size: 14px;
+/* Indicateurs de swipe */
+.swipe-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.swipe-left {
+    left: 30px;
+    color: #ef4444;
+}
+
+.swipe-right {
+    right: 30px;
+    color: #22c55e;
+}
+
+.swipe-indicator.active {
+    opacity: 1;
+}
+
+.swipe-icon {
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.swipe-text {
+    font-size: 18px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Animation de swipe */
+.flashcard.swiping-left {
+    transform: translateX(-100px) rotate(-10deg);
+    opacity: 0.7;
+}
+
+.flashcard.swiping-right {
+    transform: translateX(100px) rotate(10deg);
+    opacity: 0.7;
+}
+
+.flashcard.swipe-out-left {
+    animation: swipeOutLeft 0.3s ease-out forwards;
+}
+
+.flashcard.swipe-out-right {
+    animation: swipeOutRight 0.3s ease-out forwards;
+}
+
+@keyframes swipeOutLeft {
+    to {
+        transform: translateX(-150%) rotate(-30deg);
+        opacity: 0;
     }
-    
+}
+
+@keyframes swipeOutRight {
+    to {
+        transform: translateX(150%) rotate(30deg);
+        opacity: 0;
+    }
+}
+
+@media (max-width: 768px) {
     .btn-audio {
         width: 50px;
         height: 50px;
@@ -107,40 +209,62 @@ body { padding: 0; background: #0f0f0f; }
         top: 15px;
         right: 15px;
     }
+    
+    .bottom-controls {
+        bottom: 15px;
+        gap: 10px;
+    }
+    
+    .control-btn {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+    
+    .swipe-indicator {
+        display: none; /* Masquer sur mobile pour ne pas encombrer */
+    }
 }
 </style>
 
 <script>
-    
 const mots = {{ mots|tojson }};
 const deckId = {{ deck_id }};
+
 let indexActuel = 0;
 let traductionVisible = false;
 let modeInverse = false; // false = FR→Hongrois, true = Hongrois→FR
-let historique = [];
-let motHongroisActuel = ''; // Stocke TOUJOURS le mot hongrois
+let motHongroisActuel = '';
 let audioElement = null;
+
+// Gestion du système d'apprentissage
+let motsAppris = new Set(); // Mots marqués comme appris
+let pileMots = []; // Pile des mots à revoir
+let ordreOriginal = []; // Ordre original pour statistiques
 
 // Variables pour le tracking de session
 let sessionStartTime = Date.now();
-let motsVus = 0;
+let totalMotsVus = 0;
+
+// Variables pour le swipe
+let touchStartX = 0;
+let touchStartY = 0;
+let currentX = 0;
+let currentY = 0;
+let isDragging = false;
 
 function prononcerMot(event) {
     event.stopPropagation();
     
     if (!motHongroisActuel) return;
     
-    // Arrêter toute lecture en cours
     if (audioElement) {
         audioElement.pause();
         audioElement.currentTime = 0;
     }
     
-    // Créer l'URL de notre API TTS
     const texteEncode = encodeURIComponent(motHongroisActuel);
     const url = `/api/tts?text=${texteEncode}`;
     
-    // Créer et jouer l'audio
     audioElement = new Audio(url);
     audioElement.play().catch(err => {
         console.error('Erreur de lecture audio:', err);
@@ -154,7 +278,6 @@ function afficherBoutonAudio(afficher) {
         btnAudio.style.display = 'flex';
     } else {
         btnAudio.style.display = 'none';
-        // Arrêter la lecture si on cache le bouton
         if (audioElement) {
             audioElement.pause();
         }
@@ -166,18 +289,25 @@ function toggleMode() {
     const button = document.getElementById('mode-toggle');
     button.textContent = modeInverse ? 'Hongrois → FR' : 'FR → Hongrois';
     
-    // Recommencer avec le nouveau mode
-    indexActuel = 0;
-    historique = [];
-    melangerMots();
-    afficherMot();
-    updateBoutonPrecedent();
+    // Réinitialiser
+    initialiserSession();
 }
 
-function melangerMots() {
-    for (let i = mots.length - 1; i > 0; i--) {
+function initialiserSession() {
+    motsAppris.clear();
+    pileMots = [...Array(mots.length).keys()]; // Indices 0 à mots.length-1
+    ordreOriginal = [...pileMots];
+    melangerPile();
+    indexActuel = 0;
+    totalMotsVus = 0;
+    afficherMot();
+    updateCompteur();
+}
+
+function melangerPile() {
+    for (let i = pileMots.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [mots[i], mots[j]] = [mots[j], mots[i]];
+        [pileMots[i], pileMots[j]] = [pileMots[j], pileMots[i]];
     }
 }
 
@@ -185,76 +315,120 @@ function afficherMot() {
     const flashcard = document.getElementById('flashcard');
     const motActuel = document.getElementById('mot-actuel');
     
-    if (indexActuel >= mots.length) {
-        motActuel.innerHTML = '🎉<br>Terminé !<br><small>Cliquez pour recommencer</small>';
+    if (pileMots.length === 0) {
+        // Tous les mots sont appris !
+        motActuel.innerHTML = '🎉<br>Terminé !<br><small>Tous les mots appris !</small>';
         flashcard.classList.remove('revealed');
-        document.getElementById('compteur').textContent = mots.length;
+        document.getElementById('instruction-text').textContent = 'Félicitations !';
         afficherBoutonAudio(false);
         motHongroisActuel = '';
+        
+        // Enregistrer la session
+        enregistrerSession(true);
         return;
     }
     
-    const mot = mots[indexActuel];
+    const motIndex = pileMots[indexActuel % pileMots.length];
+    const mot = mots[motIndex];
     
-    // TOUJOURS stocker le mot hongrois (peu importe le mode)
     motHongroisActuel = mot.traduction;
-    
-    // Afficher la question selon le mode
     const texteAffiche = modeInverse ? mot.traduction : mot.mot_francais;
     
     motActuel.textContent = texteAffiche;
-    flashcard.classList.remove('revealed');
-    document.getElementById('compteur').textContent = indexActuel + 1;
+    flashcard.classList.remove('revealed', 'swiping-left', 'swiping-right');
     traductionVisible = false;
     
-    // En mode inverse, on affiche du hongrois dès le début → bouton visible
-    // En mode normal, on affiche du français → bouton caché
     if (modeInverse) {
         afficherBoutonAudio(true);
     } else {
         afficherBoutonAudio(false);
     }
+    
+    document.getElementById('instruction-text').textContent = 'Cliquez ou Swipe';
 }
 
 function revelerTraduction() {
+    if (pileMots.length === 0) return;
+    
     const flashcard = document.getElementById('flashcard');
     const motActuel = document.getElementById('mot-actuel');
     
-    if (indexActuel >= mots.length) {
-        // Session terminée - enregistrer les stats
-        enregistrerSession(true);
-        
-        // Recommencer
-        indexActuel = 0;
-        historique = [];
-        motsVus = 0;
-        sessionStartTime = Date.now();
-        melangerMots();
-        afficherMot();
-        updateBoutonPrecedent();
-        return;
-    }
-    
     if (!traductionVisible) {
-        // Révéler la traduction
-        const mot = mots[indexActuel];
+        const motIndex = pileMots[indexActuel % pileMots.length];
+        const mot = mots[motIndex];
         const traduction = modeInverse ? mot.mot_francais : mot.traduction;
         
         motActuel.textContent = traduction;
         flashcard.classList.add('revealed');
         traductionVisible = true;
+        totalMotsVus++;
         
-        // En mode normal, on vient d'afficher du hongrois → bouton visible
-        // En mode inverse, on affiche du français → bouton reste visible (on peut toujours écouter la question)
         afficherBoutonAudio(true);
-    } else {
-        // Passer au mot suivant
-        historique.push(indexActuel);
-        indexActuel++;
-        motsVus++;
-        afficherMot();
-        updateBoutonPrecedent();
+        document.getElementById('instruction-text').textContent = 'Swipe pour évaluer';
     }
+}
+
+function marquerAppris() {
+    if (pileMots.length === 0 || !traductionVisible) {
+        if (!traductionVisible) {
+            revelerTraduction();
+        }
+        return;
+    }
+    
+    const flashcard = document.getElementById('flashcard');
+    const motIndex = pileMots[indexActuel % pileMots.length];
+    
+    // Animation de swipe vers la droite
+    flashcard.classList.add('swipe-out-right');
+    
+    setTimeout(() => {
+        // Marquer comme appris et retirer de la pile
+        motsAppris.add(motIndex);
+        pileMots.splice(indexActuel % pileMots.length, 1);
+        
+        // Ajuster l'index si nécessaire
+        if (indexActuel >= pileMots.length && pileMots.length > 0) {
+            indexActuel = 0;
+        }
+        
+        updateCompteur();
+        afficherMot();
+    }, 300);
+}
+
+function marquerRevoir() {
+    if (pileMots.length === 0 || !traductionVisible) {
+        if (!traductionVisible) {
+            revelerTraduction();
+        }
+        return;
+    }
+    
+    const flashcard = document.getElementById('flashcard');
+    const motIndex = pileMots[indexActuel % pileMots.length];
+    
+    // Animation de swipe vers la gauche
+    flashcard.classList.add('swipe-out-left');
+    
+    setTimeout(() => {
+        // Retirer de la position actuelle
+        pileMots.splice(indexActuel % pileMots.length, 1);
+        
+        // Remettre à la fin de la pile (pour le revoir plus tard)
+        pileMots.push(motIndex);
+        
+        // Ajuster l'index si nécessaire
+        if (indexActuel >= pileMots.length && pileMots.length > 0) {
+            indexActuel = 0;
+        }
+        
+        afficherMot();
+    }, 300);
+}
+
+function updateCompteur() {
+    document.getElementById('compteur-appris').textContent = motsAppris.size;
 }
 
 function enregistrerSession(complete) {
@@ -268,7 +442,7 @@ function enregistrerSession(complete) {
         body: JSON.stringify({
             deck_id: deckId,
             type_session: 'flashcard',
-            nombre_mots_vus: motsVus,
+            nombre_mots_vus: motsAppris.size, // Nombre de mots appris
             score: 0,
             duree_secondes: dureeSec,
             complete: complete
@@ -278,40 +452,146 @@ function enregistrerSession(complete) {
 
 // Enregistrer la session si l'utilisateur quitte la page
 window.addEventListener('beforeunload', function() {
-    if (motsVus > 0) {
+    if (motsAppris.size > 0) {
         enregistrerSession(false);
     }
 });
 
-function motPrecedent() {
-    if (historique.length > 0) {
-        indexActuel = historique.pop();
-        afficherMot();
-        updateBoutonPrecedent();
+// ===== GESTION DU SWIPE =====
+
+const cardContainer = document.getElementById('card-container');
+const flashcard = document.getElementById('flashcard');
+const swipeLeft = document.getElementById('swipe-left');
+const swipeRight = document.getElementById('swipe-right');
+
+// Touch events
+flashcard.addEventListener('touchstart', handleTouchStart, { passive: true });
+flashcard.addEventListener('touchmove', handleTouchMove, { passive: false });
+flashcard.addEventListener('touchend', handleTouchEnd);
+
+// Mouse events (pour desktop)
+flashcard.addEventListener('mousedown', handleMouseDown);
+document.addEventListener('mousemove', handleMouseMove);
+document.addEventListener('mouseup', handleMouseUp);
+
+function handleTouchStart(e) {
+    if (!traductionVisible) {
+        revelerTraduction();
+        return;
+    }
+    
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    isDragging = true;
+}
+
+function handleTouchMove(e) {
+    if (!isDragging || !traductionVisible) return;
+    
+    e.preventDefault();
+    
+    currentX = e.touches[0].clientX - touchStartX;
+    currentY = e.touches[0].clientY - touchStartY;
+    
+    updateSwipeVisual();
+}
+
+function handleTouchEnd(e) {
+    if (!isDragging || !traductionVisible) return;
+    
+    isDragging = false;
+    handleSwipeEnd();
+}
+
+function handleMouseDown(e) {
+    if (!traductionVisible) {
+        revelerTraduction();
+        return;
+    }
+    
+    touchStartX = e.clientX;
+    touchStartY = e.clientY;
+    isDragging = true;
+    flashcard.style.cursor = 'grabbing';
+}
+
+function handleMouseMove(e) {
+    if (!isDragging || !traductionVisible) return;
+    
+    currentX = e.clientX - touchStartX;
+    currentY = e.clientY - touchStartY;
+    
+    updateSwipeVisual();
+}
+
+function handleMouseUp(e) {
+    if (!isDragging || !traductionVisible) return;
+    
+    isDragging = false;
+    flashcard.style.cursor = 'grab';
+    handleSwipeEnd();
+}
+
+function updateSwipeVisual() {
+    const threshold = 50; // Distance minimale pour activer les indicateurs
+    
+    // Appliquer la transformation
+    flashcard.style.transform = `translateX(${currentX}px) rotate(${currentX * 0.1}deg)`;
+    flashcard.style.transition = 'none';
+    
+    // Afficher les indicateurs
+    if (currentX < -threshold) {
+        swipeLeft.classList.add('active');
+        swipeRight.classList.remove('active');
+    } else if (currentX > threshold) {
+        swipeRight.classList.add('active');
+        swipeLeft.classList.remove('active');
+    } else {
+        swipeLeft.classList.remove('active');
+        swipeRight.classList.remove('active');
     }
 }
 
-function updateBoutonPrecedent() {
-    const btn = document.getElementById('btn-precedent');
-    btn.disabled = historique.length === 0;
+function handleSwipeEnd() {
+    const swipeThreshold = 100; // Distance minimale pour valider le swipe
+    
+    swipeLeft.classList.remove('active');
+    swipeRight.classList.remove('active');
+    
+    flashcard.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    
+    if (currentX < -swipeThreshold) {
+        // Swipe vers la gauche - Revoir
+        marquerRevoir();
+    } else if (currentX > swipeThreshold) {
+        // Swipe vers la droite - Appris
+        marquerAppris();
+    } else {
+        // Retour à la position normale
+        flashcard.style.transform = '';
+    }
+    
+    currentX = 0;
+    currentY = 0;
 }
 
 // Initialiser
-melangerMots();
-afficherMot();
-updateBoutonPrecedent();
+initialiserSession();
 
 // Support des touches clavier
 document.addEventListener('keydown', function(e) {
     if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
         revelerTraduction();
+    } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        marquerAppris();
+    } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        marquerRevoir();
     } else if (e.code === 'KeyM') {
         e.preventDefault();
         toggleMode();
-    } else if (e.code === 'ArrowLeft' || e.code === 'Backspace') {
-        e.preventDefault();
-        motPrecedent();
     } else if (e.code === 'KeyP') {
         e.preventDefault();
         prononcerMot(e);
