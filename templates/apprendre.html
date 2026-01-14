@@ -220,24 +220,24 @@
                 <div class="flashcard-label">Hongrois</div>
                 <div class="flashcard-text" id="traduction"></div>
                 <button class="audio-btn" onclick="playAudio(event)" title="Écouter">🔊</button>
-                <div class="flashcard-hint">👆 Cliquez pour retourner</div>
+                <div class="flashcard-hint">⬅️ Je connais | Je ne connais pas ➡️</div>
             </div>
         </div>
     </div>
     
     <!-- Instructions swipe -->
     <div class="swipe-instruction">
-        ⬅️ Swipe gauche : À revoir | Swipe droite : Apprise ➡️
+        ⬅️ Swipe gauche : Je connais | Swipe droite : Je ne connais pas ➡️
     </div>
     
     <!-- Contrôles -->
     <div class="controls">
-        <button class="btn btn-secondary" onclick="rejectCard()" id="btn-reject">
-            ❌ À revoir
+        <button class="btn btn-primary" onclick="markAsKnown()" id="btn-known">
+            ✓ Je connais
         </button>
         
-        <button class="btn btn-primary" onclick="acceptCard()" id="btn-accept">
-            ✅ Apprise
+        <button class="btn btn-secondary" onclick="markAsUnknown()" id="btn-unknown">
+            ✗ Je ne connais pas
         </button>
     </div>
     
@@ -282,11 +282,11 @@
 {% block extra_js %}
 <script>
 // Données
-const initialMots = {{ mots|tojson }};
-let cards = [...initialMots]; // Copie pour manipulation
+const allMots = {{ mots|tojson }};
 const deckId = {{ deck_id }};
-let currentIndex = 0;
-let remainingCount = cards.length;
+let remainingCards = [...allMots]; // Cartes restantes à réviser
+let currentCard = null;
+let cardsSeenCount = 0; // Nombre de cartes vues (uniques)
 let isFlipped = false;
 let startTime = Date.now();
 
@@ -302,39 +302,42 @@ const remainingCardsEl = document.getElementById('remaining-cards');
 const currentPositionEl = document.getElementById('current-position');
 const totalInDeckEl = document.getElementById('total-in-deck');
 const progressFill = document.getElementById('progress-fill');
-const btnReject = document.getElementById('btn-reject');
-const btnAccept = document.getElementById('btn-accept');
 const motFrancais = document.getElementById('mot-francais');
 const traduction = document.getElementById('traduction');
 const completionModal = document.getElementById('completion-modal');
 
 // Init
-totalInDeckEl.textContent = initialMots.length;
-showCard();
+totalInDeckEl.textContent = allMots.length;
+showNextCard();
 
-// Afficher la carte courante
-function showCard() {
-    if (currentIndex >= cards.length) {
-        // Plus de cartes
+// Afficher la prochaine carte
+function showNextCard() {
+    if (remainingCards.length === 0) {
         endSession();
         return;
     }
     
+    // Prendre la première carte de la pile
+    currentCard = remainingCards[0];
     isFlipped = false;
     flashcard.classList.remove('flipped', 'swipe-left', 'swipe-right');
     
-    const currentCard = cards[currentIndex];
+    // Afficher le contenu
     motFrancais.textContent = currentCard.mot_francais;
     traduction.textContent = currentCard.traduction;
     
-    // Mise à jour affichage
-    remainingCardsEl.textContent = remainingCount;
-    currentPositionEl.textContent = currentIndex + 1;
+    // Mettre à jour les compteurs
+    updateCounters();
+}
+
+// Mettre à jour les compteurs
+function updateCounters() {
+    remainingCardsEl.textContent = remainingCards.length;
+    currentPositionEl.textContent = cardsSeenCount + 1;
     
-    // Progression basée sur les cartes apprises
-    const learnedCards = initialMots.length - remainingCount;
-    const progress = (learnedCards / initialMots.length) * 100;
-    progressFill.style.width = progress + '%';
+    // Progression basée sur les cartes vues
+    const progress = (cardsSeenCount / allMots.length) * 100;
+    progressFill.style.width = Math.min(progress, 100) + '%';
 }
 
 // Retourner la carte
@@ -343,46 +346,52 @@ function flipCard() {
     flashcard.classList.toggle('flipped');
 }
 
-// ✅ ACCEPTER la carte (apprise)
-function acceptCard() {
-    flashcard.classList.add('swipe-right');
+// Marquer comme connue (swipe gauche)
+function markAsKnown() {
+    if (!isFlipped) {
+        flipCard();
+        return;
+    }
     
-    setTimeout(() => {
-        remainingCount--; // ✅ Décrémente car carte apprise
-        currentIndex++;
-        showCard();
-    }, 300);
-}
-
-// ❌ REFUSER la carte (à revoir)
-function rejectCard() {
     flashcard.classList.add('swipe-left');
     
     setTimeout(() => {
-        // Remettre la carte à la fin de la pile
-        const currentCard = cards[currentIndex];
-        cards.push(currentCard);
-        
-        // ⚠️ NE PAS décrémenter remainingCount
-        // La carte reste "à faire"
-        
-        currentIndex++;
-        showCard();
+        // Retirer la carte de la pile (ne pas la rajouter)
+        remainingCards.shift();
+        cardsSeenCount++;
+        showNextCard();
+    }, 300);
+}
+
+// Marquer comme inconnue (swipe droite)
+function markAsUnknown() {
+    if (!isFlipped) {
+        flipCard();
+        return;
+    }
+    
+    flashcard.classList.add('swipe-right');
+    
+    setTimeout(() => {
+        // Retirer la carte et la remettre à la fin de la pile
+        const card = remainingCards.shift();
+        remainingCards.push(card);
+        cardsSeenCount++;
+        showNextCard();
     }, 300);
 }
 
 // Audio
 function playAudio(event) {
     event.stopPropagation();
-    const text = cards[currentIndex].traduction;
+    const text = currentCard.traduction;
     const audio = new Audio('/api/tts?text=' + encodeURIComponent(text));
     audio.play();
 }
 
-// Fin de session
+// Fin session
 function endSession() {
     const duration = Math.floor((Date.now() - startTime) / 1000);
-    const cardsLearned = initialMots.length - remainingCount;
     
     fetch('/api/session', {
         method: 'POST',
@@ -390,10 +399,10 @@ function endSession() {
         body: JSON.stringify({
             deck_id: deckId,
             type_session: 'flashcard',
-            nombre_mots_vus: cardsLearned,
+            nombre_mots_vus: allMots.length,
             score: 0,
             duree_secondes: duration,
-            complete: remainingCount === 0
+            complete: true
         })
     }).then(() => {
         document.querySelector('.flashcard-container').classList.add('hidden');
@@ -405,14 +414,10 @@ function endSession() {
 function restartSession() {
     completionModal.classList.add('hidden');
     document.querySelector('.flashcard-container').classList.remove('hidden');
-    
-    // Reset
-    cards = [...initialMots];
-    currentIndex = 0;
-    remainingCount = cards.length;
+    remainingCards = [...allMots];
+    cardsSeenCount = 0;
     startTime = Date.now();
-    
-    showCard();
+    showNextCard();
 }
 
 // GESTION TACTILE (SWIPE)
@@ -433,14 +438,14 @@ function handleSwipe() {
     
     // Vérifier que le swipe est plus horizontal que vertical
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        // Seuil minimum de 100px
-        if (Math.abs(diffX) > 100) {
+        // Seuil minimum de 50px
+        if (Math.abs(diffX) > 50) {
             if (diffX > 0) {
-                // Swipe DROITE → Carte apprise ✅
-                acceptCard();
+                // Swipe droite → Je ne connais pas
+                markAsUnknown();
             } else {
-                // Swipe GAUCHE → Carte à revoir ❌
-                rejectCard();
+                // Swipe gauche → Je connais
+                markAsKnown();
             }
         }
     } else {
@@ -462,9 +467,9 @@ flashcard.addEventListener('click', function(e) {
 // Raccourcis clavier
 document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowLeft') {
-        rejectCard();
+        markAsKnown();
     } else if (e.key === 'ArrowRight') {
-        acceptCard();
+        markAsUnknown();
     } else if (e.key === ' ') {
         e.preventDefault();
         flipCard();

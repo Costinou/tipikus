@@ -2,625 +2,184 @@
 
 {% block title %}Modifier la lesson - Tipikus{% endblock %}
 
-{% block content %}
-<a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="back-link">← Retour à la lesson</a>
-
-<h1>✏️ Modifier une lesson</h1>
-<p style="color: #888; margin-bottom: 30px;">
-    Niveau {{ lesson.niveau }} - Lesson {{ lesson.numero }}
-</p>
-
-<form method="POST" action="{{ url_for('edit_lesson_post', lesson_id=lesson.id) }}" enctype="multipart/form-data" id="edit-form">
-    <div class="form-group">
-        <label for="titre" style="display: block; margin-bottom: 8px; color: #cccccc; font-weight: 500;">
-            Titre de la lesson
-        </label>
-        <input type="text" name="titre" id="titre" value="{{ lesson.titre }}" required>
-    </div>
-    
-    <div class="form-group">
-        <label style="display: block; margin-bottom: 8px; color: #cccccc; font-weight: 500;">
-            Mode d'édition
-        </label>
-        <div class="mode-selector">
-            <button type="button" class="mode-btn active" onclick="switchMode('editor')" id="btn-editor">
-                ✏️ Éditeur en ligne
-            </button>
-            <button type="button" class="mode-btn" onclick="switchMode('file')" id="btn-file">
-                📁 Upload fichier .md
-            </button>
+{% block page_header %}
+<div class="page-header">
+    <div class="flex flex-between" style="align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1>✏️ Modifier la lesson</h1>
+            <p class="text-muted">Lesson {{ lesson.numero }} • {{ lesson.niveau }}</p>
         </div>
+        
+        <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
+            ← Retour
+        </a>
     </div>
-    
-    <!-- Mode Éditeur -->
-    <div id="mode-editor" class="editor-mode">
-        <div class="editor-container">
-            <div class="editor-panel">
-                <div class="editor-header">
-                    <span>📝 Markdown</span>
-                    <div class="editor-tools">
-                        <button type="button" onclick="insertMarkdown('**', '**')" title="Gras" class="tool-btn">
-                            <strong>B</strong>
-                        </button>
-                        <button type="button" onclick="insertMarkdown('*', '*')" title="Italique" class="tool-btn">
-                            <em>I</em>
-                        </button>
-                        <button type="button" onclick="insertMarkdown('`', '`')" title="Code" class="tool-btn">
-                            &lt;/&gt;
-                        </button>
-                        <button type="button" onclick="insertMarkdown('[', '](url)')" title="Lien" class="tool-btn">
-                            🔗
-                        </button>
-                        <button type="button" onclick="insertMarkdown('![', '](image.jpg)')" title="Image" class="tool-btn">
-                            🖼️
-                        </button>
-                        <button type="button" onclick="insertYoutube()" title="YouTube" class="tool-btn">
-                            ▶️
-                        </button>
-                        <button type="button" onclick="insertMarkdown('## ', '')" title="Titre" class="tool-btn">
-                            H
-                        </button>
-                        <button type="button" onclick="insertMarkdown('- ', '')" title="Liste" class="tool-btn">
-                            •
-                        </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <form method="POST" action="{{ url_for('edit_lesson_post', lesson_id=lesson.id) }}" enctype="multipart/form-data">
+        
+        <!-- Informations -->
+        <div class="card mb-2">
+            <h3 class="card-title">📝 Informations</h3>
+            
+            <!-- Info non modifiables -->
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Niveau</div>
+                        <div style="font-weight: 600; color: var(--accent);">{{ lesson.niveau }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Numéro</div>
+                        <div style="font-weight: 600; color: var(--accent);">{{ lesson.numero }}</div>
                     </div>
                 </div>
-                <textarea id="markdown-editor" name="markdown_content">{{ lesson.content_markdown }}</textarea>
+                <small class="text-muted" style="display: block; margin-top: 0.5rem;">
+                    ℹ️ Le niveau et le numéro ne peuvent pas être modifiés
+                </small>
             </div>
             
-            <div class="preview-panel">
-                <div class="editor-header">
-                    <span>👁️ Aperçu</span>
-                    <button type="button" onclick="updatePreview()" class="tool-btn">
-                        🔄 Rafraîchir
-                    </button>
-                </div>
-                <div id="markdown-preview" class="markdown-content"></div>
+            <!-- Titre modifiable -->
+            <div class="form-group">
+                <label for="titre" class="form-label">
+                    Titre de la lesson <span style="color: var(--accent);">*</span>
+                </label>
+                <input 
+                    type="text" 
+                    id="titre" 
+                    name="titre" 
+                    class="form-input" 
+                    value="{{ lesson.titre }}"
+                    required
+                    autofocus
+                >
             </div>
         </div>
         
-        <div class="info-box">
-            <strong>💡 Syntaxe YouTube :</strong>
-            <code>!youtube[VIDEO_ID](Titre optionnel)</code>
-            <br>
-            <small style="color: #888;">Exemple : <code>!youtube[dQw4w9WgXcQ](Ma vidéo)</code></small>
-        </div>
-    </div>
-    
-    <!-- Mode Upload fichier -->
-    <div id="mode-file" class="editor-mode" style="display: none;">
-        <div class="form-group">
-            <label class="file-label">
-                <input type="file" name="fichier_md" accept=".md" id="file-input">
-                <span class="file-button">Choisir un nouveau fichier .md (optionnel)</span>
-                <span class="file-name" id="file-name">Aucun fichier sélectionné</span>
-            </label>
-            <div class="info-box" style="margin-top: 15px;">
-                <strong>ℹ️ Modification du contenu :</strong>
-                <p style="margin: 10px 0 0 0; color: #888; font-size: 13px;">
-                    Si vous ne sélectionnez pas de nouveau fichier, l'ancien contenu Markdown sera conservé.
-                    <br>
-                    Pour modifier le contenu, uploadez un nouveau fichier .md ou utilisez l'éditeur en ligne.
-                </p>
+        <!-- Contenu actuel -->
+        <div class="card mb-2">
+            <h3 class="card-title">📄 Contenu actuel</h3>
+            
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; max-height: 200px; overflow-y: auto;">
+                <pre style="white-space: pre-wrap; font-size: 0.875rem; color: var(--text-secondary); margin: 0;">{{ lesson.content_markdown[:500] }}{% if lesson.content_markdown|length > 500 %}...{% endif %}</pre>
+            </div>
+            
+            <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                📊 {{ lesson.content_markdown|length }} caractères • 
+                {{ lesson.content_markdown.split('\n')|length }} lignes
             </div>
         </div>
-    </div>
-    
-    <button type="submit" class="btn">Enregistrer les modifications</button>
-    <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary" style="margin-top: 10px;">
-        Annuler
-    </a>
-</form>
+        
+        <!-- Nouveau contenu (optionnel) -->
+        <div class="card mb-2">
+            <h3 class="card-title">📝 Modifier le contenu (optionnel)</h3>
+            
+            <div class="form-group">
+                <label for="fichier_md" class="form-label">
+                    Nouveau fichier Markdown (.md)
+                </label>
+                <input 
+                    type="file" 
+                    id="fichier_md" 
+                    name="fichier_md" 
+                    class="form-input" 
+                    accept=".md"
+                    onchange="previewMarkdown()"
+                >
+                <small class="text-muted">
+                    ⚠️ Laissez vide pour garder le contenu actuel
+                </small>
+            </div>
+            
+            <!-- Aperçu du nouveau fichier -->
+            <div id="markdown-preview" class="hidden mt-2" style="background: var(--accent); background: rgba(252, 163, 17, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--accent);">
+                <strong>📄 Nouveau contenu :</strong>
+                <pre id="preview-content" style="margin-top: 0.5rem; white-space: pre-wrap; font-size: 0.875rem; color: var(--text-secondary); max-height: 200px; overflow-y: auto;"></pre>
+            </div>
+        </div>
+        
+        <!-- Boutons -->
+        <div class="card">
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    ✓ Enregistrer les modifications
+                </button>
+                
+                <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
+                    Annuler
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
 
-<style>
-input[type="text"] {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    font-size: 16px;
-    background: #2a2a2a;
-    color: #e0e0e0;
-    transition: border-color 0.3s ease;
-}
-
-input[type="text"]:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.mode-selector {
-    display: flex;
-    gap: 10px;
-    background: #0f0f0f;
-    padding: 5px;
-    border-radius: 8px;
-    border: 1px solid #333;
-}
-
-.mode-btn {
-    flex: 1;
-    padding: 12px;
-    background: transparent;
-    color: #888;
-    border: none;
-    border-radius: 6px;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.mode-btn:hover {
-    color: #ffffff;
-    background: #1a1a1a;
-}
-
-.mode-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.editor-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.editor-panel,
-.preview-panel {
-    background: #0f0f0f;
-    border: 1px solid #333;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.editor-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 15px;
-    background: #1a1a1a;
-    border-bottom: 1px solid #333;
-    color: #ffffff;
-    font-weight: 500;
-}
-
-.editor-tools {
-    display: flex;
-    gap: 5px;
-}
-
-.tool-btn {
-    padding: 6px 10px;
-    background: #2a2a2a;
-    color: #e0e0e0;
-    border: 1px solid #444;
-    border-radius: 4px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.tool-btn:hover {
-    background: #333;
-    border-color: #667eea;
-    transform: translateY(-1px);
-}
-
-#markdown-editor {
-    width: 100%;
-    min-height: 500px;
-    padding: 20px;
-    background: #0f0f0f;
-    color: #e0e0e0;
-    border: none;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: vertical;
-}
-
-#markdown-editor:focus {
-    outline: none;
-}
-
-#markdown-preview {
-    padding: 20px;
-    min-height: 500px;
-    max-height: 600px;
-    overflow-y: auto;
-}
-
-/* Styles Markdown pour l'aperçu */
-.markdown-content h1 {
-    color: #ffffff;
-    font-size: 2em;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-    border-bottom: 2px solid #667eea;
-    padding-bottom: 0.3em;
-}
-
-.markdown-content h2 {
-    color: #ffffff;
-    font-size: 1.5em;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-}
-
-.markdown-content h3 {
-    color: #cccccc;
-    font-size: 1.2em;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-}
-
-.markdown-content p {
-    margin-bottom: 1em;
-}
-
-.markdown-content img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 20px 0;
-}
-
-.markdown-content code {
-    background: #1a1a1a;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
-    color: #4ade80;
-}
-
-.markdown-content pre {
-    background: #1a1a1a;
-    padding: 15px;
-    border-radius: 8px;
-    overflow-x: auto;
-    border: 1px solid #2a2a2a;
-    margin: 1em 0;
-}
-
-.markdown-content pre code {
-    background: none;
-    padding: 0;
-}
-
-.markdown-content ul,
-.markdown-content ol {
-    margin: 1em 0;
-    padding-left: 2em;
-}
-
-.markdown-content li {
-    margin-bottom: 0.5em;
-}
-
-.markdown-content blockquote {
-    border-left: 4px solid #667eea;
-    padding-left: 20px;
-    margin: 1em 0;
-    color: #cccccc;
-    font-style: italic;
-}
-
-.markdown-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1em 0;
-}
-
-.markdown-content th,
-.markdown-content td {
-    padding: 12px;
-    border: 1px solid #333;
-    text-align: left;
-}
-
-.markdown-content th {
-    background: #1a1a1a;
-    font-weight: 600;
-}
-
-/* YouTube dans l'aperçu */
-.markdown-content .youtube-container {
-    position: relative;
-    padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
-    max-width: 100%;
-    margin: 2em 0;
-    border-radius: 8px;
-    background: #1a1a1a;
-}
-
-.markdown-content .youtube-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-.markdown-content .youtube-title {
-    text-align: center;
-    color: #888;
-    font-size: 14px;
-    font-style: italic;
-    margin-top: 10px;
-}
-
-.file-label {
-    display: block;
-    cursor: pointer;
-}
-
-.file-label input[type="file"] {
-    display: none;
-}
-
-.file-button {
-    display: inline-block;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    margin-bottom: 10px;
-}
-
-.file-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.file-name {
-    display: block;
-    color: #888;
-    font-size: 14px;
-    margin-top: 5px;
-}
-
-.info-box {
-    background: #0f0f0f;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 15px;
-    margin-top: 15px;
-}
-
-.info-box strong {
-    color: #ffffff;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.info-box code {
-    background: #2a2a2a;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    color: #4ade80;
-}
-
-@media (max-width: 1024px) {
-    .editor-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .editor-tools {
-        flex-wrap: wrap;
-    }
-}
-</style>
-
-<!-- Bibliothèque Marked.js pour le rendu Markdown -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
-
+{% block extra_js %}
 <script>
-let currentMode = 'editor';
-
-// Fonction pour extraire l'ID YouTube
-function extractYoutubeId(url) {
-    const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\s]+)/,
-        /youtube\.com\/watch\?.*v=([^&\s]+)/
-    ];
-    
-    for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match && match[1]) {
-            return match[1];
-        }
-    }
-    return null;
-}
-
-// Fonction pour créer un embed YouTube
-function createYoutubeEmbed(videoId, title = '') {
-    const titleHtml = title ? `<div class="youtube-title">🎥 ${title}</div>` : '';
-    return `
-        <div class="youtube-container">
-            <iframe 
-                src="https://www.youtube-nocookie.com/embed/${videoId}" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowfullscreen>
-            </iframe>
-        </div>
-        ${titleHtml}
-    `;
-}
-
-// Configurer marked avec support YouTube
-marked.use({
-    renderer: {
-        image(href, title, text) {
-            if (href.includes('img.youtube.com')) {
-                const match = href.match(/\/vi\/([^\/]+)\//);
-                if (match && match[1]) {
-                    return createYoutubeEmbed(match[1], title || text);
-                }
-            }
-            
-            if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('/')) {
-                href = '/static/lessons/images/' + href;
-            }
-            
-            const titleAttr = title ? ` title="${title}"` : '';
-            return `<img src="${href}" alt="${text}"${titleAttr}>`;
-        },
-        
-        link(href, title, text) {
-            const videoId = extractYoutubeId(href);
-            if (videoId) {
-                return createYoutubeEmbed(videoId, title || text);
-            }
-            
-            const titleAttr = title ? ` title="${title}"` : '';
-            return `<a href="${href}"${titleAttr}>${text}</a>`;
-        }
-    },
-    
-    extensions: [{
-        name: 'youtube',
-        level: 'block',
-        start(src) { return src.match(/^!youtube\[/)?.index; },
-        tokenizer(src) {
-            const rule = /^!youtube\[([^\]]+)\](?:\(([^)]+)\))?/;
-            const match = rule.exec(src);
-            if (match) {
-                return {
-                    type: 'youtube',
-                    raw: match[0],
-                    videoId: match[1],
-                    title: match[2] || ''
-                };
-            }
-        },
-        renderer(token) {
-            return createYoutubeEmbed(token.videoId, token.title);
-        }
-    }]
-});
-
-// Changer de mode
-function switchMode(mode) {
-    currentMode = mode;
-    
-    if (mode === 'editor') {
-        document.getElementById('mode-editor').style.display = 'block';
-        document.getElementById('mode-file').style.display = 'none';
-        document.getElementById('btn-editor').classList.add('active');
-        document.getElementById('btn-file').classList.remove('active');
-        
-        // Désactiver le champ fichier
-        document.getElementById('file-input').disabled = true;
-    } else {
-        document.getElementById('mode-editor').style.display = 'none';
-        document.getElementById('mode-file').style.display = 'block';
-        document.getElementById('btn-file').classList.add('active');
-        document.getElementById('btn-editor').classList.remove('active');
-        
-        // Activer le champ fichier et vider le textarea
-        document.getElementById('file-input').disabled = false;
-        document.getElementById('markdown-editor').value = '';
-    }
-}
-
-// Insérer du markdown
-function insertMarkdown(before, after) {
-    const editor = document.getElementById('markdown-editor');
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
-    const selectedText = editor.value.substring(start, end);
-    const replacement = before + (selectedText || 'texte') + after;
-    
-    editor.value = editor.value.substring(0, start) + replacement + editor.value.substring(end);
-    
-    // Repositionner le curseur
-    const newPos = start + before.length + (selectedText ? selectedText.length : 5);
-    editor.focus();
-    editor.setSelectionRange(newPos, newPos);
-    
-    updatePreview();
-}
-
-// Insérer une vidéo YouTube
-function insertYoutube() {
-    const videoId = prompt('Entrez l\'ID de la vidéo YouTube:', 'dQw4w9WgXcQ');
-    if (videoId) {
-        const title = prompt('Titre de la vidéo (optionnel):', '');
-        const markdown = title 
-            ? `!youtube[${videoId}](${title})`
-            : `!youtube[${videoId}]`;
-        
-        const editor = document.getElementById('markdown-editor');
-        const pos = editor.selectionStart;
-        editor.value = editor.value.substring(0, pos) + '\n\n' + markdown + '\n\n' + editor.value.substring(pos);
-        editor.focus();
-        
-        updatePreview();
-    }
-}
-
-// Mettre à jour l'aperçu
-function updatePreview() {
-    const markdown = document.getElementById('markdown-editor').value;
+// Prévisualiser le nouveau fichier Markdown
+function previewMarkdown() {
+    const fileInput = document.getElementById('fichier_md');
     const preview = document.getElementById('markdown-preview');
-    preview.innerHTML = marked.parse(markdown);
+    const previewContent = document.getElementById('preview-content');
+    
+    if (!fileInput.files || !fileInput.files[0]) {
+        preview.classList.add('hidden');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    
+    if (!file.name.endsWith('.md')) {
+        alert('Veuillez sélectionner un fichier .md');
+        fileInput.value = '';
+        return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const content = e.target.result;
+        
+        // Limiter l'aperçu aux 800 premiers caractères
+        let displayContent = content;
+        if (content.length > 800) {
+            displayContent = content.substring(0, 800) + '\n\n... (fichier tronqué)';
+        }
+        
+        const lines = content.split('\n').length;
+        const chars = content.length;
+        const images = (content.match(/!\[.*?\]\(.*?\)/g) || []).length;
+        
+        previewContent.textContent = 
+            `📊 ${lines} lignes • ${chars} caractères • ${images} image(s)\n\n` + 
+            displayContent;
+        
+        preview.classList.remove('hidden');
+    };
+    
+    reader.readAsText(file);
 }
 
-// Gestion du formulaire
-document.getElementById('edit-form').addEventListener('submit', function(e) {
-    if (currentMode === 'file') {
-        // En mode fichier, on supprime le contenu du textarea pour ne pas l'envoyer
-        document.getElementById('markdown-editor').removeAttribute('name');
-    }
-});
-
-// Gestion du fichier
-document.getElementById('file-input').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name || 'Aucun fichier sélectionné';
-    document.getElementById('file-name').textContent = fileName;
-});
-
-// Auto-update preview pendant la frappe (avec délai)
-let updateTimeout;
-document.getElementById('markdown-editor').addEventListener('input', function() {
-    clearTimeout(updateTimeout);
-    updateTimeout = setTimeout(updatePreview, 500);
-});
-
-// Initialiser l'aperçu
-updatePreview();
-
-// Support des raccourcis clavier
-document.getElementById('markdown-editor').addEventListener('keydown', function(e) {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 'b':
-                e.preventDefault();
-                insertMarkdown('**', '**');
-                break;
-            case 'i':
-                e.preventDefault();
-                insertMarkdown('*', '*');
-                break;
-            case 'k':
-                e.preventDefault();
-                insertMarkdown('[', '](url)');
-                break;
+// Validation du formulaire
+document.querySelector('form').addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('fichier_md');
+    
+    if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        if (!file.name.endsWith('.md')) {
+            e.preventDefault();
+            alert('Le fichier doit être au format .md');
+            return;
         }
     }
+    
+    // Afficher un loader
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Enregistrement...';
 });
 </script>
 {% endblock %}

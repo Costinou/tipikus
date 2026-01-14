@@ -1,260 +1,159 @@
 {% extends "base.html" %}
 
-{% block title %}Statistiques - Tipikus{% endblock %}
+{% block title %}Statistiques globales - Tipikus{% endblock %}
+
+{% block page_header %}
+<div class="page-header text-center">
+    <h1>📊 Vos statistiques globales</h1>
+    <p class="text-muted">Vue d'ensemble de votre progression</p>
+</div>
+{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
-
-<h1>📊 Statistiques globales</h1>
-<p style="color: #888; margin-bottom: 30px;">Aperçu de votre progression</p>
-
-{% if stats_totales.total_sessions > 0 %}
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon">🎯</div>
-        <div class="stat-value">{{ stats_totales.total_sessions }}</div>
-        <div class="stat-label">Sessions totales</div>
+<!-- Vue d'ensemble -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                {{ stats_totales.total_sessions or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Sessions totales</div>
+        </div>
     </div>
     
-    <div class="stat-card">
-        <div class="stat-icon">📚</div>
-        <div class="stat-value">{{ stats_totales.total_mots }}</div>
-        <div class="stat-label">Cartes vues</div>
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                {{ stats_totales.total_mots or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Mots appris</div>
+        </div>
     </div>
     
-    <div class="stat-card">
-        <div class="stat-icon">🔥</div>
-        <div class="stat-value">{{ stats_totales.streak }}</div>
-        <div class="stat-label">Jours d'affilée</div>
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                🔥 {{ stats_totales.streak or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Série de jours</div>
+        </div>
     </div>
     
-    <div class="stat-card">
-        <div class="stat-icon">⏱️</div>
-        <div class="stat-value">{{ stats_totales.total_heures }}h{{ stats_totales.total_minutes }}m</div>
-        <div class="stat-label">Temps total</div>
+    {% if stats_totales.taux_reussite %}
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: {% if stats_totales.taux_reussite >= 80 %}#28a745{% elif stats_totales.taux_reussite >= 60 %}var(--accent){% else %}#dc3545{% endif %};">
+                {{ stats_totales.taux_reussite }}%
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Taux de réussite</div>
+        </div>
     </div>
+    {% endif %}
+    
+    {% if stats_totales.total_heures or stats_totales.total_minutes %}
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                {{ stats_totales.total_heures or 0 }}h{{ stats_totales.total_minutes or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Temps total</div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
-{% if stats_totales.taux_reussite is not none %}
-<div class="stat-section">
-    <h3>Performance aux Quiz</h3>
-    <div class="progress-bar">
-        <div class="progress-fill" style="width: {{ stats_totales.taux_reussite }}%"></div>
-    </div>
-    <p style="text-align: center; color: #888; margin-top: 10px;">
-        Taux de réussite global: <strong style="color: #4ade80;">{{ stats_totales.taux_reussite }}%</strong>
-        <br>
-        <span style="font-size: 13px;">{{ stats_totales.total_score }} bonnes réponses sur {{ stats_totales.total_questions_quiz }}</span>
-    </p>
-</div>
-{% endif %}
-{% endif %}
-
-{% if stats_par_langue %}
-<div class="stat-section">
-    <h3>Par langue</h3>
-    <div class="langues-grid">
-        {% for langue, stats in stats_par_langue.items() %}
-        <a href="{{ url_for('stats_langue', langue=langue) }}" class="langue-card">
-            <div class="langue-header">
-                <span class="langue-name">{{ langue }}</span>
-                <span class="langue-arrow">→</span>
-            </div>
-            <div class="langue-stats">
-                <div class="langue-stat">
-                    <span class="stat-mini-value">{{ stats.total_sessions }}</span>
-                    <span class="stat-mini-label">sessions</span>
-                </div>
-                <div class="langue-stat">
-                    <span class="stat-mini-value">{{ stats.total_mots }}</span>
-                    <span class="stat-mini-label">cartes</span>
-                </div>
-                <div class="langue-stat">
-                    <span class="stat-mini-value">{{ stats.streak }}</span>
-                    <span class="stat-mini-label">🔥 streak</span>
+<!-- Statistiques par niveau -->
+{% if stats_par_niveau %}
+<div class="card mb-2">
+    <h3 class="card-title">📚 Progression par niveau</h3>
+    
+    <div class="decks-list mt-2">
+        {% for niveau, stats in stats_par_niveau.items() %}
+        <div class="deck-item">
+            <div class="deck-info">
+                <div class="deck-name">Niveau {{ niveau }}</div>
+                <div class="deck-meta">
+                    {{ stats.total_sessions }} sessions • 
+                    {{ stats.total_mots }} mots
+                    {% if stats.total_questions_quiz and stats.total_questions_quiz > 0 %}
+                        • {{ ((stats.total_score / stats.total_questions_quiz) * 100)|round|int }}% réussite
+                    {% endif %}
                 </div>
             </div>
-        </a>
+            
+            <div class="deck-actions">
+                <div style="color: var(--accent); font-weight: 600; margin-right: 0.5rem;">
+                    🔥 {{ stats.streak }}
+                </div>
+                <a href="{{ url_for('stats_niveau_route', niveau=niveau) }}" class="btn btn-secondary btn-icon" title="Détails">
+                    →
+                </a>
+            </div>
+        </div>
         {% endfor %}
     </div>
 </div>
 {% endif %}
 
-{% if not stats_totales.total_sessions %}
-<div class="empty-state">
-    <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
-    <h2>Pas encore de statistiques</h2>
-    <p style="color: #888; margin-bottom: 30px;">Commencez à utiliser vos decks pour voir vos progrès !</p>
-    <a href="{{ url_for('index') }}" class="btn">Commencer</a>
+<!-- Activité récente -->
+{% if stats_totales.jours_utilises %}
+<div class="card">
+    <h3 class="card-title">📅 Activité récente</h3>
+    
+    <p class="text-muted">
+        Vous avez été actif {{ stats_totales.jours_utilises|length }} jour(s) au cours des 30 derniers jours
+    </p>
+    
+    <div style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.875rem; line-height: 1.8;">
+        {% for jour in stats_totales.jours_utilises[:14] %}
+            <span style="display: inline-block; background: var(--bg-secondary); padding: 0.25rem 0.625rem; border-radius: 4px; margin: 0.25rem;">
+                {{ jour }}
+            </span>
+        {% endfor %}
+        {% if stats_totales.jours_utilises|length > 14 %}
+            <span style="color: var(--text-secondary);">... et {{ stats_totales.jours_utilises|length - 14 }} autre(s)</span>
+        {% endif %}
+    </div>
 </div>
 {% endif %}
 
-<style>
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.stat-card {
-    background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    transition: transform 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    border-color: #667eea;
-}
-
-.stat-icon {
-    font-size: 32px;
-    margin-bottom: 10px;
-}
-
-.stat-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: #ffffff;
-    margin-bottom: 5px;
-}
-
-.stat-label {
-    font-size: 13px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.stat-section {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 20px;
-}
-
-.stat-section h3 {
-    margin-bottom: 20px;
-    color: #ffffff;
-    font-size: 18px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 30px;
-    background: #0f0f0f;
-    border-radius: 15px;
-    overflow: hidden;
-    border: 1px solid #333;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-    transition: width 0.5s ease;
-}
-
-.langues-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 15px;
-}
-
-.langue-card {
-    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 20px;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    display: block;
-}
-
-.langue-card:hover {
-    border-color: #667eea;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
-}
-
-.langue-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.langue-name {
-    font-size: 20px;
-    font-weight: 600;
-    color: #ffffff;
-}
-
-.langue-arrow {
-    font-size: 24px;
-    color: #667eea;
-}
-
-.langue-stats {
-    display: flex;
-    justify-content: space-around;
-    gap: 15px;
-}
-
-.langue-stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-}
-
-.stat-mini-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.stat-mini-label {
-    font-size: 11px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-}
-
-.empty-state h2 {
-    color: #ffffff;
-    margin-bottom: 10px;
-}
-
-@media (max-width: 600px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+<!-- Message si aucune donnée -->
+{% if not stats_totales.total_sessions or stats_totales.total_sessions == 0 %}
+<div class="card text-center" style="padding: 3rem;">
+    <div style="font-size: 5rem; margin-bottom: 1rem;">🚀</div>
+    <h2>Commencez votre apprentissage !</h2>
+    <p class="text-muted" style="max-width: 500px; margin: 1rem auto;">
+        Vous n'avez pas encore de statistiques. Choisissez un niveau et commencez à apprendre le hongrois !
+    </p>
     
-    .stat-card {
-        padding: 15px;
-    }
-    
-    .stat-icon {
-        font-size: 24px;
-    }
-    
-    .stat-value {
-        font-size: 22px;
-    }
-    
-    .langues-grid {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
+    <a href="{{ url_for('index') }}" class="btn btn-primary mt-2" style="font-size: 1.125rem; padding: 0.875rem 2rem;">
+        🇭🇺 Explorer les niveaux
+    </a>
+</div>
+{% endif %}
+
+<!-- Encouragement -->
+{% if stats_totales.total_sessions and stats_totales.total_sessions > 0 %}
+<div class="card mt-2" style="background: linear-gradient(135deg, rgba(252, 163, 17, 0.1), rgba(20, 33, 61, 0.1)); border: 2px solid var(--accent);">
+    <div style="text-align: center; padding: 1rem;">
+        {% if stats_totales.streak and stats_totales.streak >= 7 %}
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏆</div>
+            <h3 style="color: var(--accent);">Incroyable série !</h3>
+            <p class="text-muted">Vous avez une série de {{ stats_totales.streak }} jours. Continuez comme ça !</p>
+        {% elif stats_totales.total_sessions >= 50 %}
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⭐</div>
+            <h3 style="color: var(--accent);">Apprenant dévoué !</h3>
+            <p class="text-muted">Plus de {{ stats_totales.total_sessions }} sessions complétées. Excellent travail !</p>
+        {% elif stats_totales.taux_reussite and stats_totales.taux_reussite >= 90 %}
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+            <h3 style="color: var(--accent);">Précision exceptionnelle !</h3>
+            <p class="text-muted">{{ stats_totales.taux_reussite }}% de réussite. Vous maîtrisez bien !</p>
+        {% else %}
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💪</div>
+            <h3 style="color: var(--accent);">Continuez ainsi !</h3>
+            <p class="text-muted">Chaque session vous rapproche de la maîtrise du hongrois !</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -662,3 +662,47 @@ a:hover {
 .gap-2 { gap: 1rem; }
 .hidden { display: none; }
 .page-header { margin-bottom: 1.5rem; }
+
+
+
+
+
+/* 🎥 STYLES POUR LES VIDÉOS YOUTUBE */
+.markdown-content .youtube-container {
+    position: relative;
+    padding-bottom: 56.25%; /* Ratio 16:9 */
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    margin: 2em 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    background: #0f0f0f;
+}
+
+.markdown-content .youtube-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 12px;
+}
+
+.markdown-content .youtube-title {
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    font-style: italic;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.lesson-decks-section {
+    margin-top: 40px;
+}
+
+.lesson-decks-section h2 {
+    margin-bottom: 20px;
+}

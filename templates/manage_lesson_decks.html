@@ -1,168 +1,198 @@
 {% extends "base.html" %}
 
-{% block title %}Gérer les decks - {{ lesson.titre }}{% endblock %}
+{% block title %}Gérer les decks - Tipikus{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="flex flex-between" style="align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.875rem; margin-bottom: 0.5rem;">
+                <div style="width: 50px; height: 50px; background: var(--accent); color: var(--black); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700;">
+                    {{ lesson.numero }}
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem;">Lesson {{ lesson.numero }} • {{ lesson.niveau }}</div>
+                    <h1 style="margin: 0;">⚙️ {{ lesson.titre }}</h1>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex gap-1" style="flex-wrap: wrap;">
+            <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
+                👁️ Voir la lesson
+            </a>
+            
+            <a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="btn btn-secondary">
+                ← Retour
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="back-link">← Retour à la lesson</a>
-
-<h1>⚙️ Gérer les decks</h1>
-<p style="color: #888; margin-bottom: 30px;">Lesson {{ lesson.numero }}: {{ lesson.titre }} ({{ lesson.niveau }})</p>
-
 <!-- Decks actuellement dans la lesson -->
-<div class="section-box">
-    <h2>📚 Decks actuellement dans cette lesson ({{ decks_in_lesson|length }})</h2>
+<div class="card mb-2">
+    <div class="card-header">
+        <h3 class="card-title">📚 Decks associés ({{ decks_in_lesson|length }})</h3>
+    </div>
     
     {% if decks_in_lesson %}
-    <ul class="deck-list">
+    <div class="decks-list">
         {% for deck in decks_in_lesson %}
-        <li class="deck-item-wrapper">
-            <div class="deck-item-content">
-                <div class="deck-name">
-                    📚 {{ deck.nom }}
-                </div>
-                <form method="POST" action="{{ url_for('detach_deck_route', deck_id=deck.id) }}" style="margin: 0;">
-                    <button type="submit" class="btn-detach" onclick="return confirm('Retirer ce deck de la lesson ?')">
-                        ❌ Retirer
+        <div class="deck-item" style="border-left: 4px solid var(--accent);">
+            <div class="deck-info">
+                <div class="deck-name">{{ deck.nom }}</div>
+                <div class="deck-meta">🌍 Deck commun • {{ deck.niveau }}</div>
+            </div>
+            
+            <div class="deck-actions">
+                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="Voir les mots">
+                    👁️
+                </a>
+                
+                <form method="POST" action="{{ url_for('detach_deck_route', deck_id=deck.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('Retirer ce deck de la lesson ?');">
+                    <button type="submit" class="btn btn-danger btn-icon" title="Retirer">
+                        ❌
                     </button>
                 </form>
             </div>
-        </li>
+        </div>
         {% endfor %}
-    </ul>
+    </div>
     {% else %}
-    <p style="color: #888; font-style: italic; padding: 20px 0;">
-        Aucun deck dans cette lesson pour le moment.
-    </p>
+    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        <div style="font-size: 3rem; margin-bottom: 0.5rem;">📭</div>
+        <p>Aucun deck associé à cette lesson</p>
+        <small>Ajoutez des decks ci-dessous</small>
+    </div>
     {% endif %}
 </div>
 
 <!-- Decks disponibles à ajouter -->
-<div class="section-box">
-    <h2>➕ Ajouter des decks à cette lesson</h2>
-    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        Decks communs du niveau {{ lesson.niveau }} disponibles
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">➕ Decks disponibles ({{ available_decks|length }})</h3>
+    </div>
+    
+    <p class="text-muted" style="margin-bottom: 1rem;">
+        ℹ️ Seuls les <strong>decks communs</strong> du niveau <strong>{{ lesson.niveau }}</strong> peuvent être ajoutés
     </p>
     
     {% if available_decks %}
-    <ul class="deck-list">
+    <!-- Barre de recherche -->
+    <div class="form-group">
+        <input 
+            type="text" 
+            id="search-decks" 
+            class="form-input" 
+            placeholder="🔍 Rechercher un deck..."
+            onkeyup="filterDecks()"
+        >
+    </div>
+    
+    <div class="decks-list" id="available-decks-list">
         {% for deck in available_decks %}
-        <li class="deck-item-wrapper">
-            <div class="deck-item-content">
-                <div class="deck-name">
-                    📚 {{ deck.nom }}
-                </div>
-                <form method="POST" action="{{ url_for('associate_deck_route') }}" style="margin: 0;">
+        <div class="deck-item available-deck-item">
+            <div class="deck-info">
+                <div class="deck-name">{{ deck.nom }}</div>
+                <div class="deck-meta">🌍 Deck commun • {{ deck.niveau }}</div>
+            </div>
+            
+            <div class="deck-actions">
+                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="Voir les mots">
+                    👁️
+                </a>
+                
+                <form method="POST" action="{{ url_for('associate_deck_route') }}" style="display: inline;">
                     <input type="hidden" name="deck_id" value="{{ deck.id }}">
                     <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
-                    <button type="submit" class="btn-add">
+                    <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">
                         ✅ Ajouter
                     </button>
                 </form>
             </div>
-        </li>
+        </div>
         {% endfor %}
-    </ul>
+    </div>
+    
+    <!-- Message si recherche vide -->
+    <div id="no-results" class="hidden" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
+        <p>Aucun deck trouvé</p>
+    </div>
+    
     {% else %}
-    <p style="color: #888; font-style: italic; padding: 20px 0;">
-        Aucun deck commun disponible pour le niveau {{ lesson.niveau }}.
-        <br>
-        <a href="{{ url_for('nouveau_deck', niveau=lesson.niveau) }}" style="color: #667eea;">
-            Créer un nouveau deck commun →
+    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        <div style="font-size: 3rem; margin-bottom: 0.5rem;">✅</div>
+        <p>Tous les decks communs de ce niveau sont déjà associés</p>
+        <small>Créez de nouveaux decks communs pour en ajouter plus</small>
+        
+        <a href="{{ url_for('nouveau_deck', niveau=lesson.niveau) }}" class="btn btn-primary mt-2">
+            ➕ Créer un deck commun
         </a>
-    </p>
+    </div>
     {% endif %}
 </div>
 
-<style>
-.section-box {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 30px;
-}
-
-.section-box h2 {
-    margin-bottom: 20px;
-    color: #ffffff;
-    font-size: 18px;
-}
-
-.deck-list {
-    list-style: none;
-}
-
-.deck-item-wrapper {
-    margin-bottom: 10px;
-}
-
-.deck-item-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background: #0f0f0f;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.deck-item-content:hover {
-    background: #1a1a1a;
-    border-color: #444;
-}
-
-.deck-name {
-    color: #e0e0e0;
-    font-size: 16px;
-    font-weight: 500;
-}
-
-.btn-detach {
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-detach:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-}
-
-.btn-add {
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-add:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
-
-@media (max-width: 600px) {
-    .deck-item-content {
-        flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
-    }
+<!-- Aide -->
+<div class="card mt-2">
+    <h3 class="card-title">💡 Conseils</h3>
     
-    .btn-detach,
-    .btn-add {
-        width: 100%;
+    <ul style="color: var(--text-secondary); line-height: 1.8; margin-left: 1.5rem;">
+        <li>Associez des decks pertinents au contenu de la lesson</li>
+        <li>Ordonnez les decks du plus simple au plus complexe</li>
+        <li>Un deck ne peut être associé qu'à <strong>une seule lesson</strong></li>
+        <li>Les decks retirés redeviennent des "decks libres"</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Recherche de decks
+function filterDecks() {
+    const input = document.getElementById('search-decks');
+    const filter = input.value.toLowerCase();
+    const items = document.querySelectorAll('.available-deck-item');
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const name = item.querySelector('.deck-name').textContent.toLowerCase();
+        
+        if (name.includes(filter)) {
+            item.style.display = '';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Afficher/masquer le message "Aucun résultat"
+    const noResults = document.getElementById('no-results');
+    const list = document.getElementById('available-decks-list');
+    
+    if (visibleCount === 0 && filter !== '') {
+        noResults.classList.remove('hidden');
+        list.style.display = 'none';
+    } else {
+        noResults.classList.add('hidden');
+        list.style.display = '';
     }
 }
-</style>
+
+// Confirmation avant ajout
+document.querySelectorAll('form').forEach(form => {
+    if (form.action.includes('associate-deck-to-lesson')) {
+        form.addEventListener('submit', function(e) {
+            const deckName = this.closest('.deck-item').querySelector('.deck-name').textContent;
+            if (!confirm(`Ajouter "${deckName}" à cette lesson ?`)) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

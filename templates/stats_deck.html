@@ -1,74 +1,116 @@
 {% extends "base.html" %}
 
-{% block title %}Statistiques {{ deck.nom }} - Tipikus{% endblock %}
+{% block title %}Statistiques - {{ deck.nom }}{% endblock %}
 
-{% block content %}
-<a href="{{ url_for('niveau', niveau=deck.niveau) }}" class="back-link">← Retour au niveau {{ deck.niveau }}</a>
-
-<h1>📊 {{ deck.nom }}</h1>
-<p style="color: #888; margin-bottom: 30px;">Niveau {{ deck.niveau }}</p>
-
-{% if stats.total_sessions > 0 %}
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon">🎯</div>
-        <div class="stat-value">{{ stats.total_sessions }}</div>
-        <div class="stat-label">Sessions</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon">📚</div>
-        <div class="stat-value">{{ stats.total_mots }}</div>
-        <div class="stat-label">Cartes vues</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon">🔥</div>
-        <div class="stat-value">{{ stats.streak }}</div>
-        <div class="stat-label">Jours d'affilée</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon">⏱️</div>
-        <div class="stat-value">{{ (stats.total_duree // 60) }}m</div>
-        <div class="stat-label">Temps total</div>
+{% block page_header %}
+<div class="page-header">
+    <div class="flex flex-between" style="align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1>📊 Statistiques</h1>
+            <p class="text-muted">{{ deck.nom }} • {{ deck.niveau }}</p>
+        </div>
+        
+        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary">
+            ← Retour au deck
+        </a>
     </div>
 </div>
+{% endblock %}
 
-{% if stats.taux_reussite is not none %}
-<div class="stat-section">
-    <h3>Performance aux Quiz</h3>
-    <div class="progress-bar">
-        <div class="progress-fill" style="width: {{ stats.taux_reussite }}%"></div>
+{% block content %}
+<!-- Vue d'ensemble -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                {{ stats.total_sessions or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Sessions</div>
+        </div>
     </div>
-    <p style="text-align: center; color: #888; margin-top: 10px;">
-        Taux de réussite: <strong style="color: #4ade80;">{{ stats.taux_reussite }}%</strong>
-        <br>
-        <span style="font-size: 13px;">{{ stats.total_score }} bonnes réponses sur {{ stats.total_questions_quiz }}</span>
-    </p>
+    
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                {{ stats.total_mots or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Mots vus</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+                🔥 {{ stats.streak or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Jours consécutifs</div>
+        </div>
+    </div>
+    
+    {% if stats.taux_reussite %}
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: {% if stats.taux_reussite >= 80 %}#28a745{% elif stats.taux_reussite >= 60 %}var(--accent){% else %}#dc3545{% endif %};">
+                {{ stats.taux_reussite }}%
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Taux de réussite</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Temps d'apprentissage -->
+{% if stats.total_duree %}
+<div class="card mb-2">
+    <h3 class="card-title">⏱️ Temps d'apprentissage</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent);">
+                {{ (stats.total_duree // 60) or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Minutes totales</div>
+        </div>
+        
+        {% if stats.duree_moyenne %}
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent);">
+                {{ (stats.duree_moyenne // 60) or 0 }}
+            </div>
+            <div class="text-muted" style="font-size: 0.875rem;">Moyenne / session</div>
+        </div>
+        {% endif %}
+    </div>
 </div>
 {% endif %}
 
+<!-- Dernières sessions -->
 {% if stats.dernieres_sessions %}
-<div class="stat-section">
-    <h3>Dernières sessions</h3>
-    <div class="sessions-list">
+<div class="card mb-2">
+    <h3 class="card-title">📅 Dernières sessions</h3>
+    
+    <div class="decks-list mt-2">
         {% for session in stats.dernieres_sessions %}
-        <div class="session-item">
-            <div class="session-icon">
-                {% if session.type_session == 'quiz' %}🎯{% else %}📚{% endif %}
-            </div>
-            <div class="session-info">
-                <div class="session-type">
-                    {% if session.type_session == 'quiz' %}
-                        Quiz - {{ session.score }}/{{ session.nombre_mots_vus }}
+        <div class="deck-item">
+            <div class="deck-info">
+                <div class="deck-name">
+                    {% if session.type_session == 'flashcard' %}
+                        🎴 Flashcards
                     {% else %}
-                        Flashcards - {{ session.nombre_mots_vus }} mots
+                        🎯 Quiz
                     {% endif %}
                 </div>
-                <div class="session-meta">
-                    {{ session.date_session[:16] }} • {{ (session.duree_secondes // 60) }}m
+                <div class="deck-meta">
+                    {{ session.date_session[:16] }} • 
+                    {{ session.nombre_mots_vus }} mots
+                    {% if session.type_session == 'quiz' and session.nombre_mots_vus > 0 %}
+                        • {{ ((session.score / session.nombre_mots_vus) * 100)|round|int }}% réussite
+                    {% endif %}
                 </div>
+            </div>
+            
+            <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                ⏱️ {{ (session.duree_secondes // 60)|int }}min {{ (session.duree_secondes % 60)|int }}s
             </div>
         </div>
         {% endfor %}
@@ -76,153 +118,39 @@
 </div>
 {% endif %}
 
-{% else %}
-<div class="empty-state">
-    <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
-    <h2>Pas encore de statistiques</h2>
-    <p style="color: #888; margin-bottom: 30px;">Utilisez ce deck pour voir vos progrès !</p>
-    <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn">Commencer à apprendre</a>
+<!-- Jours d'activité -->
+{% if stats.jours_utilises %}
+<div class="card">
+    <h3 class="card-title">📆 Jours d'activité ({{ stats.jours_utilises|length }})</h3>
+    
+    <div style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.875rem; line-height: 1.8;">
+        {% for jour in stats.jours_utilises[:10] %}
+            <span style="display: inline-block; background: var(--bg-secondary); padding: 0.25rem 0.625rem; border-radius: 4px; margin: 0.25rem;">
+                {{ jour }}
+            </span>
+        {% endfor %}
+        {% if stats.jours_utilises|length > 10 %}
+            <span style="color: var(--text-secondary);">... et {{ stats.jours_utilises|length - 10 }} autre(s)</span>
+        {% endif %}
+    </div>
 </div>
 {% endif %}
 
-<style>
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.stat-card {
-    background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    transition: transform 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    border-color: #667eea;
-}
-
-.stat-icon {
-    font-size: 32px;
-    margin-bottom: 10px;
-}
-
-.stat-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: #ffffff;
-    margin-bottom: 5px;
-}
-
-.stat-label {
-    font-size: 13px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.stat-section {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 20px;
-}
-
-.stat-section h3 {
-    margin-bottom: 20px;
-    color: #ffffff;
-    font-size: 18px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 30px;
-    background: #0f0f0f;
-    border-radius: 15px;
-    overflow: hidden;
-    border: 1px solid #333;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-    transition: width 0.5s ease;
-}
-
-.sessions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.session-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    background: #0f0f0f;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.session-item:hover {
-    border-color: #444;
-    background: #1a1a1a;
-}
-
-.session-icon {
-    font-size: 28px;
-    flex-shrink: 0;
-}
-
-.session-info {
-    flex: 1;
-}
-
-.session-type {
-    color: #ffffff;
-    font-weight: 500;
-    margin-bottom: 4px;
-}
-
-.session-meta {
-    color: #888;
-    font-size: 13px;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-}
-
-.empty-state h2 {
-    color: #ffffff;
-    margin-bottom: 10px;
-}
-
-@media (max-width: 600px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+<!-- Message si aucune donnée -->
+{% if not stats.total_sessions or stats.total_sessions == 0 %}
+<div class="card text-center" style="padding: 3rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+    <h3>Aucune statistique</h3>
+    <p class="text-muted">Commencez à utiliser ce deck pour voir vos statistiques !</p>
     
-    .stat-card {
-        padding: 15px;
-    }
-    
-    .stat-icon {
-        font-size: 24px;
-    }
-    
-    .stat-value {
-        font-size: 22px;
-    }
-}
-</style>
+    <div class="flex flex-center gap-2 mt-2">
+        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn btn-primary">
+            🎴 Flashcards
+        </a>
+        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn btn-primary">
+            🎯 Quiz
+        </a>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
