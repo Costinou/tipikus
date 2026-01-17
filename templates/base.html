@@ -5,11 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tipikus{% endblock %}</title>
     
-    <!-- ⚠️ CETTE LIGNE DOIT ÊTRE PRÉSENTE -->
+    <!-- ⭐ PWA MANIFEST -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <!-- ⭐ THEME COLOR (apparaît dans la barre de statut Android) -->
+    <meta name="theme-color" content="#fca311">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14213d">
+    
+    <!-- ⭐ iOS SUPPORT -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tipikus">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/icon-72x72.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/icon-72x72.png') }}">
+    
+    <!-- Existing CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     <!-- JavaScript pour le thème -->
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    
+    <!-- ⭐ SERVICE WORKER REGISTRATION -->
+    <script>
+        // Enregistrer le Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => {
+                        console.log('✅ Service Worker enregistré', reg.scope);
+                        
+                        // Vérifier les mises à jour toutes les heures
+                        setInterval(() => {
+                            reg.update();
+                        }, 60 * 60 * 1000);
+                    })
+                    .catch(err => console.error('❌ Erreur Service Worker:', err));
+            });
+
+            // Détecter les mises à jour du Service Worker
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                
+                // Afficher un message à l'utilisateur
+                if (confirm('Une nouvelle version est disponible. Recharger maintenant ?')) {
+                    window.location.reload();
+                }
+            });
+        }
+
+        // ⭐ BANNIÈRE D'INSTALLATION PWA PERSONNALISÉE
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Empêcher la bannière par défaut
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Afficher votre propre bannière
+            showInstallBanner();
+        });
+
+        function showInstallBanner() {
+            // Créer une bannière personnalisée
+            const banner = document.createElement('div');
+            banner.id = 'install-banner';
+            banner.innerHTML = `
+                <div style="
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: var(--bg-card);
+                    border-top: 2px solid var(--accent);
+                    padding: 1rem;
+                    box-shadow: 0 -4px 12px var(--shadow);
+                    z-index: 1000;
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    animation: slideUp 0.3s ease-out;
+                ">
+                    <div style="flex: 1;">
+                        <strong>📱 Installer Tipikus</strong>
+                        <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--text-secondary);">
+                            Accédez rapidement à vos leçons depuis votre écran d'accueil
+                        </p>
+                    </div>
+                    <button onclick="installPWA()" class="btn btn-primary" style="white-space: nowrap;">
+                        Installer
+                    </button>
+                    <button onclick="dismissInstallBanner()" class="btn btn-secondary btn-icon">
+                        ✕
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(banner);
+        }
+
+        function installPWA() {
+            const banner = document.getElementById('install-banner');
+            if (banner) banner.remove();
+            
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('✅ PWA installée');
+                } else {
+                    console.log('❌ Installation refusée');
+                }
+                deferredPrompt = null;
+            });
+        }
+
+        function dismissInstallBanner() {
+            const banner = document.getElementById('install-banner');
+            if (banner) {
+                banner.style.animation = 'slideDown 0.3s ease-out';
+                setTimeout(() => banner.remove(), 300);
+            }
+        }
+
+        // Détecter l'installation réussie
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ PWA installée avec succès');
+            deferredPrompt = null;
+        });
+    </script>
+    
+    <style>
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { transform: translateY(0); }
+            to { transform: translateY(100%); }
+        }
+    </style>
     
     {% block extra_css %}{% endblock %}
 </head>

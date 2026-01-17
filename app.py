@@ -1064,6 +1064,13 @@ def get_unlocked_niveaux(user_id):
     
     return unlocked
 
+@app.route('/service-worker.js')
+def service_worker():
+    """Servir le Service Worker"""
+    return send_file('static/service-worker.js', mimetype='application/javascript')
+
+
+"""
 if __name__ == '__main__':
     init_db()
     
@@ -1073,7 +1080,9 @@ if __name__ == '__main__':
     
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=80,
         debug=True,
-        use_reloader=True
+        use_reloader=True,
+        ssl_context='adhoc'
     )
+"""

@@ -88,7 +88,7 @@ start() {
     if ps -p "$PID" > /dev/null 2>&1; then
         log_info "Application démarrée avec succès (PID: $PID)"
         log_info "Logs disponibles dans : $LOG_FILE"
-        log_info "Accès : http://localhost:5000"
+        log_info "Accès : http://localhost:80"
     else
         log_error "Erreur lors du démarrage de l'application"
         rm -f "$PID_FILE"
