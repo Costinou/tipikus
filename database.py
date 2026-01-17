@@ -543,39 +543,23 @@ def can_delete_deck(deck_id, user_nom):
 
 # ========== FONCTIONS POUR LES SESSIONS ==========
 
-def create_session(deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete, user_id=None):
-    """Enregistre une nouvelle session d'apprentissage
-    
-    Args:
-        deck_id: ID du deck
-        type_session: 'flashcard' ou 'quiz'
-        nombre_mots_vus: Nombre de mots vus/traités
-        score: Score obtenu (pour les quiz)
-        duree_secondes: Durée de la session
-        complete: Session complétée ou non
-        user_id: ID de l'utilisateur (NOUVEAU)
-    """
+
+def create_session(deck_id, user_id, type_session, nombre_mots_vus, score, duree_secondes, complete):
+    """Enregistre une nouvelle session d'apprentissage avec user_id"""
     conn = get_db()
-    
-    # Si user_id n'est pas fourni, essayer de le déduire du propriétaire du deck
-    if user_id is None:
-        deck = conn.execute('SELECT user_id FROM decks WHERE id = ?', (deck_id,)).fetchone()
-        if deck:
-            user_id = deck['user_id']
-    
     cursor = conn.execute(
         '''INSERT INTO sessions 
-        (deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete, user_id) 
+        (deck_id, user_id, type_session, nombre_mots_vus, score, duree_secondes, complete) 
         VALUES (?, ?, ?, ?, ?, ?, ?)''',
-        (deck_id, type_session, nombre_mots_vus, score, duree_secondes, complete, user_id)
+        (deck_id, user_id, type_session, nombre_mots_vus, score, duree_secondes, complete)
     )
     session_id = cursor.lastrowid
     conn.commit()
     conn.close()
     return session_id
 
-def get_stats_deck(deck_id, days=30):
-    """Calcule les statistiques d'un deck"""
+def get_stats_deck(deck_id, user_id, days=30):
+    """Calcule les statistiques d'un deck pour un utilisateur spécifique"""
     conn = get_db()
     
     stats = conn.execute(
@@ -588,26 +572,76 @@ def get_stats_deck(deck_id, days=30):
             AVG(duree_secondes) as duree_moyenne
         FROM sessions
         WHERE deck_id = ?
+        AND user_id = ?
         AND date_session >= datetime('now', '-' || ? || ' days')''',
-        (deck_id, days)
+        (deck_id, user_id, days)
     ).fetchone()
     
     dernieres_sessions = conn.execute(
         '''SELECT type_session, duree_secondes, nombre_mots_vus, score, date_session
         FROM sessions
         WHERE deck_id = ?
+        AND user_id = ?
         ORDER BY date_session DESC
         LIMIT 5''',
-        (deck_id,)
+        (deck_id, user_id)
     ).fetchall()
     
     jours = conn.execute(
         '''SELECT DISTINCT DATE(date_session) as jour
         FROM sessions
         WHERE deck_id = ?
+        AND user_id = ?
         AND date_session >= datetime('now', '-' || ? || ' days')
         ORDER BY jour DESC''',
-        (deck_id, days)
+        (deck_id, user_id, days)
+    ).fetchall()
+    
+    conn.close()
+    
+    result = dict(stats) if stats else {}
+    result['dernieres_sessions'] = [dict(row) for row in dernieres_sessions]
+    result['jours_utilises'] = [row['jour'] for row in jours]
+    
+    return result
+
+def get_stats_deck(deck_id, user_id, days=30):
+    """Calcule les statistiques d'un deck pour un utilisateur spécifique"""
+    conn = get_db()
+    
+    stats = conn.execute(
+        '''SELECT 
+            COUNT(*) as total_sessions,
+            SUM(nombre_mots_vus) as total_mots,
+            SUM(CASE WHEN type_session = 'quiz' THEN score ELSE 0 END) as total_score,
+            SUM(CASE WHEN type_session = 'quiz' THEN nombre_mots_vus ELSE 0 END) as total_questions_quiz,
+            SUM(duree_secondes) as total_duree,
+            AVG(duree_secondes) as duree_moyenne
+        FROM sessions
+        WHERE deck_id = ?
+        AND user_id = ?
+        AND date_session >= datetime('now', '-' || ? || ' days')''',
+        (deck_id, user_id, days)
+    ).fetchone()
+    
+    dernieres_sessions = conn.execute(
+        '''SELECT type_session, duree_secondes, nombre_mots_vus, score, date_session
+        FROM sessions
+        WHERE deck_id = ?
+        AND user_id = ?
+        ORDER BY date_session DESC
+        LIMIT 5''',
+        (deck_id, user_id)
+    ).fetchall()
+    
+    jours = conn.execute(
+        '''SELECT DISTINCT DATE(date_session) as jour
+        FROM sessions
+        WHERE deck_id = ?
+        AND user_id = ?
+        AND date_session >= datetime('now', '-' || ? || ' days')
+        ORDER BY jour DESC''',
+        (deck_id, user_id, days)
     ).fetchall()
     
     conn.close()
@@ -633,7 +667,7 @@ def get_stats_niveau(niveau, user_id, days=30):
         FROM sessions s
         JOIN decks d ON s.deck_id = d.id
         WHERE d.niveau = ?
-        AND (d.is_commun = 1 OR d.user_id = ?)
+        AND s.user_id = ?
         AND s.date_session >= datetime('now', '-' || ? || ' days')''',
         (niveau, user_id, days)
     ).fetchone()
@@ -643,16 +677,36 @@ def get_stats_niveau(niveau, user_id, days=30):
         FROM sessions s
         JOIN decks d ON s.deck_id = d.id
         WHERE d.niveau = ?
-        AND (d.is_commun = 1 OR d.user_id = ?)
+        AND s.user_id = ?
         AND s.date_session >= datetime('now', '-' || ? || ' days')
         ORDER BY jour DESC''',
         (niveau, user_id, days)
+    ).fetchall()
+    
+    # Récupérer les dernières sessions avec le nom du deck
+    dernieres_sessions = conn.execute(
+        '''SELECT 
+            s.type_session,
+            s.duree_secondes,
+            s.nombre_mots_vus,
+            s.score,
+            s.date_session,
+            s.complete,
+            d.nom as deck_nom
+        FROM sessions s
+        JOIN decks d ON s.deck_id = d.id
+        WHERE d.niveau = ?
+        AND s.user_id = ?
+        ORDER BY s.date_session DESC
+        LIMIT 10''',
+        (niveau, user_id)
     ).fetchall()
     
     conn.close()
     
     result = dict(stats) if stats else {}
     result['jours_utilises'] = [row['jour'] for row in jours]
+    result['dernieres_sessions'] = [dict(row) for row in dernieres_sessions]
     
     return result
 
@@ -677,7 +731,7 @@ def calculer_streak(jours_utilises):
     return streak
 
 def get_stats_globales(user_id, days=30):
-    """Calcule les statistiques globales"""
+    """Calcule les statistiques globales pour un utilisateur"""
     conn = get_db()
     
     stats = conn.execute(
@@ -688,20 +742,37 @@ def get_stats_globales(user_id, days=30):
             SUM(CASE WHEN s.type_session = 'quiz' THEN s.nombre_mots_vus ELSE 0 END) as total_questions_quiz,
             SUM(s.duree_secondes) as total_duree
         FROM sessions s
-        JOIN decks d ON s.deck_id = d.id
-        WHERE d.user_id = ? OR d.is_commun = 1
+        WHERE s.user_id = ?
         AND s.date_session >= datetime('now', '-' || ? || ' days')''',
         (user_id, days)
     ).fetchone()
     
     jours = conn.execute(
-        '''SELECT DISTINCT DATE(s.date_session) as jour
-        FROM sessions s
-        JOIN decks d ON s.deck_id = d.id
-        WHERE d.user_id = ? OR d.is_commun = 1
-        AND s.date_session >= datetime('now', '-' || ? || ' days')
+        '''SELECT DISTINCT DATE(date_session) as jour
+        FROM sessions
+        WHERE user_id = ?
+        AND date_session >= datetime('now', '-' || ? || ' days')
         ORDER BY jour DESC''',
         (user_id, days)
+    ).fetchall()
+    
+    # Récupérer les dernières sessions avec le nom du deck et le niveau
+    dernieres_sessions = conn.execute(
+        '''SELECT 
+            s.type_session,
+            s.duree_secondes,
+            s.nombre_mots_vus,
+            s.score,
+            s.date_session,
+            s.complete,
+            d.nom as deck_nom,
+            d.niveau as niveau
+        FROM sessions s
+        JOIN decks d ON s.deck_id = d.id
+        WHERE s.user_id = ?
+        ORDER BY s.date_session DESC
+        LIMIT 10''',
+        (user_id,)
     ).fetchall()
     
     stats_niveaux = conn.execute(
@@ -713,7 +784,7 @@ def get_stats_globales(user_id, days=30):
             SUM(CASE WHEN s.type_session = 'quiz' THEN s.nombre_mots_vus ELSE 0 END) as total_questions_quiz
         FROM sessions s
         JOIN decks d ON s.deck_id = d.id
-        WHERE d.user_id = ? OR d.is_commun = 1
+        WHERE s.user_id = ?
         AND s.date_session >= datetime('now', '-' || ? || ' days')
         GROUP BY d.niveau''',
         (user_id, days)
@@ -723,6 +794,7 @@ def get_stats_globales(user_id, days=30):
     
     result = dict(stats) if stats else {}
     result['jours_utilises'] = [row['jour'] for row in jours]
+    result['dernieres_sessions'] = [dict(row) for row in dernieres_sessions]
     
     stats_par_niveau = {}
     for row in stats_niveaux:

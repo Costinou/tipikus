@@ -888,10 +888,10 @@ def text_to_speech():
 @app.route('/api/session', methods=['POST'])
 def enregistrer_session():
     """API pour enregistrer une session d'apprentissage"""
-    user_id = session.get('user_id')  # NOUVEAU: récupérer l'user connecté
+    user_id = session.get('user_id')
     
     if not user_id:
-        return jsonify({'error': 'Utilisateur non connecté'}), 401
+        return jsonify({'error': 'Non authentifié'}), 401
     
     try:
         data = request.get_json()
@@ -906,10 +906,10 @@ def enregistrer_session():
         if not deck_id or not type_session:
             return jsonify({'error': 'Paramètres manquants'}), 400
         
-        # MODIFIÉ: Passer user_id à create_session
+        # Passer user_id à la fonction create_session
         session_id = create_session(
-            deck_id, type_session, nombre_mots_vus, 
-            score, duree_secondes, complete, user_id  # NOUVEAU
+            deck_id, user_id, type_session, nombre_mots_vus, 
+            score, duree_secondes, complete
         )
         
         return jsonify({'success': True, 'session_id': session_id})
@@ -919,14 +919,20 @@ def enregistrer_session():
 
 @app.route('/stats/deck/<int:deck_id>')
 def stats_deck(deck_id):
-    """Afficher les statistiques d'un deck"""
+    """Afficher les statistiques d'un deck pour l'utilisateur connecté"""
+    user_id = session.get('user_id')
+    
+    if not user_id:
+        return redirect(url_for('login'))
+    
     try:
         deck = get_deck_by_id(deck_id)
         if not deck:
             flash('Deck non trouvé')
             return redirect(url_for('index'))
         
-        stats = get_stats_deck(deck_id, days=30)
+        # Passer user_id à la fonction de stats
+        stats = get_stats_deck(deck_id, user_id, days=30)
         
         streak = calculer_streak(stats.get('jours_utilises', []))
         stats['streak'] = streak
@@ -945,16 +951,17 @@ def stats_deck(deck_id):
 
 @app.route('/stats/niveau/<niveau>')
 def stats_niveau_route(niveau):
-    """Afficher les statistiques d'un niveau"""
+    """Afficher les statistiques d'un niveau pour l'utilisateur connecté"""
     user_id = session.get('user_id')
     if not user_id:
-        return redirect(url_for('select_user'))
+        return redirect(url_for('login'))
     
     try:
         if niveau not in NIVEAUX_DISPONIBLES:
             flash('Niveau non trouvé')
             return redirect(url_for('index'))
         
+        # Passer user_id à la fonction de stats
         stats = get_stats_niveau(niveau, user_id, days=30)
         decks = get_decks_by_niveau(niveau, user_id)
         
@@ -975,14 +982,16 @@ def stats_niveau_route(niveau):
         flash(f'Erreur: {str(e)}')
         return redirect(url_for('index'))
 
+
 @app.route('/stats')
 def stats_globales():
-    """Afficher les statistiques globales"""
+    """Afficher les statistiques globales pour l'utilisateur connecté"""
     user_id = session.get('user_id')
     if not user_id:
-        return redirect(url_for('select_user'))
+        return redirect(url_for('login'))
     
     try:
+        # Passer user_id à la fonction de stats
         stats = get_stats_globales(user_id, days=30)
         
         streak = calculer_streak(stats.get('jours_utilises', []))
@@ -1080,8 +1089,8 @@ if __name__ == '__main__':
     
     app.run(
         host='0.0.0.0',
-        port=8000,
+        port=5000,
         debug=True,
-        use_reloader=True,
-        ssl_context='adhoc'
+        use_reloader=True
+        #ssl_context='adhoc'
     )

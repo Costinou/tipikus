@@ -290,6 +290,7 @@ let cardsSeenCount = 0; // Nombre de cartes vues (uniques)
 let currentCardPosition = 1; // Position dans le deck original (ne change qu'en avançant)
 let isFlipped = false;
 let startTime = Date.now();
+let sessionEnregistree = false; // Flag pour éviter les doublons
 
 // Gestion tactile
 let touchStartX = 0;
@@ -410,6 +411,8 @@ function endSession() {
     }).then(() => {
         document.querySelector('.flashcard-container').classList.add('hidden');
         completionModal.classList.remove('hidden');
+        // Marquer que la session a été enregistrée
+        sessionEnregistree = true;
     });
 }
 
@@ -421,6 +424,7 @@ function restartSession() {
     cardsSeenCount = 0;
     currentCardPosition = 1; // Réinitialiser la position
     startTime = Date.now();
+    sessionEnregistree = false; // Nouvelle session
     showNextCard();
 }
 
@@ -477,6 +481,25 @@ document.addEventListener('keydown', function(e) {
     } else if (e.key === ' ') {
         e.preventDefault();
         flipCard();
+    }
+});
+
+// Enregistrer la session seulement si elle n'a pas déjà été enregistrée
+window.addEventListener('beforeunload', function() {
+    if (cardsSeenCount > 0 && !sessionEnregistree) {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        
+        // Utiliser sendBeacon pour garantir l'envoi même si la page se ferme
+        const data = JSON.stringify({
+            deck_id: deckId,
+            type_session: 'flashcard',
+            nombre_mots_vus: cardsSeenCount,
+            score: 0,
+            duree_secondes: duration,
+            complete: false
+        });
+        
+        navigator.sendBeacon('/api/session', new Blob([data], { type: 'application/json' }));
     }
 });
 </script>
