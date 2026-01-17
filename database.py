@@ -882,5 +882,84 @@ def get_all_users_stats():
     conn.close()
     return users_stats
 
+def get_users_with_stats():
+    """Retourne tous les utilisateurs avec leurs statistiques"""
+    conn = get_db()
+    
+    users = get_all_users()
+    users_stats = []
+    
+    for user in users:
+        # Stats pour cet utilisateur
+        stats = conn.execute(
+            '''SELECT 
+                COUNT(*) as total_sessions,
+                SUM(s.nombre_mots_vus) as total_mots_vus,
+                SUM(CASE WHEN s.type_session = 'quiz' THEN s.score ELSE 0 END) as total_score,
+                SUM(CASE WHEN s.type_session = 'quiz' THEN s.nombre_mots_vus ELSE 0 END) as total_questions_quiz,
+                MAX(s.date_session) as derniere_activite
+            FROM sessions s
+            JOIN decks d ON s.deck_id = d.id
+            WHERE d.user_id = ? OR d.is_commun = 1''',
+            (user['id'],)
+        ).fetchone()
+        
+        # Calculer le streak
+        jours = conn.execute(
+            '''SELECT DISTINCT DATE(s.date_session) as jour
+            FROM sessions s
+            JOIN decks d ON s.deck_id = d.id
+            WHERE d.user_id = ? OR d.is_commun = 1
+            ORDER BY jour DESC''',
+            (user['id'],)
+        ).fetchall()
+        
+        streak = calculer_streak([row['jour'] for row in jours])
+        
+        # Calculer le taux de réussite
+        total_quiz = stats['total_questions_quiz'] or 0
+        taux_reussite = None
+        if total_quiz > 0:
+            taux_reussite = round((stats['total_score'] / total_quiz) * 100, 1)
+        
+        users_stats.append({
+            'id': user['id'],
+            'nom': user['nom'],
+            'total_sessions': stats['total_sessions'] or 0,
+            'total_mots_vus': stats['total_mots_vus'] or 0,
+            'streak': streak,
+            'taux_reussite': taux_reussite,
+            'derniere_activite': stats['derniere_activite'][:16] if stats['derniere_activite'] else None
+        })
+    
+    conn.close()
+    return users_stats
+
+def get_recent_sessions(limit=10):
+    """Retourne les N dernières sessions avec nom utilisateur et deck"""
+    conn = get_db()
+    
+    sessions = conn.execute(
+        '''SELECT 
+            s.id,
+            s.date_session,
+            s.type_session,
+            s.nombre_mots_vus,
+            s.score,
+            s.duree_secondes,
+            d.nom as deck_nom,
+            u.nom as user_nom
+        FROM sessions s
+        JOIN decks d ON s.deck_id = d.id
+        JOIN users u ON d.user_id = u.id
+        ORDER BY s.date_session DESC
+        LIMIT ?''',
+        (limit,)
+    ).fetchall()
+    
+    conn.close()
+    return [dict(session) for session in sessions]
+
+
 if __name__ == '__main__':
     init_db()

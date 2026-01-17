@@ -14,7 +14,7 @@ from database import (
     verify_user_password, update_user_password,
     get_lessons_by_niveau, get_lesson_by_id, create_lesson, update_lesson, delete_lesson,
     get_decks_by_lesson, associate_deck_to_lesson, detach_deck_from_lesson,
-    calculate_lesson_progress, calculate_niveau_progress, get_all_users_stats,
+    calculate_lesson_progress, calculate_niveau_progress, get_all_users_stats, get_users_with_stats, get_recent_sessions,
     NIVEAUX_DISPONIBLES
 )
 
@@ -140,13 +140,21 @@ def admin_users():
         flash('Accès refusé')
         return redirect(url_for('index'))
     
+    # Récupérer tous les utilisateurs
     users = get_all_users()
-    users_stats = get_all_users_stats()  # NOUVEAU
+    
+    # Récupérer les statistiques par utilisateur
+    users_stats = get_users_with_stats()
+    
+    # Récupérer les 10 dernières sessions
+    recent_sessions = get_recent_sessions(limit=10)
+    
     user = get_user_by_id(user_id)
     
     return render_template('admin_users.html', 
-                         users=users, 
-                         users_stats=users_stats,  # NOUVEAU
+                         users=users,
+                         users_stats=users_stats,
+                         recent_sessions=recent_sessions,
                          user=user)
 
 @app.route('/admin/create-user', methods=['POST'])

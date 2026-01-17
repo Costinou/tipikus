@@ -61,27 +61,25 @@
     {% if users_stats %}
     <div class="decks-list">
         {% for user_stat in users_stats %}
-        <div class="deck-item" style="{% if user_stat.nom == 'c' %}border-left: 4px solid var(--accent);{% endif %}">
+        <div class="deck-item" style="{% if user_stat.nom == 'c' %}border-left: 4px solid var(--accent);{% endif %} padding: 0.75rem 1rem;">
             <div class="deck-info">
-                <div class="deck-name">
+                <div class="deck-name" style="font-size: 1rem; margin-bottom: 0.25rem;">
                     {{ user_stat.nom }}
                     {% if user_stat.nom == 'c' %}
-                        <span style="background: var(--accent); color: var(--black); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">ADMIN</span>
+                        <span style="background: var(--accent); color: var(--black); padding: 0.125rem 0.375rem; border-radius: 3px; font-size: 0.625rem; margin-left: 0.5rem;">ADMIN</span>
                     {% endif %}
                 </div>
-                <div class="deck-meta">
+                <div class="deck-meta" style="font-size: 0.8125rem;">
                     📊 {{ user_stat.total_sessions }} sessions • 
-                    📝 {{ user_stat.total_mots_vus }} mots vus • 
-                    🔥 {{ user_stat.streak }} jour{{ 's' if user_stat.streak > 1 else '' }}
+                    📝 {{ user_stat.total_mots_vus }} mots • 
+                    🔥 {{ user_stat.streak }}j
                     {% if user_stat.taux_reussite %}
-                        • 🎯 {{ "%.0f"|format(user_stat.taux_reussite) }}% réussite
+                        • 🎯 {{ "%.0f"|format(user_stat.taux_reussite) }}%
+                    {% endif %}
+                    {% if user_stat.derniere_activite %}
+                        • 🕐 {{ user_stat.derniere_activite }}
                     {% endif %}
                 </div>
-                {% if user_stat.derniere_activite %}
-                <div class="deck-meta">
-                    🕐 Dernière activité : {{ user_stat.derniere_activite }}
-                </div>
-                {% endif %}
             </div>
             
             <div class="deck-actions">
@@ -119,26 +117,96 @@
 <div class="card mt-2">
     <h3 class="card-title">📊 Statistiques globales</h3>
     
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
-        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center;">
-            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">{{ users|length }}</div>
-            <div class="text-muted">Utilisateurs</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">{{ users|length }}</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Utilisateurs</div>
         </div>
         
-        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center;">
-            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">
                 {{ users_stats|sum(attribute='total_sessions') }}
             </div>
-            <div class="text-muted">Sessions totales</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Sessions totales</div>
         </div>
         
-        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; text-align: center;">
-            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">
                 {{ users_stats|sum(attribute='total_mots_vus') }}
             </div>
-            <div class="text-muted">Mots vus</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Mots vus</div>
         </div>
     </div>
+</div>
+
+<!-- 10 dernières sessions -->
+<div class="card mt-2">
+    <h3 class="card-title">📅 10 dernières sessions</h3>
+    
+    {% if recent_sessions %}
+    <div style="margin-top: 1rem;">
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--border);">
+                        <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">Date</th>
+                        <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">Utilisateur</th>
+                        <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">Deck</th>
+                        <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">Type</th>
+                        <th style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">Mots</th>
+                        <th style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">Score</th>
+                        <th style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">Durée</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in recent_sessions %}
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.75rem; font-size: 0.875rem;">
+                            {{ session.date_session[:16] }}
+                        </td>
+                        <td style="padding: 0.75rem; font-size: 0.875rem;">
+                            {{ session.user_nom }}
+                            {% if session.user_nom == 'c' %}
+                                <span style="background: var(--accent); color: var(--black); padding: 0.125rem 0.375rem; border-radius: 3px; font-size: 0.625rem;">ADMIN</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.75rem; font-size: 0.875rem;">
+                            {{ session.deck_nom }}
+                        </td>
+                        <td style="padding: 0.75rem; font-size: 0.875rem;">
+                            {% if session.type_session == 'flashcard' %}
+                                📚 Flashcard
+                            {% else %}
+                                🎯 Quiz
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">
+                            {{ session.nombre_mots_vus }}
+                        </td>
+                        <td style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">
+                            {% if session.type_session == 'quiz' %}
+                                {{ session.score }}/{{ session.nombre_mots_vus }}
+                                <span class="text-muted" style="font-size: 0.75rem;">
+                                    ({{ "%.0f"|format((session.score / session.nombre_mots_vus * 100) if session.nombre_mots_vus > 0 else 0) }}%)
+                                </span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">
+                            {{ session.duree_secondes // 60 }}m{{ session.duree_secondes % 60 }}s
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem;">
+        <p class="text-muted">Aucune session enregistrée</p>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Actions -->
@@ -150,7 +218,7 @@
     </div>
 </div>
 
-<!-- Modal de réinitialisation de mot de passe - DISPLAY NONE PAR DÉFAUT -->
+<!-- Modal de réinitialisation de mot de passe -->
 <div id="reset-password-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
     <div class="card" style="max-width: 500px; width: 90%; margin: 1rem;">
         <h3 class="card-title">🔑 Réinitialiser le mot de passe</h3>
