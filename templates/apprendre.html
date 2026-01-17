@@ -287,6 +287,7 @@ const deckId = {{ deck_id }};
 let remainingCards = [...allMots]; // Cartes restantes à réviser
 let currentCard = null;
 let cardsSeenCount = 0; // Nombre de cartes vues (uniques)
+let currentCardPosition = 1; // Position dans le deck original (ne change qu'en avançant)
 let isFlipped = false;
 let startTime = Date.now();
 
@@ -333,10 +334,10 @@ function showNextCard() {
 // Mettre à jour les compteurs
 function updateCounters() {
     remainingCardsEl.textContent = remainingCards.length;
-    currentPositionEl.textContent = cardsSeenCount + 1;
+    currentPositionEl.textContent = currentCardPosition;
     
-    // Progression basée sur les cartes vues
-    const progress = (cardsSeenCount / allMots.length) * 100;
+    // Progression basée sur la position dans le deck (pas les cartes vues)
+    const progress = ((currentCardPosition - 1) / allMots.length) * 100;
     progressFill.style.width = Math.min(progress, 100) + '%';
 }
 
@@ -359,6 +360,7 @@ function markAsKnown() {
         // Retirer la carte de la pile (ne pas la rajouter)
         remainingCards.shift();
         cardsSeenCount++;
+        currentCardPosition++; // Incrémenter la position seulement ici
         showNextCard();
     }, 300);
 }
@@ -377,6 +379,7 @@ function markAsUnknown() {
         const card = remainingCards.shift();
         remainingCards.push(card);
         cardsSeenCount++;
+        // Ne PAS incrémenter currentCardPosition ici (on rejette la carte)
         showNextCard();
     }, 300);
 }
@@ -416,6 +419,7 @@ function restartSession() {
     document.querySelector('.flashcard-container').classList.remove('hidden');
     remainingCards = [...allMots];
     cardsSeenCount = 0;
+    currentCardPosition = 1; // Réinitialiser la position
     startTime = Date.now();
     showNextCard();
 }
