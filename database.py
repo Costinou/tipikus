@@ -961,5 +961,213 @@ def get_recent_sessions(limit=10):
     return [dict(session) for session in sessions]
 
 
+# ========== FONCTIONS POUR LES EXERCICES ==========
+
+def create_exercice(lesson_id, type_exercice, titre, description='', ordre=0, config=None):
+    """Crée un nouvel exercice"""
+    import json
+    conn = get_db()
+    
+    config_json = json.dumps(config) if config else None
+    
+    cursor = conn.execute(
+        '''INSERT INTO exercices (lesson_id, type_exercice, titre, description, ordre, config)
+        VALUES (?, ?, ?, ?, ?, ?)''',
+        (lesson_id, type_exercice, titre, description, ordre, config_json)
+    )
+    exercice_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return exercice_id
+
+
+def get_exercices_by_lesson(lesson_id):
+    """Retourne tous les exercices d'une lesson, triés par ordre"""
+    import json
+    conn = get_db()
+    exercices = conn.execute(
+        'SELECT * FROM exercices WHERE lesson_id = ? ORDER BY ordre',
+        (lesson_id,)
+    ).fetchall()
+    conn.close()
+    
+    result = []
+    for ex in exercices:
+        ex_dict = dict(ex)
+        # Parser le config JSON
+        if ex_dict.get('config'):
+            try:
+                ex_dict['config'] = json.loads(ex_dict['config'])
+            except:
+                ex_dict['config'] = {}
+        else:
+            ex_dict['config'] = {}
+        result.append(ex_dict)
+    
+    return result
+
+
+def get_exercice_by_id(exercice_id):
+    """Retourne un exercice par son ID"""
+    import json
+    conn = get_db()
+    exercice = conn.execute(
+        'SELECT * FROM exercices WHERE id = ?',
+        (exercice_id,)
+    ).fetchone()
+    conn.close()
+    
+    if not exercice:
+        return None
+    
+    ex_dict = dict(exercice)
+    # Parser le config JSON
+    if ex_dict.get('config'):
+        try:
+            ex_dict['config'] = json.loads(ex_dict['config'])
+        except:
+            ex_dict['config'] = {}
+    else:
+        ex_dict['config'] = {}
+    
+    return ex_dict
+
+
+def delete_exercice(exercice_id):
+    """Supprime un exercice et tout son contenu"""
+    conn = get_db()
+    # Les contenus et résultats seront supprimés automatiquement (CASCADE)
+    conn.execute('DELETE FROM exercices WHERE id = ?', (exercice_id,))
+    conn.commit()
+    conn.close()
+
+
+def add_exercice_contenu(exercice_id, contenu_list):
+    """Ajoute du contenu à un exercice
+    
+    contenu_list: liste de dictionnaires avec le contenu
+    Exemple pour fill_blank:
+    [
+        {
+            "phrase": "Én {0} magyarul.",
+            "reponses_valides": ["tanulok", "Tanulok"],
+            "traduction": "J'étudie le hongrois.",
+            "indice": "tanul + ok"
+        },
+        ...
+    ]
+    """
+    import json
+    conn = get_db()
+    
+    for i, contenu in enumerate(contenu_list):
+        contenu_json = json.dumps(contenu, ensure_ascii=False)
+        conn.execute(
+            'INSERT INTO exercices_contenu (exercice_id, contenu, ordre) VALUES (?, ?, ?)',
+            (exercice_id, contenu_json, i)
+        )
+    
+    conn.commit()
+    conn.close()
+
+
+def get_exercice_contenu(exercice_id):
+    """Retourne tout le contenu d'un exercice, trié par ordre"""
+    import json
+    conn = get_db()
+    contenus = conn.execute(
+        'SELECT * FROM exercices_contenu WHERE exercice_id = ? ORDER BY ordre',
+        (exercice_id,)
+    ).fetchall()
+    conn.close()
+    
+    result = []
+    for c in contenus:
+        c_dict = dict(c)
+        # Parser le contenu JSON
+        try:
+            c_dict['contenu'] = json.loads(c_dict['contenu'])
+        except:
+            c_dict['contenu'] = {}
+        result.append(c_dict)
+    
+    return result
+
+
+def delete_exercice_contenu(exercice_id):
+    """Supprime tout le contenu d'un exercice"""
+    conn = get_db()
+    conn.execute('DELETE FROM exercices_contenu WHERE exercice_id = ?', (exercice_id,))
+    conn.commit()
+    conn.close()
+
+
+def create_exercice_resultat(exercice_id, user_id, score, total_questions, temps_secondes, complete):
+    """Enregistre le résultat d'un exercice"""
+    conn = get_db()
+    cursor = conn.execute(
+        '''INSERT INTO exercices_resultats 
+        (exercice_id, user_id, score, total_questions, temps_secondes, complete)
+        VALUES (?, ?, ?, ?, ?, ?)''',
+        (exercice_id, user_id, score, total_questions, temps_secondes, complete)
+    )
+    resultat_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return resultat_id
+
+
+def get_exercice_meilleur_resultat(exercice_id, user_id):
+    """Retourne le meilleur résultat d'un utilisateur pour un exercice"""
+    conn = get_db()
+    resultat = conn.execute(
+        '''SELECT * FROM exercices_resultats
+        WHERE exercice_id = ? AND user_id = ?
+        ORDER BY score DESC, date_completion DESC
+        LIMIT 1''',
+        (exercice_id, user_id)
+    ).fetchone()
+    conn.close()
+    return dict(resultat) if resultat else None
+
+
+def is_exercice_completed(exercice_id, user_id):
+    """Vérifie si un exercice est complété par un utilisateur"""
+    conn = get_db()
+    result = conn.execute(
+        '''SELECT complete FROM exercices_resultats
+        WHERE exercice_id = ? AND user_id = ?
+        ORDER BY date_completion DESC
+        LIMIT 1''',
+        (exercice_id, user_id)
+    ).fetchone()
+    conn.close()
+    return result['complete'] if result else False
+
+
+def get_exercice_stats(exercice_id, user_id):
+    """Retourne les statistiques d'un exercice pour un utilisateur"""
+    conn = get_db()
+    
+    # Meilleur score
+    meilleur = get_exercice_meilleur_resultat(exercice_id, user_id)
+    
+    # Nombre de tentatives
+    nb_tentatives = conn.execute(
+        'SELECT COUNT(*) as count FROM exercices_resultats WHERE exercice_id = ? AND user_id = ?',
+        (exercice_id, user_id)
+    ).fetchone()
+    
+    conn.close()
+    
+    return {
+        'meilleur_score': meilleur['score'] if meilleur else 0,
+        'meilleur_total': meilleur['total_questions'] if meilleur else 0,
+        'meilleur_pourcentage': round((meilleur['score'] / meilleur['total_questions']) * 100) if meilleur and meilleur['total_questions'] > 0 else 0,
+        'nb_tentatives': nb_tentatives['count'],
+        'complete': meilleur['complete'] if meilleur else False
+    }
+
+
 if __name__ == '__main__':
     init_db()

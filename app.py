@@ -14,7 +14,9 @@ from database import (
     verify_user_password, update_user_password,
     get_lessons_by_niveau, get_lesson_by_id, create_lesson, update_lesson, delete_lesson,
     get_decks_by_lesson, associate_deck_to_lesson, detach_deck_from_lesson,
-    calculate_lesson_progress, calculate_niveau_progress, get_all_users_stats, get_users_with_stats, get_recent_sessions,
+    calculate_lesson_progress, calculate_niveau_progress, get_all_users_stats, 
+    get_users_with_stats, get_recent_sessions, delete_exercice, get_exercice_by_id, create_exercice_resultat,
+    get_exercice_stats, get_exercice_contenu,get_exercices_by_lesson,create_exercice,add_exercice_contenu,
     NIVEAUX_DISPONIBLES
 )
 
@@ -369,11 +371,11 @@ def niveau(niveau):
 
 @app.route('/lesson/<int:lesson_id>')
 def view_lesson(lesson_id):
-    """Afficher une lesson avec son contenu markdown et ses decks"""
+    """Afficher une lesson avec son contenu markdown, ses decks et ses exercices"""
     user_id = session.get('user_id')
     
     if not user_id:
-        return redirect(url_for('select_user'))
+        return redirect(url_for('login'))
     
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
@@ -383,9 +385,16 @@ def view_lesson(lesson_id):
     # Récupérer les decks de cette lesson
     decks = get_decks_by_lesson(lesson_id)
     
+    # Récupérer les exercices de cette lesson
+    exercices = get_exercices_by_lesson(lesson_id)
+    
     user = get_user_by_id(user_id)
     
-    return render_template('lesson.html', lesson=lesson, decks=decks, user=user)
+    return render_template('lesson.html', 
+                         lesson=lesson, 
+                         decks=decks, 
+                         exercices=exercices,
+                         user=user)
 
 @app.route('/create-lesson', methods=['GET'])
 def create_lesson_form():
@@ -1086,6 +1095,193 @@ def service_worker():
     """Servir le Service Worker"""
     return send_file('static/service-worker.js', mimetype='application/javascript')
 
+
+# ========== ROUTES POUR LES EXERCICES ==========
+
+@app.route('/create-exercice/<int:lesson_id>', methods=['GET'])
+def create_exercice_form(lesson_id):
+    """Formulaire de création d'exercice (admin uniquement)"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id or user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut créer des exercices')
+        return redirect(url_for('index'))
+    
+    lesson = get_lesson_by_id(lesson_id)
+    if not lesson:
+        flash('Lesson non trouvée')
+        return redirect(url_for('index'))
+    
+    user = get_user_by_id(user_id)
+    return render_template('create_exercice.html', lesson=lesson, user=user)
+
+
+@app.route('/create-exercice/<int:lesson_id>', methods=['POST'])
+def create_exercice_post(lesson_id):
+    """Traiter la création d'un exercice fill_blank"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut créer des exercices')
+        return redirect(url_for('index'))
+    
+    lesson = get_lesson_by_id(lesson_id)
+    if not lesson:
+        flash('Lesson non trouvée')
+        return redirect(url_for('index'))
+    
+    titre = request.form.get('titre', '').strip()
+    description = request.form.get('description', '').strip()
+    fichier_json = request.files.get('fichier_json')
+    
+    if not titre:
+        flash('Le titre est obligatoire')
+        return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
+    
+    if not fichier_json or not fichier_json.filename.endswith('.json'):
+        flash('Veuillez sélectionner un fichier .json')
+        return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
+    
+    try:
+        import json
+        contenu_json = json.loads(fichier_json.read().decode('utf-8'))
+        
+        # Valider la structure
+        if not isinstance(contenu_json, list):
+            flash('Le fichier JSON doit contenir une liste de phrases')
+            return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
+        
+        for item in contenu_json:
+            if not all(k in item for k in ['phrase', 'reponses_valides']):
+                flash('Chaque phrase doit avoir "phrase" et "reponses_valides"')
+                return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
+        
+        # Récupérer l'ordre (nombre d'exercices existants + 1)
+        exercices_existants = get_exercices_by_lesson(lesson_id)
+        ordre = len(exercices_existants)
+        
+        # Créer l'exercice
+        config = {
+            'show_hints': True,
+            'case_sensitive': False
+        }
+        
+        exercice_id = create_exercice(
+            lesson_id=lesson_id,
+            type_exercice='fill_blank',
+            titre=titre,
+            description=description,
+            ordre=ordre,
+            config=config
+        )
+        
+        # Ajouter le contenu
+        add_exercice_contenu(exercice_id, contenu_json)
+        
+        flash(f'Exercice "{titre}" créé avec {len(contenu_json)} phrase(s)!')
+        return redirect(url_for('view_lesson', lesson_id=lesson_id))
+        
+    except json.JSONDecodeError:
+        flash('Erreur: Fichier JSON invalide')
+        return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
+    except Exception as e:
+        flash(f'Erreur lors de la création: {str(e)}')
+        return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
+
+
+@app.route('/exercice/<int:exercice_id>')
+def exercice_fill_blank(exercice_id):
+    """Page d'exercice fill_blank"""
+    user_id = session.get('user_id')
+    
+    if not user_id:
+        return redirect(url_for('login'))
+    
+    exercice = get_exercice_by_id(exercice_id)
+    if not exercice:
+        flash('Exercice non trouvé')
+        return redirect(url_for('index'))
+    
+    if exercice['type_exercice'] != 'fill_blank':
+        flash('Type d\'exercice non supporté')
+        return redirect(url_for('index'))
+    
+    # Récupérer le contenu
+    contenu = get_exercice_contenu(exercice_id)
+    
+    # Récupérer la lesson
+    lesson = get_lesson_by_id(exercice['lesson_id'])
+    
+    # Récupérer les stats
+    stats = get_exercice_stats(exercice_id, user_id)
+    
+    user = get_user_by_id(user_id)
+    
+    return render_template('exercice_fill_blank.html', 
+                         exercice=exercice, 
+                         contenu=contenu, 
+                         lesson=lesson,
+                         stats=stats,
+                         user=user)
+
+
+@app.route('/api/exercice/submit', methods=['POST'])
+def submit_exercice():
+    """API pour soumettre le résultat d'un exercice"""
+    user_id = session.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'Non authentifié'}), 401
+    
+    try:
+        data = request.get_json()
+        
+        exercice_id = data.get('exercice_id')
+        score = data.get('score', 0)
+        total_questions = data.get('total_questions', 0)
+        temps_secondes = data.get('temps_secondes', 0)
+        complete = data.get('complete', False)
+        
+        if not exercice_id:
+            return jsonify({'error': 'Paramètres manquants'}), 400
+        
+        resultat_id = create_exercice_resultat(
+            exercice_id, user_id, score, total_questions, temps_secondes, complete
+        )
+        
+        return jsonify({'success': True, 'resultat_id': resultat_id})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/delete-exercice/<int:exercice_id>', methods=['POST'])
+def delete_exercice_route(exercice_id):
+    """Supprimer un exercice (admin uniquement)"""
+    user_name = session.get('user_name')
+    
+    if user_name != 'c':
+        flash('Seul l\'utilisateur "c" peut supprimer des exercices')
+        return redirect(url_for('index'))
+    
+    try:
+        exercice = get_exercice_by_id(exercice_id)
+        if not exercice:
+            flash('Exercice non trouvé')
+            return redirect(url_for('index'))
+        
+        lesson_id = exercice['lesson_id']
+        titre = exercice['titre']
+        
+        delete_exercice(exercice_id)
+        
+        flash(f'Exercice "{titre}" supprimé avec succès')
+        return redirect(url_for('view_lesson', lesson_id=lesson_id))
+        
+    except Exception as e:
+        flash(f'Erreur lors de la suppression: {str(e)}')
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':

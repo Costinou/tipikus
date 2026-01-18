@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercice.titre }} - Tipikus{% endblock %}
+
+{% block extra_css %}
+<style>
+.exercice-container {
+    max-width: 800px;
+    margin: 1.5rem auto;
+}
+
+.exercice-header {
+    margin-bottom: 2rem;
+}
+
+.progress-info {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.progress-text {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.question-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin-bottom: 1.5rem;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.phrase-container {
+    font-size: 1.75rem;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.phrase-input {
+    display: inline-block;
+    min-width: 200px;
+    padding: 0.5rem 1rem;
+    font-size: 1.75rem;
+    text-align: center;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.phrase-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.phrase-input.correct {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.phrase-input.incorrect {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.traduction {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-top: 1rem;
+    font-size: 1rem;
+}
+
+.indice {
+    text-align: center;
+    color: var(--accent);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 8px;
+}
+
+.feedback {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    min-height: 30px;
+}
+
+.feedback.correct {
+    color: #4ade80;
+}
+
+.feedback.incorrect {
+    color: #f87171;
+}
+
+.stats-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.completion-screen {
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+
+.completion-icon {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+    animation: bounce 1s ease-in-out infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-15px); }
+}
+
+.score-display {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    .phrase-container {
+        font-size: 1.4rem;
+    }
+    
+    .phrase-input {
+        min-width: 150px;
+        font-size: 1.4rem;
+    }
+    
+    .question-card {
+        padding: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="exercice-container">
+    <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="back-link">
+        ← Retour à la lesson
+    </a>
+    
+    <!-- En-tête -->
+    <div class="card mb-2 exercice-header">
+        <h1>✍️ {{ exercice.titre }}</h1>
+        {% if exercice.description %}
+        <p class="text-muted">{{ exercice.description }}</p>
+        {% endif %}
+        
+        {% if stats.nb_tentatives > 0 %}
+        <div style="margin-top: 1rem;">
+            <span class="stats-badge">
+                Meilleur score: {{ stats.meilleur_score }}/{{ stats.meilleur_total }} 
+                ({{ stats.meilleur_pourcentage }}%)
+            </span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Progression -->
+    <div class="card mb-2">
+        <div class="progress-info">
+            <div class="progress-text">
+                Question <span id="current-question">1</span> / <span id="total-questions">{{ contenu|length }}</span>
+            </div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                Score: <span id="current-score">0</span> / <span id="questions-answered">0</span>
+            </div>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Question -->
+    <div id="question-container">
+        <div class="card question-card">
+            <div class="phrase-container" id="phrase-text"></div>
+            
+            <div class="traduction" id="traduction-text"></div>
+            
+            <div class="indice hidden" id="indice-text"></div>
+            
+            <div class="feedback" id="feedback"></div>
+        </div>
+        
+        <div class="flex flex-center gap-2">
+            <button class="btn btn-primary" onclick="verifierReponse()" id="btn-verifier">
+                Vérifier
+            </button>
+            
+            <button class="btn btn-secondary hidden" onclick="questionSuivante()" id="btn-suivant">
+                Suivant →
+            </button>
+        </div>
+    </div>
+    
+    <!-- Écran de fin -->
+    <div id="completion-container" class="hidden">
+        <div class="card completion-screen">
+            <div class="completion-icon" id="completion-icon">🎉</div>
+            <h2 id="completion-title">Félicitations !</h2>
+            <div class="score-display" id="final-score"></div>
+            <p class="text-muted" id="completion-message"></p>
+            
+            <div class="flex flex-center gap-2 mt-3" style="flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="recommencer()">
+                    🔄 Recommencer
+                </button>
+                
+                <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-primary">
+                    ← Retour à la lesson
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Données
+const exerciceId = {{ exercice.id }};
+const questions = {{ contenu|tojson }};
+let currentIndex = 0;
+let score = 0;
+let questionsAnswered = 0;
+let startTime = Date.now();
+let currentInput = null;
+
+// Éléments DOM
+const questionContainer = document.getElementById('question-container');
+const completionContainer = document.getElementById('completion-container');
+const phraseText = document.getElementById('phrase-text');
+const traductionText = document.getElementById('traduction-text');
+const indiceText = document.getElementById('indice-text');
+const feedback = document.getElementById('feedback');
+const btnVerifier = document.getElementById('btn-verifier');
+const btnSuivant = document.getElementById('btn-suivant');
+const progressFill = document.getElementById('progress-fill');
+const currentQuestion = document.getElementById('current-question');
+const currentScore = document.getElementById('current-score');
+const questionsAnsweredEl = document.getElementById('questions-answered');
+
+// Afficher la première question
+afficherQuestion();
+
+function afficherQuestion() {
+    if (currentIndex >= questions.length) {
+        terminerExercice();
+        return;
+    }
+    
+    const q = questions[currentIndex].contenu;
+    
+    // Réinitialiser l'interface
+    feedback.textContent = '';
+    feedback.className = 'feedback';
+    indiceText.classList.add('hidden');
+    btnVerifier.classList.remove('hidden');
+    btnSuivant.classList.add('hidden');
+    
+    // Afficher la phrase avec input
+    const phrase = q.phrase.replace('{0}', '<input type="text" class="phrase-input" id="user-input" autocomplete="off">');
+    phraseText.innerHTML = phrase;
+    
+    // Afficher la traduction si disponible
+    if (q.traduction) {
+        traductionText.textContent = q.traduction;
+        traductionText.classList.remove('hidden');
+    } else {
+        traductionText.classList.add('hidden');
+    }
+    
+    // Stocker l'indice pour plus tard
+    indiceText.textContent = q.indice || '';
+    
+    // Focus sur l'input
+    currentInput = document.getElementById('user-input');
+    if (currentInput) {
+        currentInput.focus();
+        
+        // Permettre d'appuyer sur Entrée pour vérifier
+        currentInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifierReponse();
+            }
+        });
+    }
+    
+    // Mettre à jour les compteurs
+    currentQuestion.textContent = currentIndex + 1;
+    updateProgress();
+}
+
+function verifierReponse() {
+    if (!currentInput) return;
+    
+    const userAnswer = currentInput.value.trim();
+    const q = questions[currentIndex].contenu;
+    const reponses = q.reponses_valides;
+    
+    // Vérifier si la réponse est correcte
+    const isCorrect = reponses.some(r => {
+        // Comparaison insensible à la casse
+        return r.toLowerCase() === userAnswer.toLowerCase();
+    });
+    
+    questionsAnswered++;
+    questionsAnsweredEl.textContent = questionsAnswered;
+    
+    if (isCorrect) {
+        score++;
+        currentScore.textContent = score;
+        currentInput.classList.add('correct');
+        feedback.textContent = '✓ Correct !';
+        feedback.className = 'feedback correct';
+    } else {
+        currentInput.classList.add('incorrect');
+        feedback.textContent = '✗ Incorrect - Réponse: ' + reponses[0];
+        feedback.className = 'feedback incorrect';
+        
+        // Afficher l'indice si disponible
+        if (q.indice) {
+            indiceText.classList.remove('hidden');
+        }
+    }
+    
+    // Désactiver l'input
+    currentInput.disabled = true;
+    
+    // Changer les boutons
+    btnVerifier.classList.add('hidden');
+    btnSuivant.classList.remove('hidden');
+    btnSuivant.focus();
+}
+
+function questionSuivante() {
+    currentIndex++;
+    afficherQuestion();
+}
+
+function updateProgress() {
+    const progress = ((currentIndex) / questions.length) * 100;
+    progressFill.style.width = Math.min(progress, 100) + '%';
+}
+
+function terminerExercice() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const percentage = Math.round((score / questions.length) * 100);
+    
+    // Enregistrer le résultat
+    fetch('/api/exercice/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            exercice_id: exerciceId,
+            score: score,
+            total_questions: questions.length,
+            temps_secondes: duration,
+            complete: percentage >= 80
+        })
+    });
+    
+    // Afficher l'écran de fin
+    questionContainer.classList.add('hidden');
+    completionContainer.classList.remove('hidden');
+    
+    // Personnaliser le message
+    const finalScoreEl = document.getElementById('final-score');
+    const completionIcon = document.getElementById('completion-icon');
+    const completionTitle = document.getElementById('completion-title');
+    const completionMessage = document.getElementById('completion-message');
+    
+    finalScoreEl.textContent = `${score} / ${questions.length}`;
+    
+    if (percentage === 100) {
+        completionIcon.textContent = '🏆';
+        completionTitle.textContent = 'Parfait !';
+        completionMessage.textContent = 'Score parfait ! Excellent travail !';
+    } else if (percentage >= 80) {
+        completionIcon.textContent = '🎉';
+        completionTitle.textContent = 'Très bien !';
+        completionMessage.textContent = 'Vous maîtrisez bien le sujet !';
+    } else if (percentage >= 60) {
+        completionIcon.textContent = '👍';
+        completionTitle.textContent = 'Bien joué !';
+        completionMessage.textContent = 'Continuez à pratiquer pour progresser.';
+    } else {
+        completionIcon.textContent = '📚';
+        completionTitle.textContent = 'Continuez vos efforts !';
+        completionMessage.textContent = 'Révisez la leçon et réessayez.';
+    }
+}
+
+function recommencer() {
+    currentIndex = 0;
+    score = 0;
+    questionsAnswered = 0;
+    startTime = Date.now();
+    
+    currentScore.textContent = '0';
+    questionsAnsweredEl.textContent = '0';
+    
+    completionContainer.classList.add('hidden');
+    questionContainer.classList.remove('hidden');
+    
+    afficherQuestion();
+}
+</script>
+{% endblock %}
