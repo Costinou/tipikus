@@ -8,6 +8,7 @@ __pycache__/
 
 # Initial tipikus db must be empty
 tipikus.db
+tipikus.db.backup*
 
 # Distribution / packaging
 .Python
