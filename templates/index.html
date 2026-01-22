@@ -12,7 +12,7 @@
 {% block content %}
 <!-- Levels grid -->
 <div class="niveaux-grid">
-    {% for niveau in niveaux_disponibles %}
+    {% for niveau in AVAILABLE_LEVELS %}
     <a href="{{ url_for('niveau', niveau=niveau) }}" 
        class="card niveau-card {% if niveau not in unlocked_niveaux %}locked{% endif %}"
        style="text-decoration: none;">
@@ -43,7 +43,7 @@
         <!-- Locked badge -->
         {% if niveau not in unlocked_niveaux %}
         <p class="text-muted mt-2" style="font-size: 0.875rem;">
-            ⚠️ Complete {{ niveaux_disponibles[niveaux_disponibles.index(niveau) - 1] }} to 80% to unlock
+            ⚠️ Complete {{ AVAILABLE_LEVELS[AVAILABLE_LEVELS.index(niveau) - 1] }} to 80% to unlock
         </p>
         {% endif %}
     </a>

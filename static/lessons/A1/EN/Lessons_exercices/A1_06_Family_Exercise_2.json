@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Hol {0} a szüleid?",
+    "reponses_valides": ["laknak", "Laknak"],
+    "traduction": "Where do your parents live?",
+    "indice": "verb 'lakik' (to live) in 3rd person plural"
+  },
+  {
+    "phrase": "A családom {0}.",
+    "reponses_valides": ["kicsi", "Kicsi"],
+    "traduction": "My family is small.",
+    "indice": "adjective for 'small'"
+  },
+  {
+    "phrase": "{0} vagyunk a családban.",
+    "reponses_valides": ["Négyen", "négyen"],
+    "traduction": "There are four of us in the family.",
+    "indice": "number four + people suffix (-en)"
+  },
+  {
+    "phrase": "A bátyám az {0} tanul.",
+    "reponses_valides": ["egyetemen", "Egyetemen"],
+    "traduction": "My older brother studies at the university.",
+    "indice": "university + locative suffix (-en)"
+  },
+  {
+    "phrase": "Mit {0} az apád?",
+    "reponses_valides": ["csinál", "Csinál"],
+    "traduction": "What does your father do?",
+    "indice": "verb 'csinál' (to do) in 3rd person"
+  },
+  {
+    "phrase": "{0} gyerekeim vannak.",
+    "reponses_valides": ["Három", "három"],
+    "traduction": "I have three children.",
+    "indice": "number three"
+  },
+  {
+    "phrase": "A nagymamám {0} és vicces.",
+    "reponses_valides": ["idős", "Idős"],
+    "traduction": "My grandmother is elderly and funny.",
+    "indice": "adjective for 'elderly/old'"
+  },
+  {
+    "phrase": "Az öcsém még {0}.",
+    "reponses_valides": ["kicsi", "Kicsi"],
+    "traduction": "My younger brother is still little.",
+    "indice": "adjective for 'small/little'"
+  },
+  {
+    "phrase": "A nővérem egy bankban {0}.",
+    "reponses_valides": ["dolgozik", "Dolgozik"],
+    "traduction": "My older sister works at a bank.",
+    "indice": "verb 'dolgozik' (to work) in 3rd person"
+  },
+  {
+    "phrase": "{0} testvéred van?",
+    "reponses_valides": ["Van", "van"],
+    "traduction": "Do you have siblings?",
+    "indice": "verb 'van' (to have/there is)"
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Nagyon {0} sportolni.",
+    "reponses_valides": ["szeretek", "Szeretek"],
+    "traduction": "I really like to play sports.",
+    "indice": "verb 'szeret' (to like) in 1st person"
+  },
+  {
+    "phrase": "A barátnőm nagyon jól {0} pingpongozni.",
+    "reponses_valides": ["tud", "Tud"],
+    "traduction": "My girlfriend knows how to play ping-pong very well.",
+    "indice": "verb 'tud' (to know/can) in 3rd person"
+  },
+  {
+    "phrase": "Van egy {0}.",
+    "reponses_valides": ["ukulelém", "Ukulelém"],
+    "traduction": "I have a ukulele.",
+    "indice": "ukulele + possessive 'my'"
+  },
+  {
+    "phrase": "Nagyon szeretek {0}.",
+    "reponses_valides": ["énekelni", "Énekelni"],
+    "traduction": "I really like to sing.",
+    "indice": "verb infinitive 'to sing'"
+  },
+  {
+    "phrase": "A barátnőmmel {0}.",
+    "reponses_valides": ["zenélünk", "Zenélünk"],
+    "traduction": "We make music with my girlfriend.",
+    "indice": "verb 'zenél' (to make music) in 1st person plural"
+  },
+  {
+    "phrase": "Van egy régi {0}.",
+    "reponses_valides": ["zongorám", "Zongorám"],
+    "traduction": "I have an old piano.",
+    "indice": "piano + possessive 'my'"
+  },
+  {
+    "phrase": "A barátnőmnek van egy {0}.",
+    "reponses_valides": ["gitárja", "Gitárja"],
+    "traduction": "My girlfriend has a guitar.",
+    "indice": "guitar + possessive 'her'"
+  },
+  {
+    "phrase": "Pingpongozom a {0}.",
+    "reponses_valides": ["barátnőmmel", "Barátnőmmel"],
+    "traduction": "I play ping-pong with my girlfriend.",
+    "indice": "girlfriend + possessive 'my' + suffix 'with' (-vel)"
+  },
+  {
+    "phrase": "Gitárral és zongorával {0}.",
+    "reponses_valides": ["játszunk", "Játszunk"],
+    "traduction": "We play with guitar and piano.",
+    "indice": "verb 'játszik' (to play) in 1st person plural"
+  },
+  {
+    "phrase": "Szeretek {0} a zongorán.",
+    "reponses_valides": ["gyakorolni", "Gyakorolni"],
+    "traduction": "I like to practice on the piano.",
+    "indice": "verb infinitive 'to practice'"
+  }
+]

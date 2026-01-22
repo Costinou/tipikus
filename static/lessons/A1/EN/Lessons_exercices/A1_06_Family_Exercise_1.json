@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Van egy {0}.",
+    "reponses_valides": ["bátyám", "Bátyám"],
+    "traduction": "I have an older brother.",
+    "indice": "older brother + possessive 'my'"
+  },
+  {
+    "phrase": "Az {0} tanár.",
+    "reponses_valides": ["anyám", "Anyám"],
+    "traduction": "My mother is a teacher.",
+    "indice": "mother + possessive 'my'"
+  },
+  {
+    "phrase": "Hány {0} van?",
+    "reponses_valides": ["testvéred", "Testvéred"],
+    "traduction": "How many siblings do you have?",
+    "indice": "sibling + possessive 'your'"
+  },
+  {
+    "phrase": "{0} testvérem.",
+    "reponses_valides": ["Nincs", "nincs"],
+    "traduction": "I don't have siblings.",
+    "indice": "negative form of 'van' (to have)"
+  },
+  {
+    "phrase": "A {0} Budapesten lakik.",
+    "reponses_valides": ["húgom", "Húgom"],
+    "traduction": "My younger sister lives in Budapest.",
+    "indice": "younger sister + possessive 'my'"
+  },
+  {
+    "phrase": "Két {0} van.",
+    "reponses_valides": ["gyerekem", "Gyerekem"],
+    "traduction": "I have two children.",
+    "indice": "child + possessive 'my'"
+  },
+  {
+    "phrase": "A {0} nyugdíjas.",
+    "reponses_valides": ["nagypapám", "Nagypapám"],
+    "traduction": "My grandfather is retired.",
+    "indice": "grandfather + possessive 'my'"
+  },
+  {
+    "phrase": "Az {0} orvos.",
+    "reponses_valides": ["apám", "Apám"],
+    "traduction": "My father is a doctor.",
+    "indice": "father + possessive 'my'"
+  },
+  {
+    "phrase": "A {0} fiatal és okos.",
+    "reponses_valides": ["nővérem", "Nővérem"],
+    "traduction": "My older sister is young and smart.",
+    "indice": "older sister + possessive 'my'"
+  },
+  {
+    "phrase": "Van egy {0} és egy húgom.",
+    "reponses_valides": ["öcsém", "Öcsém"],
+    "traduction": "I have a younger brother and a younger sister.",
+    "indice": "younger brother + possessive 'my'"
+  }
+]

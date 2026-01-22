@@ -1,0 +1,56 @@
+[
+  {
+    "phrase": "Én {0} magyarul.",
+    "reponses_valides": ["tanulok", "Tanulok"],
+    "traduction": "I study Hungarian.",
+    "indice": "verb 'tanul' (to study) in 1st person"
+  },
+  {
+    "phrase": "Te hol {0}?",
+    "reponses_valides": ["laksz", "Laksz"],
+    "traduction": "Where do you live?",
+    "indice": "verb 'lakik' (to live) in 2nd person"
+  },
+  {
+    "phrase": "Mi {0} Budapesten.",
+    "reponses_valides": ["lakunk", "Lakunk"],
+    "traduction": "We live in Budapest.",
+    "indice": "verb 'lakik' in 1st person plural"
+  },
+  {
+    "phrase": "Ti {0} vagytok?",
+    "reponses_valides": ["kik", "Kik"],
+    "traduction": "Who are you?",
+    "indice": "interrogative pronoun 'who' in plural"
+  },
+  {
+    "phrase": "Ők {0} beszélnek.",
+    "reponses_valides": ["angolul", "Angolul"],
+    "traduction": "They speak English.",
+    "indice": "adverb for the English language"
+  },
+  {
+    "phrase": "A könyv az {0}.",
+    "reponses_valides": ["asztalon", "Asztalon"],
+    "traduction": "The book is on the table.",
+    "indice": "noun 'asztal' (table) with locative suffix"
+  },
+  {
+    "phrase": "Ez {0} toll.",
+    "reponses_valides": ["egy", "Egy"],
+    "traduction": "This is a pen.",
+    "indice": "indefinite article"
+  },
+  {
+    "phrase": "Jó {0} kívánok!",
+    "reponses_valides": ["napot", "Napot"],
+    "traduction": "Good day! (I wish you a good day)",
+    "indice": "noun 'nap' (day) in accusative"
+  },
+  {
+    "phrase": "Köszönöm {0}!",
+    "reponses_valides": ["szépen", "Szépen"],
+    "traduction": "Thank you very much!",
+    "indice": "adverb 'nicely/well'"
+  }
+]

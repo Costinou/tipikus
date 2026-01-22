@@ -1,0 +1,23 @@
+{
+  "where (location)": "hol",
+  "where to (direction)": "hova",
+  "from where": "honnan",
+  "when": "mikor",
+  "what": "mi",
+  "who": "ki",
+  "why": "miért",
+  "how": "hogyan",
+  "how much (cost)": "mennyibe",
+  "today": "ma",
+  "tomorrow": "holnap",
+  "yesterday": "tegnap",
+  "now": "most",
+  "evening": "este",
+  "morning": "reggel",
+  "afternoon": "délután",
+  "night": "éjjel",
+  "on Monday": "hétfőn",
+  "on weekend": "hétvégén",
+  "yes": "igen",
+  "no": "nem"
+}

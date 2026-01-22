@@ -17,7 +17,7 @@ from database import (
     calculate_lesson_progress, calculate_niveau_progress, get_all_users_stats, 
     get_users_with_stats, get_recent_sessions, delete_exercice, get_exercice_by_id, create_exercice_resultat,
     get_exercice_stats, get_exercice_contenu,get_exercices_by_lesson,create_exercice,add_exercice_contenu,
-    NIVEAUX_DISPONIBLES
+    AVAILABLE_LEVELS
 )
 
 # Import for text-to-speech
@@ -298,14 +298,14 @@ def index():
     
     # Calculate progress for each level
     niveaux_progress = {}
-    for niveau in NIVEAUX_DISPONIBLES:
+    for niveau in AVAILABLE_LEVELS:
         niveaux_progress[niveau] = calculate_niveau_progress(user_id, niveau)
     
     # NEW: Get unlocked levels
     unlocked_niveaux = get_unlocked_niveaux(user_id)
     
     return render_template('index.html', 
-                         niveaux_disponibles=NIVEAUX_DISPONIBLES,
+                         AVAILABLE_LEVELS=AVAILABLE_LEVELS,
                          niveaux_counts=niveaux_counts,
                          niveaux_progress=niveaux_progress,
                          unlocked_niveaux=unlocked_niveaux,
@@ -320,7 +320,7 @@ def niveau(niveau):
     if not user_id:
         return redirect(url_for('select_user'))
     
-    if niveau not in NIVEAUX_DISPONIBLES:
+    if niveau not in AVAILABLE_LEVELS:
         flash(f'Level "{niveau}" not supported')
         return redirect(url_for('index'))
     
@@ -411,7 +411,7 @@ def create_lesson_form():
         return redirect(url_for('index'))
     
     user = get_user_by_id(user_id)
-    return render_template('create_lesson.html', niveaux=NIVEAUX_DISPONIBLES, user=user)
+    return render_template('create_lesson.html', niveaux=AVAILABLE_LEVELS, user=user)
 
 @app.route('/create-lesson', methods=['POST'])
 def create_lesson_post():
@@ -429,7 +429,7 @@ def create_lesson_post():
     fichier_md = request.files.get('fichier_md')
     
     # Validations
-    if niveau not in NIVEAUX_DISPONIBLES:
+    if niveau not in AVAILABLE_LEVELS:
         flash('Invalid level')
         return redirect(url_for('create_lesson_form'))
     
@@ -637,7 +637,7 @@ def nouveau_deck(niveau=None):
     user = get_user_by_id(user_id)
     
     return render_template('nouveau_deck.html', 
-                         niveaux=NIVEAUX_DISPONIBLES, 
+                         niveaux=AVAILABLE_LEVELS, 
                          niveau_preselect=niveau,
                          user=user)
 
@@ -654,17 +654,17 @@ def creer_deck():
     is_commun = request.form.get('is_commun') == 'on'
     fichier = request.files.get('fichier')
     
-    if niveau not in NIVEAUX_DISPONIBLES:
+    if niveau not in AVAILABLE_LEVELS:
         flash('Please select a valid level')
-        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES)
+        return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS)
     
     if not nom_deck:
         flash('Deck name is required')
-        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
+        return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
     
     if not fichier or fichier.filename == '':
         flash('Please select a file')
-        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
+        return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
     
     # Determine file type
     filename = fichier.filename.lower()
@@ -673,7 +673,7 @@ def creer_deck():
     
     if not (is_json or is_csv):
         flash('Unsupported file format. Use .json or .csv')
-        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
+        return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
     
     try:
         contenu = fichier.read().decode('utf-8-sig')
@@ -683,14 +683,14 @@ def creer_deck():
             mots_dict = json.loads(contenu)
             if not isinstance(mots_dict, dict):
                 flash('JSON file must be an object (dictionary)')
-                return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
+                return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
         
         elif is_csv:
             lignes = contenu.strip().split('\n')
             
             if len(lignes) < 2:
                 flash('CSV file must contain at least 2 lines')
-                return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
+                return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
             
             premiere_ligne = lignes[0]
             separateur = ';' if ';' in premiere_ligne else ','
@@ -711,7 +711,7 @@ def creer_deck():
         
         if not mots_dict:
             flash('File is empty or contains no valid words')
-            return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
+            return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
         
         # Create deck
         deck_id = create_deck(nom_deck, niveau, user_id, is_commun)
@@ -723,10 +723,10 @@ def creer_deck():
         
     except json.JSONDecodeError:
         flash('Error: Invalid JSON file')
-        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
+        return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
     except Exception as e:
         flash(f'Error creating deck: {str(e)}')
-        return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
+        return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
 
 @app.route('/supprimer-deck/<int:deck_id>', methods=['POST'])
 def supprimer_deck(deck_id):
@@ -974,7 +974,7 @@ def stats_niveau_route(niveau):
         return redirect(url_for('login'))
     
     try:
-        if niveau not in NIVEAUX_DISPONIBLES:
+        if niveau not in AVAILABLE_LEVELS:
             flash('Level not found')
             return redirect(url_for('index'))
         
@@ -1049,18 +1049,18 @@ def get_unlocked_niveaux(user_id):
     For others: A level is unlocked if previous one has >= 80% progress
     First level (A1) is always unlocked
     """
-    from database import NIVEAUX_DISPONIBLES, calculate_niveau_progress, get_user_by_id
+    from database import AVAILABLE_LEVELS, calculate_niveau_progress, get_user_by_id
     
     # Check if user is admin
     user = get_user_by_id(user_id)
     if user and user['nom'] == 'c':
         # Admin has access to ALL levels
-        return NIVEAUX_DISPONIBLES.copy()
+        return AVAILABLE_LEVELS.copy()
     
     # For other users, normal logic
     unlocked = []
     
-    for i, niveau in enumerate(NIVEAUX_DISPONIBLES):
+    for i, niveau in enumerate(AVAILABLE_LEVELS):
         # A1 and Custom are always unlocked
         if niveau == 'A1' or niveau == 'Custom':
             unlocked.append(niveau)
@@ -1068,12 +1068,12 @@ def get_unlocked_niveaux(user_id):
         
         # Check previous level
         if i > 0:
-            niveau_precedent = NIVEAUX_DISPONIBLES[i - 1]
+            niveau_precedent = AVAILABLE_LEVELS[i - 1]
             
             # If it's Custom, take the one before
             if niveau_precedent == 'Custom':
                 if i > 1:
-                    niveau_precedent = NIVEAUX_DISPONIBLES[i - 2]
+                    niveau_precedent = AVAILABLE_LEVELS[i - 2]
                 else:
                     # Unlikely case but for safety
                     unlocked.append(niveau)

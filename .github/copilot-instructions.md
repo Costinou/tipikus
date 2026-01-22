@@ -25,7 +25,7 @@ Routes are split across modular blueprints registered in [app.py](app.py):
 ### 2. **Database Layer** 
 [database.py](database.py) handles all SQLite operations with utility functions:
 - **Core tables**: `users`, `decks`, `mots` (vocabulary), `sessions`, `lessons`, `exercices`
-- **Key constants**: `NIVEAUX_DISPONIBLES = ['A1', 'A1+', 'A2', 'A2+', 'B1', 'B1+', 'Custom']`
+- **Key constants**: `AVAILABLE_LEVELS = ['A1', 'A1+', 'A2', 'A2+', 'B1', 'B1+', 'Custom']`
 - **Query pattern**: Use `sqlite3.Row` for dict-like access
 - **Session management**: Stored in Flask session; user login sets `session['user_id']` and `session['user_name']`
 
