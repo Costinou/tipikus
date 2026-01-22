@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Gérer les decks - Tipikus{% endblock %}
+{% block title %}Manage Decks - Tipikus{% endblock %}
 
 {% block page_header %}
 <div class="page-header">
@@ -19,11 +19,11 @@
         
         <div class="flex gap-1" style="flex-wrap: wrap;">
             <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
-                👁️ Voir la lesson
+                👁️ View Lesson
             </a>
             
             <a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="btn btn-secondary">
-                ← Retour
+                ← Back
             </a>
         </div>
     </div>
@@ -31,10 +31,10 @@
 {% endblock %}
 
 {% block content %}
-<!-- Decks actuellement dans la lesson -->
+<!-- Decks currently in lesson -->
 <div class="card mb-2">
     <div class="card-header">
-        <h3 class="card-title">📚 Decks associés ({{ decks_in_lesson|length }})</h3>
+        <h3 class="card-title">📚 Associated Decks ({{ decks_in_lesson|length }})</h3>
     </div>
     
     {% if decks_in_lesson %}
@@ -43,18 +43,18 @@
         <div class="deck-item" style="border-left: 4px solid var(--accent);">
             <div class="deck-info">
                 <div class="deck-name">{{ deck.nom }}</div>
-                <div class="deck-meta">🌍 Deck commun • {{ deck.niveau }}</div>
+                <div class="deck-meta">🌍 Common deck • {{ deck.niveau }}</div>
             </div>
             
             <div class="deck-actions">
-                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="Voir les mots">
+                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="View Words">
                     👁️
                 </a>
                 
                 <form method="POST" action="{{ url_for('detach_deck_route', deck_id=deck.id) }}" 
                       style="display: inline;"
-                      onsubmit="return confirm('Retirer ce deck de la lesson ?');">
-                    <button type="submit" class="btn btn-danger btn-icon" title="Retirer">
+                      onsubmit="return confirm('Remove this deck from the lesson?');">
+                    <button type="submit" class="btn btn-danger btn-icon" title="Remove">
                         ❌
                     </button>
                 </form>
@@ -65,30 +65,30 @@
     {% else %}
     <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
         <div style="font-size: 3rem; margin-bottom: 0.5rem;">📭</div>
-        <p>Aucun deck associé à cette lesson</p>
-        <small>Ajoutez des decks ci-dessous</small>
+        <p>No decks associated with this lesson</p>
+        <small>Add decks below</small>
     </div>
     {% endif %}
 </div>
 
-<!-- Decks disponibles à ajouter -->
+<!-- Available decks to add -->
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">➕ Decks disponibles ({{ available_decks|length }})</h3>
+        <h3 class="card-title">➕ Available Decks ({{ available_decks|length }})</h3>
     </div>
     
     <p class="text-muted" style="margin-bottom: 1rem;">
-        ℹ️ Seuls les <strong>decks communs</strong> du niveau <strong>{{ lesson.niveau }}</strong> peuvent être ajoutés
+        ℹ️ Only <strong>common decks</strong> from level <strong>{{ lesson.niveau }}</strong> can be added
     </p>
     
     {% if available_decks %}
-    <!-- Barre de recherche -->
+    <!-- Search bar -->
     <div class="form-group">
         <input 
             type="text" 
             id="search-decks" 
             class="form-input" 
-            placeholder="🔍 Rechercher un deck..."
+            placeholder="🔍 Search for a deck..."
             onkeyup="filterDecks()"
         >
     </div>
@@ -98,11 +98,11 @@
         <div class="deck-item available-deck-item">
             <div class="deck-info">
                 <div class="deck-name">{{ deck.nom }}</div>
-                <div class="deck-meta">🌍 Deck commun • {{ deck.niveau }}</div>
+                <div class="deck-meta">🌍 Common deck • {{ deck.niveau }}</div>
             </div>
             
             <div class="deck-actions">
-                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="Voir les mots">
+                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="View Words">
                     👁️
                 </a>
                 
@@ -110,7 +110,7 @@
                     <input type="hidden" name="deck_id" value="{{ deck.id }}">
                     <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
                     <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">
-                        ✅ Ajouter
+                        ✅ Add
                     </button>
                 </form>
             </div>
@@ -118,41 +118,41 @@
         {% endfor %}
     </div>
     
-    <!-- Message si recherche vide -->
+    <!-- Empty search message -->
     <div id="no-results" class="hidden" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
         <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
-        <p>Aucun deck trouvé</p>
+        <p>No decks found</p>
     </div>
     
     {% else %}
     <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
         <div style="font-size: 3rem; margin-bottom: 0.5rem;">✅</div>
-        <p>Tous les decks communs de ce niveau sont déjà associés</p>
-        <small>Créez de nouveaux decks communs pour en ajouter plus</small>
+        <p>All common decks for this level are already associated</p>
+        <small>Create new common decks to add more</small>
         
         <a href="{{ url_for('nouveau_deck', niveau=lesson.niveau) }}" class="btn btn-primary mt-2">
-            ➕ Créer un deck commun
+            ➕ Create Common Deck
         </a>
     </div>
     {% endif %}
 </div>
 
-<!-- Aide -->
+<!-- Help -->
 <div class="card mt-2">
-    <h3 class="card-title">💡 Conseils</h3>
+    <h3 class="card-title">💡 Tips</h3>
     
     <ul style="color: var(--text-secondary); line-height: 1.8; margin-left: 1.5rem;">
-        <li>Associez des decks pertinents au contenu de la lesson</li>
-        <li>Ordonnez les decks du plus simple au plus complexe</li>
-        <li>Un deck ne peut être associé qu'à <strong>une seule lesson</strong></li>
-        <li>Les decks retirés redeviennent des "decks libres"</li>
+        <li>Associate decks relevant to the lesson content</li>
+        <li>Order decks from simplest to most complex</li>
+        <li>A deck can only be associated with <strong>one lesson</strong></li>
+        <li>Removed decks become "free decks" again</li>
     </ul>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Recherche de decks
+// Search decks
 function filterDecks() {
     const input = document.getElementById('search-decks');
     const filter = input.value.toLowerCase();
@@ -170,7 +170,7 @@ function filterDecks() {
         }
     });
     
-    // Afficher/masquer le message "Aucun résultat"
+    // Show/hide "No results" message
     const noResults = document.getElementById('no-results');
     const list = document.getElementById('available-decks-list');
     
@@ -183,12 +183,12 @@ function filterDecks() {
     }
 }
 
-// Confirmation avant ajout
+// Confirmation before adding
 document.querySelectorAll('form').forEach(form => {
     if (form.action.includes('associate-deck-to-lesson')) {
         form.addEventListener('submit', function(e) {
             const deckName = this.closest('.deck-item').querySelector('.deck-name').textContent;
-            if (!confirm(`Ajouter "${deckName}" à cette lesson ?`)) {
+            if (!confirm(`Add "${deckName}" to this lesson?`)) {
                 e.preventDefault();
             }
         });

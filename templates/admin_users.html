@@ -1,61 +1,61 @@
 {% extends "base.html" %}
 
-{% block title %}Gestion des utilisateurs - Tipikus{% endblock %}
+{% block title %}User Management - Tipikus{% endblock %}
 
 {% block page_header %}
 <div class="page-header text-center">
-    <h1>👥 Gestion des utilisateurs</h1>
-    <p class="text-muted">Administration des comptes utilisateurs</p>
+    <h1>👥 User Management</h1>
+    <p class="text-muted">User account administration</p>
 </div>
 {% endblock %}
 
 {% block content %}
-<!-- Créer un utilisateur -->
+<!-- Create a user -->
 <div class="card mb-2">
     <div class="card-header">
-        <h3 class="card-title">➕ Créer un nouvel utilisateur</h3>
+        <h3 class="card-title">➕ Create New User</h3>
     </div>
     
     <form method="POST" action="{{ url_for('admin_create_user') }}">
         <div class="flex gap-2" style="flex-wrap: wrap; align-items: flex-end;">
             <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                <label for="nom" class="form-label">Nom d'utilisateur</label>
+                <label for="nom" class="form-label">Username</label>
                 <input 
                     type="text" 
                     id="nom" 
                     name="nom" 
                     class="form-input" 
-                    placeholder="Ex: Pierre"
+                    placeholder="e.g. John"
                     required
                     pattern="[A-Za-z0-9_-]+"
-                    title="Lettres, chiffres, - et _ uniquement"
+                    title="Letters, numbers, - and _ only"
                 >
             </div>
             
             <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                <label for="password" class="form-label">Mot de passe</label>
+                <label for="password" class="form-label">Password</label>
                 <input 
                     type="password" 
                     id="password" 
                     name="password" 
                     class="form-input" 
-                    placeholder="Min. 4 caractères"
+                    placeholder="Min. 4 characters"
                     required
                     minlength="4"
                 >
             </div>
             
             <button type="submit" class="btn btn-primary">
-                ✅ Créer
+                ✅ Create
             </button>
         </div>
     </form>
 </div>
 
-<!-- Liste des utilisateurs -->
+<!-- User list -->
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">📋 Utilisateurs existants ({{ users|length }})</h3>
+        <h3 class="card-title">📋 Existing Users ({{ users|length }})</h3>
     </div>
     
     {% if users_stats %}
@@ -71,8 +71,8 @@
                 </div>
                 <div class="deck-meta" style="font-size: 0.8125rem;">
                     📊 {{ user_stat.total_sessions }} sessions • 
-                    📝 {{ user_stat.total_mots_vus }} mots • 
-                    🔥 {{ user_stat.streak }}j
+                    📝 {{ user_stat.total_mots_vus }} words • 
+                    🔥 {{ user_stat.streak }}d
                     {% if user_stat.taux_reussite %}
                         • 🎯 {{ "%.0f"|format(user_stat.taux_reussite) }}%
                     {% endif %}
@@ -84,23 +84,23 @@
             
             <div class="deck-actions">
                 {% if user_stat.nom != 'c' %}
-                <!-- Réinitialiser le mot de passe -->
+                <!-- Reset password -->
                 <button class="btn btn-secondary btn-icon" 
                         onclick="showResetPassword({{ user_stat.id }}, '{{ user_stat.nom }}')"
-                        title="Réinitialiser le mot de passe">
+                        title="Reset Password">
                     🔑
                 </button>
                 
-                <!-- Supprimer l'utilisateur -->
+                <!-- Delete user -->
                 <form method="POST" action="{{ url_for('admin_delete_user', user_id=user_stat.id) }}" 
                       style="display: inline;"
-                      onsubmit="return confirm('Supprimer {{ user_stat.nom }} ? Toutes ses données seront perdues !');">
-                    <button type="submit" class="btn btn-danger btn-icon" title="Supprimer">
+                      onsubmit="return confirm('Delete {{ user_stat.nom }}? All their data will be lost!');">
+                    <button type="submit" class="btn btn-danger btn-icon" title="Delete">
                         🗑️
                     </button>
                 </form>
                 {% else %}
-                <span class="text-muted" style="font-size: 0.875rem;">Protégé</span>
+                <span class="text-muted" style="font-size: 0.875rem;">Protected</span>
                 {% endif %}
             </div>
         </div>
@@ -108,40 +108,40 @@
     </div>
     {% else %}
     <div style="text-align: center; padding: 2rem;">
-        <p class="text-muted">Aucun utilisateur trouvé</p>
+        <p class="text-muted">No users found</p>
     </div>
     {% endif %}
 </div>
 
-<!-- Statistiques globales -->
+<!-- Global statistics -->
 <div class="card mt-2">
-    <h3 class="card-title">📊 Statistiques globales</h3>
+    <h3 class="card-title">📊 Global Statistics</h3>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1rem;">
         <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
             <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">{{ users|length }}</div>
-            <div class="text-muted" style="font-size: 0.875rem;">Utilisateurs</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Users</div>
         </div>
         
         <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
             <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">
                 {{ users_stats|sum(attribute='total_sessions') }}
             </div>
-            <div class="text-muted" style="font-size: 0.875rem;">Sessions totales</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Total Sessions</div>
         </div>
         
         <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
             <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">
                 {{ users_stats|sum(attribute='total_mots_vus') }}
             </div>
-            <div class="text-muted" style="font-size: 0.875rem;">Mots vus</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Words Seen</div>
         </div>
     </div>
 </div>
 
-<!-- 10 dernières sessions -->
+<!-- 10 most recent sessions -->
 <div class="card mt-2">
-    <h3 class="card-title">📅 10 dernières sessions</h3>
+    <h3 class="card-title">📅 10 Most Recent Sessions</h3>
     
     {% if recent_sessions %}
     <div style="margin-top: 1rem;">
@@ -150,12 +150,12 @@
                 <thead>
                     <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--border);">
                         <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">Date</th>
-                        <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">Utilisateur</th>
+                        <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">User</th>
                         <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">Deck</th>
                         <th style="padding: 0.75rem; text-align: left; font-size: 0.875rem;">Type</th>
-                        <th style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">Mots</th>
+                        <th style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">Words</th>
                         <th style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">Score</th>
-                        <th style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">Durée</th>
+                        <th style="padding: 0.75rem; text-align: center; font-size: 0.875rem;">Duration</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -204,7 +204,7 @@
     </div>
     {% else %}
     <div style="text-align: center; padding: 2rem;">
-        <p class="text-muted">Aucune session enregistrée</p>
+        <p class="text-muted">No sessions recorded</p>
     </div>
     {% endif %}
 </div>
@@ -213,27 +213,27 @@
 <div class="card mt-2">
     <div class="flex flex-between" style="gap: 0.875rem; flex-wrap: wrap;">
         <a href="{{ url_for('index') }}" class="btn btn-secondary">
-            ← Retour à l'accueil
+            ← Back to Home
         </a>
     </div>
 </div>
 
-<!-- Modal de réinitialisation de mot de passe -->
+<!-- Password reset modal -->
 <div id="reset-password-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
     <div class="card" style="max-width: 500px; width: 90%; margin: 1rem;">
-        <h3 class="card-title">🔑 Réinitialiser le mot de passe</h3>
+        <h3 class="card-title">🔑 Reset Password</h3>
         
         <form id="reset-password-form" method="POST" action="">
-            <p class="text-muted">Utilisateur : <strong id="reset-username"></strong></p>
+            <p class="text-muted">User: <strong id="reset-username"></strong></p>
             
             <div class="form-group">
-                <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                <label for="new_password" class="form-label">New Password</label>
                 <input 
                     type="password" 
                     id="new_password" 
                     name="new_password" 
                     class="form-input" 
-                    placeholder="Minimum 4 caractères"
+                    placeholder="Minimum 4 characters"
                     required
                     minlength="4"
                     autocomplete="new-password"
@@ -242,10 +242,10 @@
             
             <div class="flex gap-2 mt-2">
                 <button type="submit" class="btn btn-primary" style="flex: 1;">
-                    ✓ Réinitialiser
+                    ✓ Reset
                 </button>
                 <button type="button" class="btn btn-secondary" onclick="hideResetPassword()">
-                    Annuler
+                    Cancel
                 </button>
             </div>
         </form>
@@ -261,19 +261,19 @@ const usernameEl = document.getElementById('reset-username');
 const passwordInput = document.getElementById('new_password');
 
 function showResetPassword(userId, userName) {
-    // Définir l'URL de l'action du formulaire
+    // Set form action URL
     form.action = '{{ url_for("admin_reset_password", user_id=0) }}'.replace('0', userId);
     
-    // Afficher le nom de l'utilisateur
+    // Display username
     usernameEl.textContent = userName;
     
-    // Réinitialiser le formulaire
+    // Reset form
     form.reset();
     
-    // Afficher le modal (display: flex pour le centrage)
+    // Show modal (display: flex for centering)
     modal.style.display = 'flex';
     
-    // Focus sur le champ mot de passe
+    // Focus on password field
     setTimeout(() => {
         passwordInput.focus();
     }, 100);
@@ -284,14 +284,14 @@ function hideResetPassword() {
     form.reset();
 }
 
-// Fermer avec Escape
+// Close with Escape
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && modal.style.display === 'flex') {
         hideResetPassword();
     }
 });
 
-// Fermer en cliquant sur le fond
+// Close by clicking background
 modal.addEventListener('click', function(e) {
     if (e.target === modal) {
         hideResetPassword();

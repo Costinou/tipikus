@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Accueil - Tipikus{% endblock %}
+{% block title %}Home - Tipikus{% endblock %}
 
 {% block page_header %}
 <div class="page-header text-center">
-    <h1>🇭🇺 Choisissez votre niveau</h1>
-    <p class="text-muted">Sélectionnez un niveau pour commencer à apprendre le hongrois</p>
+    <h1>🇭🇺 Choose Your Level</h1>
+    <p class="text-muted">Select a level to start learning Hungarian</p>
 </div>
 {% endblock %}
 
 {% block content %}
-<!-- Grille des niveaux -->
+<!-- Levels grid -->
 <div class="niveaux-grid">
     {% for niveau in niveaux_disponibles %}
     <a href="{{ url_for('niveau', niveau=niveau) }}" 
@@ -27,68 +27,68 @@
             {% endif %}
         </div>
         
-        <!-- Barre de progression -->
+        <!-- Progress bar -->
         {% if niveau in niveaux_progress and niveaux_progress[niveau] > 0 %}
         <div class="progress-container">
             <div class="progress-bar">
                 <div class="progress-fill" style="width: {{ niveaux_progress[niveau] }}%"></div>
             </div>
             <div class="progress-label">
-                <span>Progression</span>
+                <span>Progress</span>
                 <span><strong>{{ "%.1f"|format(niveaux_progress[niveau]) }}%</strong></span>
             </div>
         </div>
         {% endif %}
         
-        <!-- Badge verrouillé -->
+        <!-- Locked badge -->
         {% if niveau not in unlocked_niveaux %}
         <p class="text-muted mt-2" style="font-size: 0.875rem;">
-            ⚠️ Complétez {{ niveaux_disponibles[niveaux_disponibles.index(niveau) - 1] }} à 80% pour débloquer
+            ⚠️ Complete {{ niveaux_disponibles[niveaux_disponibles.index(niveau) - 1] }} to 80% to unlock
         </p>
         {% endif %}
     </a>
     {% endfor %}
 </div>
 
-<!-- Section actions rapides (pour admin) -->
+<!-- Quick actions section (for admin) -->
 {% if user.nom == 'c' %}
 <div class="card mt-3">
     <div class="card-header">
-        <h3 class="card-title">⚡ Actions rapides (Admin)</h3>
+        <h3 class="card-title">⚡ Quick Actions (Admin)</h3>
     </div>
     
     <div class="flex gap-2" style="flex-wrap: wrap;">
         <a href="{{ url_for('nouveau_deck') }}" class="btn btn-primary">
-            ➕ Nouveau deck commun
+            ➕ New common deck
         </a>
         
         <a href="{{ url_for('create_lesson_form') }}" class="btn btn-primary">
-            📖 Nouvelle lesson
+            📖 New lesson
         </a>
         
         <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
-            👥 Gérer les utilisateurs
+            👥 Manage users
         </a>
     </div>
 </div>
 {% endif %}
 
-<!-- Section informations -->
+<!-- Information section -->
 <div class="card mt-3">
     <div class="card-header">
-        <h3 class="card-title">ℹ️ À propos de Tipikus</h3>
+        <h3 class="card-title">ℹ️ About Tipikus</h3>
     </div>
     
     <div class="markdown-content">
-        <p>Tipikus est une application d'apprentissage du hongrois basée sur :</p>
+        <p>Tipikus is a Hungarian learning application based on:</p>
         <ul>
-            <li><strong>Flashcards</strong> : Mémorisez le vocabulaire efficacement</li>
-            <li><strong>Quiz</strong> : Testez vos connaissances</li>
-            <li><strong>Lessons</strong> : Suivez un parcours structuré</li>
-            <li><strong>Progression</strong> : Débloquez les niveaux progressivement</li>
+            <li><strong>Flashcards</strong>: Memorize vocabulary effectively</li>
+            <li><strong>Quizzes</strong>: Test your knowledge</li>
+            <li><strong>Lessons</strong>: Follow a structured learning path</li>
+            <li><strong>Progression</strong>: Unlock levels progressively</li>
         </ul>
         
-        <p><strong>💡 Astuce</strong> : Complétez un niveau à 80% minimum pour débloquer le suivant !</p>
+        <p><strong>💡 Tip</strong>: Complete a level to at least 80% to unlock the next one!</p>
     </div>
 </div>
 {% endblock %}

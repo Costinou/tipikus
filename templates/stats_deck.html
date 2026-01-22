@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Statistiques - {{ deck.nom }}{% endblock %}
+{% block title %}Statistics - {{ deck.nom }}{% endblock %}
 
 {% block page_header %}
 <div class="page-header">
     <div class="flex flex-between" style="align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1>📊 Statistiques</h1>
+            <h1>📊 Statistics</h1>
             <p class="text-muted">{{ deck.nom }} • {{ deck.niveau }}</p>
         </div>
         
         <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary">
-            ← Retour au deck
+            ← Back to Deck
         </a>
     </div>
 </div>
 {% endblock %}
 
 {% block content %}
-<!-- Vue d'ensemble -->
+<!-- Overview -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
     <div class="card">
         <div style="text-align: center;">
@@ -34,7 +34,7 @@
             <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
                 {{ stats.total_mots or 0 }}
             </div>
-            <div class="text-muted" style="font-size: 0.875rem;">Mots vus</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Words Seen</div>
         </div>
     </div>
     
@@ -43,7 +43,7 @@
             <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">
                 🔥 {{ stats.streak or 0 }}
             </div>
-            <div class="text-muted" style="font-size: 0.875rem;">Jours consécutifs</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Day Streak</div>
         </div>
     </div>
     
@@ -53,23 +53,23 @@
             <div style="font-size: 2.5rem; font-weight: 700; color: {% if stats.taux_reussite >= 80 %}#28a745{% elif stats.taux_reussite >= 60 %}var(--accent){% else %}#dc3545{% endif %};">
                 {{ stats.taux_reussite }}%
             </div>
-            <div class="text-muted" style="font-size: 0.875rem;">Taux de réussite</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Success Rate</div>
         </div>
     </div>
     {% endif %}
 </div>
 
-<!-- Temps d'apprentissage -->
+<!-- Learning time -->
 {% if stats.total_duree %}
 <div class="card mb-2">
-    <h3 class="card-title">⏱️ Temps d'apprentissage</h3>
+    <h3 class="card-title">⏱️ Learning Time</h3>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;">
         <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; text-align: center;">
             <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent);">
                 {{ (stats.total_duree // 60) or 0 }}
             </div>
-            <div class="text-muted" style="font-size: 0.875rem;">Minutes totales</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Total Minutes</div>
         </div>
         
         {% if stats.duree_moyenne %}
@@ -77,17 +77,17 @@
             <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent);">
                 {{ (stats.duree_moyenne // 60) or 0 }}
             </div>
-            <div class="text-muted" style="font-size: 0.875rem;">Moyenne / session</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Average / Session</div>
         </div>
         {% endif %}
     </div>
 </div>
 {% endif %}
 
-<!-- Dernières sessions -->
+<!-- Recent sessions -->
 {% if stats.dernieres_sessions %}
 <div class="card mb-2">
-    <h3 class="card-title">📅 Dernières sessions</h3>
+    <h3 class="card-title">📅 Recent Sessions</h3>
     
     <div class="decks-list mt-2">
         {% for session in stats.dernieres_sessions %}
@@ -102,9 +102,9 @@
                 </div>
                 <div class="deck-meta">
                     {{ session.date_session[:16] }} • 
-                    {{ session.nombre_mots_vus }} mots
+                    {{ session.nombre_mots_vus }} words
                     {% if session.type_session == 'quiz' and session.nombre_mots_vus > 0 %}
-                        • {{ ((session.score / session.nombre_mots_vus) * 100)|round|int }}% réussite
+                        • {{ ((session.score / session.nombre_mots_vus) * 100)|round|int }}% success
                     {% endif %}
                 </div>
             </div>
@@ -118,10 +118,10 @@
 </div>
 {% endif %}
 
-<!-- Jours d'activité -->
+<!-- Active days -->
 {% if stats.jours_utilises %}
 <div class="card">
-    <h3 class="card-title">📆 Jours d'activité ({{ stats.jours_utilises|length }})</h3>
+    <h3 class="card-title">📆 Active Days ({{ stats.jours_utilises|length }})</h3>
     
     <div style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.875rem; line-height: 1.8;">
         {% for jour in stats.jours_utilises[:10] %}
@@ -130,18 +130,18 @@
             </span>
         {% endfor %}
         {% if stats.jours_utilises|length > 10 %}
-            <span style="color: var(--text-secondary);">... et {{ stats.jours_utilises|length - 10 }} autre(s)</span>
+            <span style="color: var(--text-secondary);">... and {{ stats.jours_utilises|length - 10 }} more</span>
         {% endif %}
     </div>
 </div>
 {% endif %}
 
-<!-- Message si aucune donnée -->
+<!-- Message if no data -->
 {% if not stats.total_sessions or stats.total_sessions == 0 %}
 <div class="card text-center" style="padding: 3rem;">
     <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
-    <h3>Aucune statistique</h3>
-    <p class="text-muted">Commencez à utiliser ce deck pour voir vos statistiques !</p>
+    <h3>No Statistics</h3>
+    <p class="text-muted">Start using this deck to see your stats!</p>
     
     <div class="flex flex-center gap-2 mt-2">
         <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn btn-primary">

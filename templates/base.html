@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,7 @@
     <!-- ⭐ PWA MANIFEST -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     
-    <!-- ⭐ THEME COLOR (apparaît dans la barre de statut Android) -->
+    <!-- ⭐ THEME COLOR -->
     <meta name="theme-color" content="#fca311">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14213d">
     
@@ -25,53 +25,53 @@
     <!-- Existing CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
-    <!-- JavaScript pour le thème -->
+    <!-- JavaScript for theme -->
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     
     <!-- ⭐ SERVICE WORKER REGISTRATION -->
     <script>
-        // Enregistrer le Service Worker
+        // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js')
                     .then(reg => {
-                        console.log('✅ Service Worker enregistré', reg.scope);
+                        console.log('✅ Service Worker registered', reg.scope);
                         
-                        // Vérifier les mises à jour toutes les heures
+                        // Check for updates every hour
                         setInterval(() => {
                             reg.update();
                         }, 60 * 60 * 1000);
                     })
-                    .catch(err => console.error('❌ Erreur Service Worker:', err));
+                    .catch(err => console.error('❌ Service Worker error:', err));
             });
 
-            // Détecter les mises à jour du Service Worker
+            // Detect Service Worker updates
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (refreshing) return;
                 refreshing = true;
                 
-                // Afficher un message à l'utilisateur
-                if (confirm('Une nouvelle version est disponible. Recharger maintenant ?')) {
+                // Show message to user
+                if (confirm('A new version is available. Reload now?')) {
                     window.location.reload();
                 }
             });
         }
 
-        // ⭐ BANNIÈRE D'INSTALLATION PWA PERSONNALISÉE
+        // ⭐ CUSTOM PWA INSTALL BANNER
         let deferredPrompt;
         
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Empêcher la bannière par défaut
+            // Prevent default banner
             e.preventDefault();
             deferredPrompt = e;
             
-            // Afficher votre propre bannière
+            // Show custom banner
             showInstallBanner();
         });
 
         function showInstallBanner() {
-            // Créer une bannière personnalisée
+            // Create custom banner
             const banner = document.createElement('div');
             banner.id = 'install-banner';
             banner.innerHTML = `
@@ -91,13 +91,13 @@
                     animation: slideUp 0.3s ease-out;
                 ">
                     <div style="flex: 1;">
-                        <strong>📱 Installer Tipikus</strong>
+                        <strong>📱 Install Tipikus</strong>
                         <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--text-secondary);">
-                            Accédez rapidement à vos leçons depuis votre écran d'accueil
+                            Quick access to your lessons from your home screen
                         </p>
                     </div>
                     <button onclick="installPWA()" class="btn btn-primary" style="white-space: nowrap;">
-                        Installer
+                        Install
                     </button>
                     <button onclick="dismissInstallBanner()" class="btn btn-secondary btn-icon">
                         ✕
@@ -116,9 +116,9 @@
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === 'accepted') {
-                    console.log('✅ PWA installée');
+                    console.log('✅ PWA installed');
                 } else {
-                    console.log('❌ Installation refusée');
+                    console.log('❌ Installation declined');
                 }
                 deferredPrompt = null;
             });
@@ -132,9 +132,9 @@
             }
         }
 
-        // Détecter l'installation réussie
+        // Detect successful installation
         window.addEventListener('appinstalled', () => {
-            console.log('✅ PWA installée avec succès');
+            console.log('✅ PWA installed successfully');
             deferredPrompt = null;
         });
     </script>
@@ -158,40 +158,40 @@
         <div class="header-content">
             <!-- Logo -->
             <a href="{{ url_for('index') }}" class="logo">
-                <span>Tipikus</span> <!-- 𐲧𐲎𐲁𐲎𐲞𐲦𐲨 -->
+                <span>Tipikus</span>
             </a>
             
             <!-- Navigation & Actions -->
             <nav class="nav-actions">
                 {% if user %}
-                    <!-- Utilisateur connecté -->
-                    <span class="text-muted">Bonjour, <strong>{{ user.nom }}</strong></span>
+                    <!-- Logged in user -->
+                    <span class="text-muted">Hello, <strong>{{ user.nom }}</strong></span>
                     
                     {% if user.nom == 'c' %}
-                        <!-- Actions Admin -->
-                        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary btn-icon" title="Gestion utilisateurs">
+                        <!-- Admin Actions -->
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary btn-icon" title="User Management">
                             👥
                         </a>
                     {% endif %}
                     
-                    <!-- Changement de mot de passe -->
-                    <a href="{{ url_for('change_password') }}" class="btn btn-secondary btn-icon" title="Changer le mot de passe">
+                    <!-- Change password -->
+                    <a href="{{ url_for('change_password') }}" class="btn btn-secondary btn-icon" title="Change Password">
                         🔐
                     </a>
                     
-                    <!-- Statistiques -->
-                    <a href="{{ url_for('stats_globales') }}" class="btn btn-secondary btn-icon" title="Statistiques">
+                    <!-- Statistics -->
+                    <a href="{{ url_for('stats_globales') }}" class="btn btn-secondary btn-icon" title="Statistics">
                         📊
                     </a>
                     
-                    <!-- Déconnexion -->
-                    <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-icon" title="Se déconnecter">
+                    <!-- Logout -->
+                    <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-icon" title="Log Out">
                         🚪
                     </a>
                 {% endif %}
                 
-                <!-- Toggle Thème Dark/Light -->
-                <button class="theme-toggle" aria-label="Changer le thème">
+                <!-- Toggle Dark/Light Theme -->
+                <button class="theme-toggle" aria-label="Toggle theme">
                     <span class="theme-icon">🌙</span>
                 </button>
             </nav>
@@ -223,7 +223,7 @@
     <!-- FOOTER -->
     <footer class="footer text-center text-muted">
         <div class="container">
-            <p>&copy; 2024 Tipikus - Apprentissage du hongrois 🇭🇺</p>
+            <p>&copy; 2024 Tipikus - Learn Hungarian 🇭🇺</p>
         </div>
     </footer>
     

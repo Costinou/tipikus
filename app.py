@@ -20,28 +20,28 @@ from database import (
     NIVEAUX_DISPONIBLES
 )
 
-# Import pour la synthèse vocale
+# Import for text-to-speech
 try:
     from gtts import gTTS
     GTTS_AVAILABLE = True
 except ImportError:
     GTTS_AVAILABLE = False
-    print("Warning: gTTS n'est pas installé.")
+    print("Warning: gTTS is not installed.")
 
 app = Flask(__name__)
 app.secret_key = 'tipikus_secret_key_2024'
 
-# Configuration des sessions
-app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 an
+# Session configuration
+app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 year
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-# ========== ROUTES AUTHENTIFICATION ==========
+# ========== AUTHENTICATION ROUTES ==========
 
 @app.route('/login', methods=['GET'])
 def login():
-    """Page de connexion"""
-    # Si déjà connecté, rediriger vers l'accueil
+    """Login page"""
+    # If already logged in, redirect to home
     if session.get('user_id'):
         return redirect(url_for('index'))
     
@@ -49,22 +49,22 @@ def login():
 
 @app.route('/login', methods=['POST'])
 def login_post():
-    """Traiter la connexion"""
+    """Process login"""
     nom = request.form.get('nom', '').strip()
     password = request.form.get('password', '').strip()
     
     if not nom or not password:
-        flash('Nom et mot de passe requis')
+        flash('Username and password required')
         return redirect(url_for('login'))
     
-    # Vérifier les identifiants
+    # Verify credentials
     user = verify_user_password(nom, password)
     
     if not user:
-        flash('Nom d\'utilisateur ou mot de passe incorrect')
+        flash('Incorrect username or password')
         return redirect(url_for('login'))
     
-    # Connexion réussie
+    # Successful login
     session.clear()
     session.permanent = True
     session['user_id'] = user['id']
@@ -75,14 +75,14 @@ def login_post():
 
 @app.route('/logout')
 def logout():
-    """Déconnexion"""
+    """Logout"""
     session.clear()
-    flash('Vous avez été déconnecté')
+    flash('You have been logged out')
     return redirect(url_for('login'))
 
 @app.route('/change-password', methods=['GET'])
 def change_password():
-    """Page de changement de mot de passe"""
+    """Password change page"""
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('login'))
@@ -92,7 +92,7 @@ def change_password():
 
 @app.route('/change-password', methods=['POST'])
 def change_password_post():
-    """Traiter le changement de mot de passe"""
+    """Process password change"""
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     
@@ -103,52 +103,52 @@ def change_password_post():
     new_password = request.form.get('new_password', '')
     confirm_password = request.form.get('confirm_password', '')
     
-    # Vérifications
+    # Validations
     if not current_password or not new_password or not confirm_password:
-        flash('Tous les champs sont requis')
+        flash('All fields are required')
         return redirect(url_for('change_password'))
     
-    # Vérifier le mot de passe actuel
+    # Verify current password
     user = verify_user_password(user_name, current_password)
     if not user:
-        flash('Mot de passe actuel incorrect')
+        flash('Current password is incorrect')
         return redirect(url_for('change_password'))
     
-    # Vérifier que les nouveaux mots de passe correspondent
+    # Check that new passwords match
     if new_password != confirm_password:
-        flash('Les nouveaux mots de passe ne correspondent pas')
+        flash('New passwords do not match')
         return redirect(url_for('change_password'))
     
-    # Vérifier la longueur
+    # Check length
     if len(new_password) < 4:
-        flash('Le mot de passe doit contenir au moins 4 caractères')
+        flash('Password must be at least 4 characters')
         return redirect(url_for('change_password'))
     
-    # Mettre à jour le mot de passe
+    # Update password
     update_user_password(user_id, new_password)
     
-    flash('Mot de passe changé avec succès!')
+    flash('Password changed successfully!')
     return redirect(url_for('index'))
 
-# ========== ROUTES ADMIN (Gestion utilisateurs) ==========
+# ========== ADMIN ROUTES (User management) ==========
 
 @app.route('/admin/users')
 def admin_users():
-    """Page de gestion des utilisateurs (admin uniquement)"""
+    """User management page (admin only)"""
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     
     if not user_id or user_name != 'c':
-        flash('Accès refusé')
+        flash('Access denied')
         return redirect(url_for('index'))
     
-    # Récupérer tous les utilisateurs
+    # Get all users
     users = get_all_users()
     
-    # Récupérer les statistiques par utilisateur
+    # Get statistics per user
     users_stats = get_users_with_stats()
     
-    # Récupérer les 10 dernières sessions
+    # Get last 10 sessions
     recent_sessions = get_recent_sessions(limit=10)
     
     user = get_user_by_id(user_id)
@@ -161,128 +161,128 @@ def admin_users():
 
 @app.route('/admin/create-user', methods=['POST'])
 def admin_create_user():
-    """Créer un utilisateur (admin uniquement)"""
+    """Create a user (admin only)"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        flash('Accès refusé')
+        flash('Access denied')
         return redirect(url_for('index'))
     
     nom = request.form.get('nom', '').strip()
     password = request.form.get('password', '').strip()
     
     if not nom or not password:
-        flash('Nom et mot de passe requis')
+        flash('Username and password required')
         return redirect(url_for('admin_users'))
     
     if len(nom) > 50:
-        flash('Le nom est trop long (max 50 caractères)')
+        flash('Username is too long (max 50 characters)')
         return redirect(url_for('admin_users'))
     
     if len(password) < 4:
-        flash('Le mot de passe doit contenir au moins 4 caractères')
+        flash('Password must be at least 4 characters')
         return redirect(url_for('admin_users'))
     
     user_id = create_user(nom, password)
     
     if user_id is None:
-        flash('Ce nom existe déjà')
+        flash('This username already exists')
         return redirect(url_for('admin_users'))
     
-    flash(f'Utilisateur "{nom}" créé avec succès')
+    flash(f'User "{nom}" created successfully')
     return redirect(url_for('admin_users'))
 
 @app.route('/admin/delete-user/<int:user_id>', methods=['POST'])
 def admin_delete_user(user_id):
-    """Supprimer un utilisateur (admin uniquement)"""
+    """Delete a user (admin only)"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        flash('Accès refusé')
+        flash('Access denied')
         return redirect(url_for('index'))
     
-    # Empêcher de supprimer l'admin
+    # Prevent deleting admin
     user_to_delete = get_user_by_id(user_id)
     if user_to_delete and user_to_delete['nom'] == 'c':
-        flash('Impossible de supprimer l\'administrateur')
+        flash('Cannot delete administrator')
         return redirect(url_for('admin_users'))
     
     try:
         if user_to_delete:
             nom_user = user_to_delete['nom']
             delete_user(user_id)
-            flash(f'Utilisateur "{nom_user}" supprimé avec succès')
+            flash(f'User "{nom_user}" deleted successfully')
         else:
-            flash('Utilisateur non trouvé')
+            flash('User not found')
     except Exception as e:
-        flash(f'Erreur lors de la suppression: {str(e)}')
+        flash(f'Error during deletion: {str(e)}')
     
     return redirect(url_for('admin_users'))
 
 @app.route('/admin/reset-password/<int:user_id>', methods=['POST'])
 def admin_reset_password(user_id):
-    """Réinitialiser le mot de passe d'un utilisateur (admin uniquement)"""
+    """Reset user password (admin only)"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        flash('Accès refusé')
+        flash('Access denied')
         return redirect(url_for('index'))
     
     new_password = request.form.get('new_password', '').strip()
     
     if not new_password:
-        flash('Mot de passe requis')
+        flash('Password required')
         return redirect(url_for('admin_users'))
     
     if len(new_password) < 4:
-        flash('Le mot de passe doit contenir au moins 4 caractères')
+        flash('Password must be at least 4 characters')
         return redirect(url_for('admin_users'))
     
     user_to_reset = get_user_by_id(user_id)
     if not user_to_reset:
-        flash('Utilisateur non trouvé')
+        flash('User not found')
         return redirect(url_for('admin_users'))
     
     try:
         update_user_password(user_id, new_password)
-        flash(f'Mot de passe de "{user_to_reset["nom"]}" réinitialisé avec succès')
+        flash(f'Password for "{user_to_reset["nom"]}" reset successfully')
     except Exception as e:
-        flash(f'Erreur lors de la réinitialisation: {str(e)}')
+        flash(f'Error during reset: {str(e)}')
     
     return redirect(url_for('admin_users'))
 
-# ========== ROUTES UTILISATEURS (anciennes, simplifiées) ==========
+# ========== USER ROUTES (old, simplified) ==========
 
 @app.route('/api/select-user', methods=['POST'])
 def api_select_user():
-    """Rediriger vers login (ancienne route, pour compatibilité)"""
+    """Redirect to login (old route, for compatibility)"""
     return redirect(url_for('login'))
 
 @app.route('/select-user')
 def select_user():
-    """Rediriger vers login"""
+    """Redirect to login"""
     return redirect(url_for('login'))
 
 @app.route('/create-user', methods=['POST'])
 def create_user_post():
-    """Rediriger vers login"""
+    """Redirect to login"""
     return redirect(url_for('login'))
 
 @app.route('/change-user')
 def change_user():
-    """Déconnexion"""
+    """Logout"""
     return redirect(url_for('logout'))
 
 @app.route('/delete-user/<int:user_id>', methods=['POST'])
 def delete_user_route(user_id):
-    """Rediriger vers admin"""
+    """Redirect to admin"""
     return redirect(url_for('admin_users'))
 
-# ========== ROUTES PRINCIPALES ==========
+# ========== MAIN ROUTES ==========
 
 @app.route('/')
 def index():
-    """Page d'accueil - Sélection du niveau"""
+    """Home page - Level selection"""
     user_id = session.get('user_id')
     
     if not user_id:
@@ -293,66 +293,66 @@ def index():
         session.clear()
         return redirect(url_for('login'))
     
-    # Récupérer les niveaux avec compteur de decks
+    # Get levels with deck counter
     niveaux_counts = get_niveaux_with_counts(user_id)
     
-    # Calculer la progression pour chaque niveau
+    # Calculate progress for each level
     niveaux_progress = {}
     for niveau in NIVEAUX_DISPONIBLES:
         niveaux_progress[niveau] = calculate_niveau_progress(user_id, niveau)
     
-    # NOUVEAU: Obtenir les niveaux débloqués
+    # NEW: Get unlocked levels
     unlocked_niveaux = get_unlocked_niveaux(user_id)
     
     return render_template('index.html', 
                          niveaux_disponibles=NIVEAUX_DISPONIBLES,
                          niveaux_counts=niveaux_counts,
                          niveaux_progress=niveaux_progress,
-                         unlocked_niveaux=unlocked_niveaux,  # NOUVEAU
+                         unlocked_niveaux=unlocked_niveaux,
                          user=user)
 
 
 @app.route('/niveau/<niveau>')
 def niveau(niveau):
-    """Page d'un niveau - Liste des lessons et decks"""
+    """Level page - List of lessons and decks"""
     user_id = session.get('user_id')
     
     if not user_id:
         return redirect(url_for('select_user'))
     
     if niveau not in NIVEAUX_DISPONIBLES:
-        flash(f'Niveau "{niveau}" non supporté')
+        flash(f'Level "{niveau}" not supported')
         return redirect(url_for('index'))
     
-    # Vérifier si le niveau est débloqué
+    # Check if level is unlocked
     unlocked_niveaux = get_unlocked_niveaux(user_id)
     if niveau not in unlocked_niveaux:
-        flash(f'⚠️ Le niveau {niveau} est verrouillé. Complétez le niveau précédent à 80% pour le débloquer.')
+        flash(f'⚠️ Level {niveau} is locked. Complete the previous level to 80% to unlock it.')
         return redirect(url_for('index'))
     
-    # Récupérer les lessons du niveau
+    # Get lessons for this level
     lessons = get_lessons_by_niveau(niveau)
     
-    # Calculer la progression pour chaque lesson
+    # Calculate progress for each lesson
     lessons_progress = {}
     for lesson in lessons:
         lessons_progress[lesson['id']] = calculate_lesson_progress(user_id, lesson['id'])
     
-    # Récupérer les decks HORS lessons (communs + perso pour user normal, TOUS pour admin)
+    # Get decks OUTSIDE lessons (common + personal for normal user, ALL for admin)
     all_decks = get_decks_by_niveau(niveau, user_id, include_in_lessons=False)
     
     user = get_user_by_id(user_id)
     is_admin = user['nom'] == 'c'
     
-    # Séparer les decks
+    # Separate decks
     decks_communs = [d for d in all_decks if d['is_commun']]
     
     if is_admin:
-        # Pour l'admin : séparer decks perso admin + decks perso autres users
+        # For admin: separate admin personal decks + other users' personal decks
         decks_perso_admin = [d for d in all_decks if not d['is_commun'] and d['user_id'] == user_id]
         decks_perso_autres = [d for d in all_decks if not d['is_commun'] and d['user_id'] != user_id]
     else:
-        # Pour user normal : seulement ses decks perso
+        # For normal user: only their personal decks
         decks_perso_admin = []
         decks_perso_autres = []
         decks_perso = [d for d in all_decks if not d['is_commun']]
@@ -367,11 +367,11 @@ def niveau(niveau):
                          user=user,
                          is_admin=is_admin)
 
-# ========== ROUTES POUR LES LESSONS ==========
+# ========== LESSON ROUTES ==========
 
 @app.route('/lesson/<int:lesson_id>')
 def view_lesson(lesson_id):
-    """Afficher une lesson avec son contenu markdown, ses decks et ses exercices"""
+    """Display a lesson with its markdown content, decks and exercises"""
     user_id = session.get('user_id')
     
     if not user_id:
@@ -379,13 +379,13 @@ def view_lesson(lesson_id):
     
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
-        flash('Lesson non trouvée')
+        flash('Lesson not found')
         return redirect(url_for('index'))
     
-    # Récupérer les decks de cette lesson
+    # Get decks for this lesson
     decks = get_decks_by_lesson(lesson_id)
     
-    # Récupérer les exercices de cette lesson
+    # Get exercises for this lesson
     exercices = get_exercices_by_lesson(lesson_id)
     
     user = get_user_by_id(user_id)
@@ -398,16 +398,16 @@ def view_lesson(lesson_id):
 
 @app.route('/create-lesson', methods=['GET'])
 def create_lesson_form():
-    """Formulaire de création de lesson (admin uniquement)"""
+    """Lesson creation form (admin only)"""
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     
     if not user_id:
         return redirect(url_for('select_user'))
     
-    # Vérifier que c'est l'admin
+    # Check that it's admin
     if user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut créer des lessons')
+        flash('Only user "c" can create lessons')
         return redirect(url_for('index'))
     
     user = get_user_by_id(user_id)
@@ -415,12 +415,12 @@ def create_lesson_form():
 
 @app.route('/create-lesson', methods=['POST'])
 def create_lesson_post():
-    """Traiter la création d'une lesson"""
+    """Process lesson creation"""
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     
     if not user_id or user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut créer des lessons')
+        flash('Only user "c" can create lessons')
         return redirect(url_for('index'))
     
     niveau = request.form.get('niveau', '').strip()
@@ -430,7 +430,7 @@ def create_lesson_post():
     
     # Validations
     if niveau not in NIVEAUX_DISPONIBLES:
-        flash('Niveau invalide')
+        flash('Invalid level')
         return redirect(url_for('create_lesson_form'))
     
     try:
@@ -438,48 +438,48 @@ def create_lesson_post():
         if numero < 1:
             raise ValueError()
     except (ValueError, TypeError):
-        flash('Le numéro doit être un entier positif')
+        flash('Number must be a positive integer')
         return redirect(url_for('create_lesson_form'))
     
     if not titre:
-        flash('Le titre est obligatoire')
+        flash('Title is required')
         return redirect(url_for('create_lesson_form'))
     
     if not fichier_md or not fichier_md.filename.endswith('.md'):
-        flash('Veuillez sélectionner un fichier .md')
+        flash('Please select a .md file')
         return redirect(url_for('create_lesson_form'))
     
     try:
-        # Lire le contenu du fichier markdown
+        # Read markdown file content
         content_markdown = fichier_md.read().decode('utf-8')
         
-        # Créer la lesson
+        # Create lesson
         lesson_id = create_lesson(niveau, numero, titre, content_markdown)
         
         if lesson_id is None:
-            flash(f'Une lesson {numero} existe déjà pour le niveau {niveau}')
+            flash(f'A lesson {numero} already exists for level {niveau}')
             return redirect(url_for('create_lesson_form'))
         
-        flash(f'Lesson "{titre}" créée avec succès!')
+        flash(f'Lesson "{titre}" created successfully!')
         return redirect(url_for('view_lesson', lesson_id=lesson_id))
         
     except Exception as e:
-        flash(f'Erreur lors de la création: {str(e)}')
+        flash(f'Error during creation: {str(e)}')
         return redirect(url_for('create_lesson_form'))
 
 @app.route('/delete-lesson/<int:lesson_id>', methods=['POST'])
 def delete_lesson_route(lesson_id):
-    """Supprimer une lesson (admin uniquement)"""
+    """Delete a lesson (admin only)"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut supprimer des lessons')
+        flash('Only user "c" can delete lessons')
         return redirect(url_for('index'))
     
     try:
         lesson = get_lesson_by_id(lesson_id)
         if not lesson:
-            flash('Lesson non trouvée')
+            flash('Lesson not found')
             return redirect(url_for('index'))
         
         niveau = lesson['niveau']
@@ -487,26 +487,26 @@ def delete_lesson_route(lesson_id):
         
         delete_lesson(lesson_id)
         
-        flash(f'Lesson "{titre}" supprimée avec succès')
+        flash(f'Lesson "{titre}" deleted successfully')
         return redirect(url_for('niveau', niveau=niveau))
         
     except Exception as e:
-        flash(f'Erreur lors de la suppression: {str(e)}')
+        flash(f'Error during deletion: {str(e)}')
         return redirect(url_for('index'))
 
 @app.route('/edit-lesson/<int:lesson_id>', methods=['GET'])
 def edit_lesson_form(lesson_id):
-    """Formulaire de modification d'une lesson (admin uniquement)"""
+    """Lesson editing form (admin only)"""
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     
     if not user_id or user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut modifier des lessons')
+        flash('Only user "c" can edit lessons')
         return redirect(url_for('index'))
     
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
-        flash('Lesson non trouvée')
+        flash('Lesson not found')
         return redirect(url_for('index'))
     
     user = get_user_by_id(user_id)
@@ -514,16 +514,16 @@ def edit_lesson_form(lesson_id):
 
 @app.route('/edit-lesson/<int:lesson_id>', methods=['POST'])
 def edit_lesson_post(lesson_id):
-    """Traiter la modification d'une lesson"""
+    """Process lesson modification"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut modifier des lessons')
+        flash('Only user "c" can edit lessons')
         return redirect(url_for('index'))
     
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
-        flash('Lesson non trouvée')
+        flash('Lesson not found')
         return redirect(url_for('index'))
     
     titre = request.form.get('titre', '').strip()
@@ -531,46 +531,46 @@ def edit_lesson_post(lesson_id):
     
     # Validations
     if not titre:
-        flash('Le titre est obligatoire')
+        flash('Title is required')
         return redirect(url_for('edit_lesson_form', lesson_id=lesson_id))
     
     try:
-        # Si un nouveau fichier est uploadé, le lire
+        # If new file uploaded, read it
         if fichier_md and fichier_md.filename and fichier_md.filename.endswith('.md'):
             content_markdown = fichier_md.read().decode('utf-8')
         else:
-            # Sinon, garder l'ancien contenu
+            # Otherwise, keep old content
             content_markdown = lesson['content_markdown']
         
-        # Mettre à jour la lesson
+        # Update lesson
         update_lesson(lesson_id, titre, content_markdown)
         
-        flash(f'Lesson "{titre}" modifiée avec succès!')
+        flash(f'Lesson "{titre}" modified successfully!')
         return redirect(url_for('view_lesson', lesson_id=lesson_id))
         
     except Exception as e:
-        flash(f'Erreur lors de la modification: {str(e)}')
+        flash(f'Error during modification: {str(e)}')
         return redirect(url_for('edit_lesson_form', lesson_id=lesson_id))
 
 @app.route('/manage-lesson-decks/<int:lesson_id>')
 def manage_lesson_decks(lesson_id):
-    """Interface pour gérer les decks d'une lesson (admin uniquement)"""
+    """Interface to manage lesson decks (admin only)"""
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     
     if not user_id or user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut gérer les lessons')
+        flash('Only user "c" can manage lessons')
         return redirect(url_for('index'))
     
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
-        flash('Lesson non trouvée')
+        flash('Lesson not found')
         return redirect(url_for('index'))
     
-    # Decks déjà dans la lesson
+    # Decks already in lesson
     decks_in_lesson = get_decks_by_lesson(lesson_id)
     
-    # Decks disponibles (communs, même niveau, pas encore dans une lesson)
+    # Available decks (common, same level, not yet in a lesson)
     all_decks = get_decks_by_niveau(lesson['niveau'], user_id, include_in_lessons=True)
     available_decks = [d for d in all_decks if d['is_commun'] and d['lesson_id'] is None]
     
@@ -584,11 +584,11 @@ def manage_lesson_decks(lesson_id):
 
 @app.route('/associate-deck-to-lesson', methods=['POST'])
 def associate_deck_route():
-    """Associer un deck à une lesson"""
+    """Associate a deck with a lesson"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        return jsonify({'error': 'Non autorisé'}), 403
+        return jsonify({'error': 'Unauthorized'}), 403
     
     deck_id = request.form.get('deck_id')
     lesson_id = request.form.get('lesson_id')
@@ -597,16 +597,16 @@ def associate_deck_route():
         associate_deck_to_lesson(int(deck_id), int(lesson_id))
         return redirect(url_for('manage_lesson_decks', lesson_id=lesson_id))
     except Exception as e:
-        flash(f'Erreur: {str(e)}')
+        flash(f'Error: {str(e)}')
         return redirect(url_for('manage_lesson_decks', lesson_id=lesson_id))
 
 @app.route('/detach-deck-from-lesson/<int:deck_id>', methods=['POST'])
 def detach_deck_route(deck_id):
-    """Détacher un deck de sa lesson"""
+    """Detach a deck from its lesson"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        flash('Non autorisé')
+        flash('Unauthorized')
         return redirect(url_for('index'))
     
     try:
@@ -620,15 +620,15 @@ def detach_deck_route(deck_id):
         else:
             return redirect(url_for('index'))
     except Exception as e:
-        flash(f'Erreur: {str(e)}')
+        flash(f'Error: {str(e)}')
         return redirect(url_for('index'))
 
-# ========== ROUTES PRINCIPALES ==========
+# ========== MAIN ROUTES ==========
 
 @app.route('/nouveau-deck')
 @app.route('/nouveau-deck/<niveau>')
 def nouveau_deck(niveau=None):
-    """Afficher le formulaire de création de deck"""
+    """Display deck creation form"""
     user_id = session.get('user_id')
     
     if not user_id:
@@ -643,7 +643,7 @@ def nouveau_deck(niveau=None):
 
 @app.route('/creer-deck', methods=['POST'])
 def creer_deck():
-    """Traiter la création d'un nouveau deck"""
+    """Process creating a new deck"""
     user_id = session.get('user_id')
     
     if not user_id:
@@ -655,24 +655,24 @@ def creer_deck():
     fichier = request.files.get('fichier')
     
     if niveau not in NIVEAUX_DISPONIBLES:
-        flash('Veuillez sélectionner un niveau valide')
+        flash('Please select a valid level')
         return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES)
     
     if not nom_deck:
-        flash('Le nom du deck est obligatoire')
+        flash('Deck name is required')
         return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
     
     if not fichier or fichier.filename == '':
-        flash('Veuillez sélectionner un fichier')
+        flash('Please select a file')
         return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
     
-    # Déterminer le type de fichier
+    # Determine file type
     filename = fichier.filename.lower()
     is_json = filename.endswith('.json')
     is_csv = filename.endswith('.csv')
     
     if not (is_json or is_csv):
-        flash('Format de fichier non supporté. Utilisez .json ou .csv')
+        flash('Unsupported file format. Use .json or .csv')
         return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
     
     try:
@@ -682,14 +682,14 @@ def creer_deck():
         if is_json:
             mots_dict = json.loads(contenu)
             if not isinstance(mots_dict, dict):
-                flash('Le fichier JSON doit être un objet (dictionnaire)')
+                flash('JSON file must be an object (dictionary)')
                 return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
         
         elif is_csv:
             lignes = contenu.strip().split('\n')
             
             if len(lignes) < 2:
-                flash('Le fichier CSV doit contenir au moins 2 lignes')
+                flash('CSV file must contain at least 2 lines')
                 return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
             
             premiere_ligne = lignes[0]
@@ -710,27 +710,27 @@ def creer_deck():
                         mots_dict[mot_fr] = traduction
         
         if not mots_dict:
-            flash('Le fichier est vide ou ne contient pas de mots valides')
+            flash('File is empty or contains no valid words')
             return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
         
-        # Créer le deck
+        # Create deck
         deck_id = create_deck(nom_deck, niveau, user_id, is_commun)
         add_mots_to_deck(deck_id, mots_dict)
         
-        type_deck = "commun" if is_commun else "personnel"
-        flash(f'Deck {type_deck} "{nom_deck}" créé avec {len(mots_dict)} mots!')
+        type_deck = "common" if is_commun else "personal"
+        flash(f'{type_deck.capitalize()} deck "{nom_deck}" created with {len(mots_dict)} words!')
         return redirect(url_for('niveau', niveau=niveau))
         
     except json.JSONDecodeError:
-        flash('Erreur: Fichier JSON invalide')
+        flash('Error: Invalid JSON file')
         return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
     except Exception as e:
-        flash(f'Erreur lors de la création du deck: {str(e)}')
+        flash(f'Error creating deck: {str(e)}')
         return render_template('nouveau_deck.html', niveaux=NIVEAUX_DISPONIBLES, niveau_preselect=niveau)
 
 @app.route('/supprimer-deck/<int:deck_id>', methods=['POST'])
 def supprimer_deck(deck_id):
-    """Supprimer un deck"""
+    """Delete a deck"""
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     
@@ -740,19 +740,19 @@ def supprimer_deck(deck_id):
     try:
         deck = get_deck_by_id(deck_id)
         if not deck:
-            flash('Deck non trouvé')
+            flash('Deck not found')
             return redirect(url_for('index'))
         
-        # Vérifier les permissions
+        # Check permissions
         if deck['is_commun']:
-            # Deck commun : seul 'c' peut supprimer
+            # Common deck: only 'c' can delete
             if user_name != 'c':
-                flash('Seul l\'utilisateur "c" peut supprimer les decks communs')
+                flash('Only user "c" can delete common decks')
                 return redirect(url_for('niveau', niveau=deck['niveau']))
         else:
-            # Deck perso : seul le propriétaire peut supprimer
+            # Personal deck: only owner can delete
             if deck['user_id'] != user_id:
-                flash('Vous ne pouvez pas supprimer ce deck')
+                flash('You cannot delete this deck')
                 return redirect(url_for('niveau', niveau=deck['niveau']))
         
         niveau = deck['niveau']
@@ -760,28 +760,28 @@ def supprimer_deck(deck_id):
         
         delete_deck(deck_id)
         
-        flash(f'Deck "{nom_deck}" supprimé avec succès')
+        flash(f'Deck "{nom_deck}" deleted successfully')
         return redirect(url_for('niveau', niveau=niveau))
         
     except Exception as e:
-        flash(f'Erreur lors de la suppression: {str(e)}')
+        flash(f'Error during deletion: {str(e)}')
         return redirect(url_for('index'))
 
 @app.route('/exporter-deck/<int:deck_id>')
 def exporter_deck(deck_id):
-    """Exporter un deck au format JSON ou CSV"""
+    """Export a deck in JSON or CSV format"""
     format_export = request.args.get('format', 'json').lower()
     
     try:
         deck = get_deck_by_id(deck_id)
         if not deck:
-            flash('Deck non trouvé')
+            flash('Deck not found')
             return redirect(url_for('index'))
         
         mots_dict = get_mots_by_deck_ordered(deck_id)
         
         if not mots_dict:
-            flash('Ce deck ne contient aucun mot')
+            flash('This deck contains no words')
             return redirect(url_for('niveau', niveau=deck['niveau']))
         
         base_filename = deck['nom'].replace(' ', '_')
@@ -793,7 +793,7 @@ def exporter_deck(deck_id):
             wrapper = io.TextIOWrapper(buffer, encoding='utf-8', newline='', write_through=True)
             writer = csv.writer(wrapper, delimiter=';')
             
-            writer.writerow(['Français', 'Hongrois'])
+            writer.writerow(['French', 'Hungarian'])
             
             for mot_fr, traduction in mots_dict.items():
                 writer.writerow([mot_fr, traduction])
@@ -821,16 +821,16 @@ def exporter_deck(deck_id):
             )
         
     except Exception as e:
-        flash(f'Erreur lors de l\'export: {str(e)}')
+        flash(f'Error during export: {str(e)}')
         return redirect(url_for('index'))
 
 @app.route('/voir-deck/<int:deck_id>')
 def voir_deck(deck_id):
-    """Afficher le contenu d'un deck"""
+    """Display deck content"""
     try:
         deck = get_deck_by_id(deck_id)
         if not deck:
-            flash('Deck non trouvé')
+            flash('Deck not found')
             return redirect(url_for('index'))
         
         mots = get_mots_by_deck(deck_id)
@@ -839,38 +839,38 @@ def voir_deck(deck_id):
         return render_template('voir_deck.html', deck=deck, mots=mots_sorted)
         
     except Exception as e:
-        flash(f'Erreur: {str(e)}')
+        flash(f'Error: {str(e)}')
         return redirect(url_for('index'))
 
 @app.route('/apprendre/<int:deck_id>')
 def apprendre(deck_id):
-    """Page d'apprentissage pour un deck"""
+    """Learning page for a deck"""
     mots = get_mots_by_deck(deck_id)
     
     if not mots:
-        flash('Ce deck ne contient aucun mot')
+        flash('This deck contains no words')
         return redirect(url_for('index'))
     
     return render_template('apprendre.html', mots=mots, deck_id=deck_id)
 
 @app.route('/quiz/<int:deck_id>')
 def quiz(deck_id):
-    """Page de quiz QCM pour un deck"""
+    """Multiple choice quiz page for a deck"""
     mots = get_mots_by_deck(deck_id)
     
     if not mots:
-        flash('Ce deck ne contient aucun mot')
+        flash('This deck contains no words')
         return redirect(url_for('index'))
     
     if len(mots) < 3:
-        flash('Le deck doit contenir au moins 3 mots pour faire un quiz')
+        flash('Deck must contain at least 3 words for a quiz')
         return redirect(url_for('index'))
     
     return render_template('quiz.html', mots=mots, deck_id=deck_id)
 
 @app.route('/api/mots/<int:deck_id>')
 def api_mots(deck_id):
-    """API pour récupérer les mots d'un deck"""
+    """API to retrieve words from a deck"""
     mots = get_mots_by_deck(deck_id)
     return jsonify([{
         'id': mot['id'],
@@ -880,13 +880,13 @@ def api_mots(deck_id):
 
 @app.route('/api/tts')
 def text_to_speech():
-    """API pour générer l'audio TTS en hongrois"""
+    """API to generate Hungarian TTS audio"""
     if not GTTS_AVAILABLE:
-        return jsonify({'error': 'gTTS non disponible'}), 503
+        return jsonify({'error': 'gTTS not available'}), 503
     
     texte = request.args.get('text', '')
     if not texte:
-        return jsonify({'error': 'Paramètre text manquant'}), 400
+        return jsonify({'error': 'Missing text parameter'}), 400
     
     try:
         tts = gTTS(text=texte, lang='hu', slow=False)
@@ -904,11 +904,11 @@ def text_to_speech():
 
 @app.route('/api/session', methods=['POST'])
 def enregistrer_session():
-    """API pour enregistrer une session d'apprentissage"""
+    """API to record a learning session"""
     user_id = session.get('user_id')
     
     if not user_id:
-        return jsonify({'error': 'Non authentifié'}), 401
+        return jsonify({'error': 'Not authenticated'}), 401
     
     try:
         data = request.get_json()
@@ -921,9 +921,9 @@ def enregistrer_session():
         complete = data.get('complete', False)
         
         if not deck_id or not type_session:
-            return jsonify({'error': 'Paramètres manquants'}), 400
+            return jsonify({'error': 'Missing parameters'}), 400
         
-        # Passer user_id à la fonction create_session
+        # Pass user_id to create_session function
         session_id = create_session(
             deck_id, user_id, type_session, nombre_mots_vus, 
             score, duree_secondes, complete
@@ -936,7 +936,7 @@ def enregistrer_session():
 
 @app.route('/stats/deck/<int:deck_id>')
 def stats_deck(deck_id):
-    """Afficher les statistiques d'un deck pour l'utilisateur connecté"""
+    """Display deck statistics for logged in user"""
     user_id = session.get('user_id')
     
     if not user_id:
@@ -945,10 +945,10 @@ def stats_deck(deck_id):
     try:
         deck = get_deck_by_id(deck_id)
         if not deck:
-            flash('Deck non trouvé')
+            flash('Deck not found')
             return redirect(url_for('index'))
         
-        # Passer user_id à la fonction de stats
+        # Pass user_id to stats function
         stats = get_stats_deck(deck_id, user_id, days=30)
         
         streak = calculer_streak(stats.get('jours_utilises', []))
@@ -963,22 +963,22 @@ def stats_deck(deck_id):
         return render_template('stats_deck.html', deck=deck, stats=stats)
         
     except Exception as e:
-        flash(f'Erreur: {str(e)}')
+        flash(f'Error: {str(e)}')
         return redirect(url_for('index'))
 
 @app.route('/stats/niveau/<niveau>')
 def stats_niveau_route(niveau):
-    """Afficher les statistiques d'un niveau pour l'utilisateur connecté"""
+    """Display level statistics for logged in user"""
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('login'))
     
     try:
         if niveau not in NIVEAUX_DISPONIBLES:
-            flash('Niveau non trouvé')
+            flash('Level not found')
             return redirect(url_for('index'))
         
-        # Passer user_id à la fonction de stats
+        # Pass user_id to stats function
         stats = get_stats_niveau(niveau, user_id, days=30)
         decks = get_decks_by_niveau(niveau, user_id)
         
@@ -996,19 +996,19 @@ def stats_niveau_route(niveau):
         return render_template('stats_niveau.html', niveau=niveau, stats=stats, decks=decks, user=user)
         
     except Exception as e:
-        flash(f'Erreur: {str(e)}')
+        flash(f'Error: {str(e)}')
         return redirect(url_for('index'))
 
 
 @app.route('/stats')
 def stats_globales():
-    """Afficher les statistiques globales pour l'utilisateur connecté"""
+    """Display global statistics for logged in user"""
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('login'))
     
     try:
-        # Passer user_id à la fonction de stats
+        # Pass user_id to stats function
         stats = get_stats_globales(user_id, days=30)
         
         streak = calculer_streak(stats.get('jours_utilises', []))
@@ -1034,7 +1034,7 @@ def stats_globales():
                              user=user)
         
     except Exception as e:
-        flash(f'Erreur: {str(e)}')
+        flash(f'Error: {str(e)}')
         return redirect(url_for('index'))
 
 @app.errorhandler(404)
@@ -1043,74 +1043,74 @@ def page_not_found(e):
 
 
 def get_unlocked_niveaux(user_id):
-    """Retourne la liste des niveaux débloqués pour un utilisateur
+    """Returns list of unlocked levels for a user
     
-    Pour l'admin 'c': TOUS les niveaux sont débloqués
-    Pour les autres: Un niveau est débloqué si le précédent a >= 80% de progression
-    Le premier niveau (A1) est toujours débloqué
+    For admin 'c': ALL levels are unlocked
+    For others: A level is unlocked if previous one has >= 80% progress
+    First level (A1) is always unlocked
     """
     from database import NIVEAUX_DISPONIBLES, calculate_niveau_progress, get_user_by_id
     
-    # Vérifier si l'utilisateur est l'admin
+    # Check if user is admin
     user = get_user_by_id(user_id)
     if user and user['nom'] == 'c':
-        # Admin a accès à TOUS les niveaux
+        # Admin has access to ALL levels
         return NIVEAUX_DISPONIBLES.copy()
     
-    # Pour les autres utilisateurs, logique normale
+    # For other users, normal logic
     unlocked = []
     
     for i, niveau in enumerate(NIVEAUX_DISPONIBLES):
-        # A1 et Custom sont toujours débloqués
+        # A1 and Custom are always unlocked
         if niveau == 'A1' or niveau == 'Custom':
             unlocked.append(niveau)
             continue
         
-        # Vérifier le niveau précédent
+        # Check previous level
         if i > 0:
             niveau_precedent = NIVEAUX_DISPONIBLES[i - 1]
             
-            # Si c'est Custom, on prend le niveau d'avant
+            # If it's Custom, take the one before
             if niveau_precedent == 'Custom':
                 if i > 1:
                     niveau_precedent = NIVEAUX_DISPONIBLES[i - 2]
                 else:
-                    # Cas improbable mais sécurité
+                    # Unlikely case but for safety
                     unlocked.append(niveau)
                     continue
             
             progression_precedent = calculate_niveau_progress(user_id, niveau_precedent)
             
-            # Débloquer si >= 80%
+            # Unlock if >= 80%
             if progression_precedent >= 80.0:
                 unlocked.append(niveau)
         else:
-            # Cas de sécurité
+            # Safety case
             unlocked.append(niveau)
     
     return unlocked
 
 @app.route('/service-worker.js')
 def service_worker():
-    """Servir le Service Worker"""
+    """Serve the Service Worker"""
     return send_file('static/service-worker.js', mimetype='application/javascript')
 
 
-# ========== ROUTES POUR LES EXERCICES ==========
+# ========== EXERCISE ROUTES ==========
 
 @app.route('/create-exercice/<int:lesson_id>', methods=['GET'])
 def create_exercice_form(lesson_id):
-    """Formulaire de création d'exercice (admin uniquement)"""
+    """Exercise creation form (admin only)"""
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     
     if not user_id or user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut créer des exercices')
+        flash('Only user "c" can create exercises')
         return redirect(url_for('index'))
     
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
-        flash('Lesson non trouvée')
+        flash('Lesson not found')
         return redirect(url_for('index'))
     
     user = get_user_by_id(user_id)
@@ -1119,16 +1119,16 @@ def create_exercice_form(lesson_id):
 
 @app.route('/create-exercice/<int:lesson_id>', methods=['POST'])
 def create_exercice_post(lesson_id):
-    """Traiter la création d'un exercice fill_blank"""
+    """Process creating a fill_blank exercise"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut créer des exercices')
+        flash('Only user "c" can create exercises')
         return redirect(url_for('index'))
     
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
-        flash('Lesson non trouvée')
+        flash('Lesson not found')
         return redirect(url_for('index'))
     
     titre = request.form.get('titre', '').strip()
@@ -1136,32 +1136,32 @@ def create_exercice_post(lesson_id):
     fichier_json = request.files.get('fichier_json')
     
     if not titre:
-        flash('Le titre est obligatoire')
+        flash('Title is required')
         return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
     
     if not fichier_json or not fichier_json.filename.endswith('.json'):
-        flash('Veuillez sélectionner un fichier .json')
+        flash('Please select a .json file')
         return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
     
     try:
         import json
         contenu_json = json.loads(fichier_json.read().decode('utf-8'))
         
-        # Valider la structure
+        # Validate structure
         if not isinstance(contenu_json, list):
-            flash('Le fichier JSON doit contenir une liste de phrases')
+            flash('JSON file must contain a list of sentences')
             return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
         
         for item in contenu_json:
             if not all(k in item for k in ['phrase', 'reponses_valides']):
-                flash('Chaque phrase doit avoir "phrase" et "reponses_valides"')
+                flash('Each sentence must have "phrase" and "reponses_valides"')
                 return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
         
-        # Récupérer l'ordre (nombre d'exercices existants + 1)
+        # Get order (number of existing exercises + 1)
         exercices_existants = get_exercices_by_lesson(lesson_id)
         ordre = len(exercices_existants)
         
-        # Créer l'exercice
+        # Create exercise
         config = {
             'show_hints': True,
             'case_sensitive': False
@@ -1176,23 +1176,23 @@ def create_exercice_post(lesson_id):
             config=config
         )
         
-        # Ajouter le contenu
+        # Add content
         add_exercice_contenu(exercice_id, contenu_json)
         
-        flash(f'Exercice "{titre}" créé avec {len(contenu_json)} phrase(s)!')
+        flash(f'Exercise "{titre}" created with {len(contenu_json)} sentence(s)!')
         return redirect(url_for('view_lesson', lesson_id=lesson_id))
         
     except json.JSONDecodeError:
-        flash('Erreur: Fichier JSON invalide')
+        flash('Error: Invalid JSON file')
         return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
     except Exception as e:
-        flash(f'Erreur lors de la création: {str(e)}')
+        flash(f'Error during creation: {str(e)}')
         return redirect(url_for('create_exercice_form', lesson_id=lesson_id))
 
 
 @app.route('/exercice/<int:exercice_id>')
 def exercice_fill_blank(exercice_id):
-    """Page d'exercice fill_blank"""
+    """Fill_blank exercise page"""
     user_id = session.get('user_id')
     
     if not user_id:
@@ -1200,20 +1200,20 @@ def exercice_fill_blank(exercice_id):
     
     exercice = get_exercice_by_id(exercice_id)
     if not exercice:
-        flash('Exercice non trouvé')
+        flash('Exercise not found')
         return redirect(url_for('index'))
     
     if exercice['type_exercice'] != 'fill_blank':
-        flash('Type d\'exercice non supporté')
+        flash('Unsupported exercise type')
         return redirect(url_for('index'))
     
-    # Récupérer le contenu
+    # Get content
     contenu = get_exercice_contenu(exercice_id)
     
-    # Récupérer la lesson
+    # Get lesson
     lesson = get_lesson_by_id(exercice['lesson_id'])
     
-    # Récupérer les stats
+    # Get stats
     stats = get_exercice_stats(exercice_id, user_id)
     
     user = get_user_by_id(user_id)
@@ -1228,11 +1228,11 @@ def exercice_fill_blank(exercice_id):
 
 @app.route('/api/exercice/submit', methods=['POST'])
 def submit_exercice():
-    """API pour soumettre le résultat d'un exercice"""
+    """API to submit exercise result"""
     user_id = session.get('user_id')
     
     if not user_id:
-        return jsonify({'error': 'Non authentifié'}), 401
+        return jsonify({'error': 'Not authenticated'}), 401
     
     try:
         data = request.get_json()
@@ -1244,7 +1244,7 @@ def submit_exercice():
         complete = data.get('complete', False)
         
         if not exercice_id:
-            return jsonify({'error': 'Paramètres manquants'}), 400
+            return jsonify({'error': 'Missing parameters'}), 400
         
         resultat_id = create_exercice_resultat(
             exercice_id, user_id, score, total_questions, temps_secondes, complete
@@ -1258,17 +1258,17 @@ def submit_exercice():
 
 @app.route('/delete-exercice/<int:exercice_id>', methods=['POST'])
 def delete_exercice_route(exercice_id):
-    """Supprimer un exercice (admin uniquement)"""
+    """Delete an exercise (admin only)"""
     user_name = session.get('user_name')
     
     if user_name != 'c':
-        flash('Seul l\'utilisateur "c" peut supprimer des exercices')
+        flash('Only user "c" can delete exercises')
         return redirect(url_for('index'))
     
     try:
         exercice = get_exercice_by_id(exercice_id)
         if not exercice:
-            flash('Exercice non trouvé')
+            flash('Exercise not found')
             return redirect(url_for('index'))
         
         lesson_id = exercice['lesson_id']
@@ -1276,11 +1276,11 @@ def delete_exercice_route(exercice_id):
         
         delete_exercice(exercice_id)
         
-        flash(f'Exercice "{titre}" supprimé avec succès')
+        flash(f'Exercise "{titre}" deleted successfully')
         return redirect(url_for('view_lesson', lesson_id=lesson_id))
         
     except Exception as e:
-        flash(f'Erreur lors de la suppression: {str(e)}')
+        flash(f'Error during deletion: {str(e)}')
         return redirect(url_for('index'))
 
 
@@ -1288,7 +1288,7 @@ if __name__ == '__main__':
     init_db()
     
     print("="*60)
-    print("🚀 DÉMARRAGE DE L'APPLICATION TIPIKUS")
+    print("🚀 STARTING TIPIKUS APPLICATION")
     print("="*60)
     
     app.run(

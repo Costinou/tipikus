@@ -1,112 +1,136 @@
-<!-- stats_globales.html - Avec dernières sessions -->
 {% extends "base.html" %}
 
-{% block title %}Statistiques - Tipikus{% endblock %}
+{% block title %}Statistics - Tipikus{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="flex flex-between" style="align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1>📊 Global Statistics</h1>
+            <p class="text-muted">Overview of your progress</p>
+        </div>
+        
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+            ← Back to Home
+        </a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('index') }}" class="back-link">← Retour à l'accueil</a>
-
-<h1>📊 Statistiques globales</h1>
-<p style="color: #888; margin-bottom: 30px;">Aperçu de votre progression</p>
-
 {% if stats_totales.total_sessions > 0 %}
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon">🎯</div>
-        <div class="stat-value">{{ stats_totales.total_sessions }}</div>
-        <div class="stat-label">Sessions totales</div>
+<!-- Overview cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">{{ stats_totales.total_sessions }}</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Total Sessions</div>
+        </div>
     </div>
     
-    <div class="stat-card">
-        <div class="stat-icon">📚</div>
-        <div class="stat-value">{{ stats_totales.total_mots }}</div>
-        <div class="stat-label">Cartes vues</div>
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">{{ stats_totales.total_mots }}</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Cards Seen</div>
+        </div>
     </div>
     
-    <div class="stat-card">
-        <div class="stat-icon">🔥</div>
-        <div class="stat-value">{{ stats_totales.streak }}</div>
-        <div class="stat-label">Jours d'affilée</div>
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">🔥 {{ stats_totales.streak }}</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Day Streak</div>
+        </div>
     </div>
     
-    <div class="stat-card">
-        <div class="stat-icon">⏱️</div>
-        <div class="stat-value">{{ stats_totales.total_heures }}h{{ stats_totales.total_minutes }}m</div>
-        <div class="stat-label">Temps total</div>
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">{{ stats_totales.total_heures }}h{{ stats_totales.total_minutes }}m</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Total Time</div>
+        </div>
     </div>
 </div>
 
+<!-- Quiz performance -->
 {% if stats_totales.taux_reussite is not none %}
-<div class="stat-section">
-    <h3>Performance aux Quiz</h3>
-    <div class="progress-bar">
-        <div class="progress-fill" style="width: {{ stats_totales.taux_reussite }}%"></div>
+<div class="card mb-2">
+    <h3 class="card-title">🎯 Quiz Performance</h3>
+    
+    <div class="progress-container mt-2">
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ stats_totales.taux_reussite }}%"></div>
+        </div>
+        <div class="progress-label">
+            <span>Overall Success Rate</span>
+            <span><strong>{{ stats_totales.taux_reussite }}%</strong></span>
+        </div>
     </div>
-    <p style="text-align: center; color: #888; margin-top: 10px;">
-        Taux de réussite global: <strong style="color: #4ade80;">{{ stats_totales.taux_reussite }}%</strong>
-        <br>
-        <span style="font-size: 13px;">{{ stats_totales.total_score }} bonnes réponses sur {{ stats_totales.total_questions_quiz }}</span>
-    </p>
+    
+    <div style="text-align: center; margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+        {{ stats_totales.total_score }} correct answers out of {{ stats_totales.total_questions_quiz }}
+    </div>
 </div>
 {% endif %}
 
-<!-- Dernières sessions -->
+<!-- Recent sessions -->
 {% if stats_totales.dernieres_sessions %}
-<div class="stat-section">
-    <h3>Dernières sessions</h3>
-    <div class="sessions-list">
+<div class="card mb-2">
+    <h3 class="card-title">📅 Recent Sessions</h3>
+    
+    <div class="decks-list mt-2">
         {% for session in stats_totales.dernieres_sessions %}
-        <div class="session-item">
-            <div class="session-icon">
-                {% if session.type_session == 'quiz' %}🎯{% else %}📚{% endif %}
-            </div>
-            <div class="session-info">
-                <div class="session-title">
+        <div class="deck-item">
+            <div class="deck-info">
+                <div class="deck-name">
+                    {% if session.type_session == 'quiz' %}🎯{% else %}📚{% endif %}
                     <strong>{{ session.deck_nom }}</strong>
-                    <span class="session-niveau">({{ session.niveau }})</span>
+                    <span style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 400;">({{ session.niveau }})</span>
                 </div>
-                <div class="session-details">
+                <div class="deck-meta">
+                    {{ session.date_session[:16] }} • 
                     {% if session.type_session == 'quiz' %}
                         Quiz - {{ session.score }}/{{ session.nombre_mots_vus }} 
                         ({{ ((session.score / session.nombre_mots_vus) * 100)|round|int }}%)
                     {% else %}
-                        Flashcards - {{ session.nombre_mots_vus }} cartes
+                        Flashcards - {{ session.nombre_mots_vus }} cards
                         {% if session.complete %}✓{% endif %}
                     {% endif %}
                 </div>
-                <div class="session-meta">
-                    {{ session.date_session[:16] }} • {{ (session.duree_secondes // 60) }}m{{ (session.duree_secondes % 60) }}s
-                </div>
+            </div>
+            
+            <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                ⏱️ {{ (session.duree_secondes // 60) }}m{{ (session.duree_secondes % 60) }}s
             </div>
         </div>
         {% endfor %}
     </div>
 </div>
 {% endif %}
-{% endif %}
 
+<!-- Statistics by level -->
 {% if stats_par_niveau %}
-<div class="stat-section">
-    <h3>Par niveau</h3>
-    <div class="langues-grid">
+<div class="card">
+    <h3 class="card-title">📚 Statistics by Level</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
         {% for niveau, stats in stats_par_niveau.items() %}
-        <a href="{{ url_for('stats_niveau_route', niveau=niveau) }}" class="langue-card">
-            <div class="langue-header">
-                <span class="langue-name">{{ niveau }}</span>
-                <span class="langue-arrow">→</span>
+        <a href="{{ url_for('stats_niveau_route', niveau=niveau) }}" class="card" style="text-decoration: none; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4 style="margin: 0; color: var(--text-primary);">{{ niveau }}</h4>
+                <span style="color: var(--accent); font-size: 1.5rem;">→</span>
             </div>
-            <div class="langue-stats">
-                <div class="langue-stat">
-                    <span class="stat-mini-value">{{ stats.total_sessions }}</span>
-                    <span class="stat-mini-label">sessions</span>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; text-align: center;">
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">{{ stats.total_sessions }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">sessions</div>
                 </div>
-                <div class="langue-stat">
-                    <span class="stat-mini-value">{{ stats.total_mots }}</span>
-                    <span class="stat-mini-label">cartes</span>
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">{{ stats.total_mots }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">words</div>
                 </div>
-                <div class="langue-stat">
-                    <span class="stat-mini-value">{{ stats.streak }}</span>
-                    <span class="stat-mini-label">🔥 streak</span>
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">🔥{{ stats.streak }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">streak</div>
                 </div>
             </div>
         </a>
@@ -115,14 +139,19 @@
 </div>
 {% endif %}
 
-{% if not stats_totales.total_sessions %}
-<div class="empty-state">
-    <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
-    <h2>Pas encore de statistiques</h2>
-    <p style="color: #888; margin-bottom: 30px;">Commencez à utiliser vos decks pour voir vos progrès !</p>
-    <a href="{{ url_for('index') }}" class="btn">Commencer</a>
+{% else %}
+<!-- Empty state -->
+<div class="card text-center" style="padding: 3rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+    <h3>No Statistics Yet</h3>
+    <p class="text-muted">Start using your decks to see your progress!</p>
+    
+    <a href="{{ url_for('index') }}" class="btn btn-primary mt-2">
+        Get Started
+    </a>
 </div>
 {% endif %}
+{% endblock %}
 
 <style>
 .stats-grid {
@@ -352,4 +381,3 @@
     }
 }
 </style>
-{% endblock %}

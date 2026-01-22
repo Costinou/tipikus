@@ -2,104 +2,9 @@
 
 {% block title %}{{ lesson.titre }} - Tipikus{% endblock %}
 
-{% block content %}
-<a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="back-link">← Retour au niveau {{ lesson.niveau }}</a>
-
-<div class="lesson-header">
-    <div>
-        <h1>📖 Lesson {{ lesson.numero }}: {{ lesson.titre }}</h1>
-        <p style="color: #888;">Niveau {{ lesson.niveau }}</p>
-    </div>
-    {% if user.nom == 'c' %}
-    <div class="admin-buttons">
-        <a href="{{ url_for('edit_lesson_form', lesson_id=lesson.id) }}" class="btn-admin" title="Modifier la lesson">
-            ✏️
-        </a>
-        <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn-admin" title="Gérer les decks">
-            ⚙️
-        </a>
-        <a href="{{ url_for('create_exercice_form', lesson_id=lesson.id) }}" class="btn-admin" title="Créer un exercice">
-            ➕
-        </a>
-        <button onclick="confirmerSuppressionLesson('{{ lesson.titre }}', {{ lesson.id }})" class="btn-admin btn-delete-admin" title="Supprimer la lesson">
-            🗑️
-        </button>
-    </div>
-    {% endif %}
-</div>
-
-<!-- Decks de la lesson -->
-{% if decks %}
-<div class="lesson-decks-section">
-    <h2>📚 Decks de cette lesson</h2>
-    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        Pratiquez avec ces decks après avoir lu la théorie
-    </p>
-    <ul class="deck-list">
-        {% for deck in decks %}
-            <li class="deck-item-wrapper">
-                <div class="deck-item-content">
-                    <div class="deck-main-buttons">
-                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn deck-btn deck-commun">
-                            📚 {{ deck.nom }}
-                        </a>
-                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn deck-btn btn-quiz quiz-commun">
-                            🎯 Quiz
-                        </a>
-                    </div>
-                    <div class="deck-actions">
-                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
-                           class="btn-action btn-view" 
-                           title="Voir le contenu">
-                            👁️
-                        </a>
-                    </div>
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-<!-- Exercices de la lesson -->
-{% if exercices %}
-<div class="lesson-exercices-section">
-    <h2>✍️ Exercices pratiques</h2>
-    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        Entraînez-vous avec ces exercices
-    </p>
-    <ul class="deck-list">
-        {% for ex in exercices %}
-            <li class="deck-item-wrapper">
-                <div class="deck-item-content">
-                    <div class="deck-main-buttons">
-                        <a href="{{ url_for('exercice_fill_blank', exercice_id=ex.id) }}" class="btn deck-btn deck-exercice">
-                            ✍️ {{ ex.titre }}
-                        </a>
-                    </div>
-                    <div class="deck-actions">
-                        {% if user.nom == 'c' %}
-                        <button onclick="confirmerSuppressionExercice('{{ ex.titre }}', {{ ex.id }})" class="btn-action btn-delete" title="Supprimer l'exercice">
-                            🗑️
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                {% if ex.description %}
-                <p style="color: #888; font-size: 12px; margin-top: 5px; padding-left: 10px;">
-                    {{ ex.description }}
-                </p>
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-<!-- Contenu Markdown -->
-<div id="markdown-content" class="markdown-content"></div>
-
+{% block extra_css %}
 <style>
+/* Lesson header */
 .lesson-header {
     display: flex;
     justify-content: space-between;
@@ -111,6 +16,7 @@
 .admin-buttons {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .btn-admin {
@@ -139,35 +45,35 @@
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
-/* Styles pour le contenu Markdown */
+/* Styles for Markdown content */
 .markdown-content {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 40px;
     margin-bottom: 40px;
     line-height: 1.8;
-    color: #e0e0e0;
+    color: var(--text-primary);
 }
 
 .markdown-content h1 {
-    color: #ffffff;
+    color: var(--text-primary);
     font-size: 2em;
     margin-top: 1em;
     margin-bottom: 0.5em;
-    border-bottom: 2px solid #667eea;
+    border-bottom: 2px solid var(--accent);
     padding-bottom: 0.3em;
 }
 
 .markdown-content h2 {
-    color: #ffffff;
+    color: var(--text-primary);
     font-size: 1.5em;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
 }
 
 .markdown-content h3 {
-    color: #cccccc;
+    color: var(--text-primary);
     font-size: 1.2em;
     margin-top: 1em;
     margin-bottom: 0.5em;
@@ -182,7 +88,7 @@
     height: auto;
     border-radius: 8px;
     margin: 20px 0;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 20px var(--shadow);
 }
 
 .markdown-content ul, .markdown-content ol {
@@ -195,46 +101,46 @@
 }
 
 .markdown-content code {
-    background: #0f0f0f;
+    background: var(--bg-secondary);
     padding: 2px 6px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 0.9em;
-    color: #4ade80;
+    color: var(--accent);
 }
 
 .markdown-content pre {
-    background: #0f0f0f;
+    background: var(--bg-secondary);
     padding: 20px;
     border-radius: 8px;
     overflow-x: auto;
-    border: 1px solid #2a2a2a;
+    border: 1px solid var(--border);
     margin: 1.5em 0;
 }
 
 .markdown-content pre code {
     background: none;
     padding: 0;
-    color: #e0e0e0;
+    color: var(--text-primary);
 }
 
 .markdown-content blockquote {
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--accent);
     padding-left: 20px;
     margin: 1.5em 0;
-    color: #cccccc;
+    color: var(--text-secondary);
     font-style: italic;
 }
 
 .markdown-content a {
-    color: #667eea;
+    color: var(--accent);
     text-decoration: none;
     border-bottom: 1px solid transparent;
     transition: border-color 0.3s ease;
 }
 
 .markdown-content a:hover {
-    border-bottom-color: #667eea;
+    border-bottom-color: var(--accent);
 }
 
 .markdown-content table {
@@ -246,14 +152,46 @@
 .markdown-content th,
 .markdown-content td {
     padding: 12px;
-    border: 1px solid #333;
+    border: 1px solid var(--border);
     text-align: left;
 }
 
 .markdown-content th {
-    background: #0f0f0f;
+    background: var(--bg-secondary);
     font-weight: 600;
-    color: #ffffff;
+    color: var(--text-primary);
+}
+
+/* YouTube video containers */
+.markdown-content .youtube-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 ratio */
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    margin: 2em 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px var(--shadow);
+    background: var(--bg-secondary);
+}
+
+.markdown-content .youtube-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 12px;
+}
+
+.markdown-content .youtube-title {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-style: italic;
+    margin-top: 10px;
+    margin-bottom: 20px;
 }
 
 .lesson-decks-section {
@@ -272,7 +210,7 @@
     margin-bottom: 20px;
 }
 
-/* Styles des decks (repris de niveau.html) */
+/* Deck styles */
 .deck-item-wrapper {
     margin-bottom: 15px;
 }
@@ -293,6 +231,15 @@
     flex: 1;
     margin: 0;
     font-size: 15px;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    text-align: center;
+    color: white;
 }
 
 .deck-commun {
@@ -300,6 +247,7 @@
 }
 
 .deck-commun:hover {
+    transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
 }
 
@@ -312,6 +260,7 @@
 }
 
 .quiz-commun:hover {
+    transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
@@ -320,6 +269,7 @@
 }
 
 .deck-exercice:hover {
+    transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
 }
 
@@ -340,10 +290,13 @@
     cursor: pointer;
     transition: all 0.3s ease;
     text-decoration: none;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
 .btn-view {
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
 }
 
 .btn-view:hover {
@@ -353,6 +306,7 @@
 
 .btn-delete {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
 }
 
 .btn-delete:hover {
@@ -379,19 +333,119 @@
     }
 }
 </style>
+{% endblock %}
 
-<!-- Bibliothèque Marked.js pour le rendu Markdown -->
+{% block content %}
+<a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+    ← Back to Level {{ lesson.niveau }}
+</a>
+
+<div class="lesson-header">
+    <div>
+        <h1>📖 Lesson {{ lesson.numero }}: {{ lesson.titre }}</h1>
+        <p style="color: var(--text-secondary);">Level {{ lesson.niveau }}</p>
+    </div>
+    {% if user.nom == 'c' %}
+    <div class="admin-buttons">
+        <a href="{{ url_for('edit_lesson_form', lesson_id=lesson.id) }}" class="btn-admin" title="Edit Lesson">
+            ✏️
+        </a>
+        <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn-admin" title="Manage Decks">
+            ⚙️
+        </a>
+        <a href="{{ url_for('create_exercice_form', lesson_id=lesson.id) }}" class="btn-admin" title="Create Exercise">
+            ➕
+        </a>
+        <button onclick="confirmerSuppressionLesson('{{ lesson.titre }}', {{ lesson.id }})" class="btn-admin btn-delete-admin" title="Delete Lesson">
+            🗑️
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Lesson Decks -->
+{% if decks %}
+<div class="lesson-decks-section">
+    <h2>📚 Lesson Decks</h2>
+    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;">
+        Practice with these decks after reading the theory
+    </p>
+    <ul class="deck-list" style="list-style: none; padding: 0;">
+        {% for deck in decks %}
+            <li class="deck-item-wrapper">
+                <div class="deck-item-content">
+                    <div class="deck-main-buttons">
+                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="deck-btn deck-commun">
+                            📚 {{ deck.nom }}
+                        </a>
+                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="deck-btn quiz-commun">
+                            🎯 Quiz
+                        </a>
+                    </div>
+                    <div class="deck-actions">
+                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
+                           class="btn-action btn-view" 
+                           title="View Content">
+                            👁️
+                        </a>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Lesson Exercises -->
+{% if exercices %}
+<div class="lesson-exercices-section">
+    <h2>✍️ Practice Exercises</h2>
+    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;">
+        Train with these exercises
+    </p>
+    <ul class="deck-list" style="list-style: none; padding: 0;">
+        {% for ex in exercices %}
+            <li class="deck-item-wrapper">
+                <div class="deck-item-content">
+                    <div class="deck-main-buttons">
+                        <a href="{{ url_for('exercice_fill_blank', exercice_id=ex.id) }}" class="deck-btn deck-exercice">
+                            ✍️ {{ ex.titre }}
+                        </a>
+                    </div>
+                    <div class="deck-actions">
+                        {% if user.nom == 'c' %}
+                        <button onclick="confirmerSuppressionExercice('{{ ex.titre }}', {{ ex.id }})" class="btn-action btn-delete" title="Delete Exercise">
+                            🗑️
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if ex.description %}
+                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 5px; padding-left: 10px;">
+                    {{ ex.description }}
+                </p>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Markdown Content -->
+<div id="markdown-content" class="markdown-content"></div>
+
+<!-- Marked.js library for Markdown rendering -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
 
 <script>
-// Contenu markdown de la lesson
+// Lesson markdown content
 const markdownContent = {{ lesson.content_markdown|tojson }};
 
-// Configurer marked pour gérer les images
+// Configure marked to handle images
 marked.use({
     renderer: {
         image(href, title, text) {
-            // Si l'image n'a pas de protocole (http/https), on assume que c'est dans /static/lessons/images/
+            // If image doesn't have protocol (http/https), assume it's in /static/lessons/images/
             if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('/')) {
                 href = '/static/lessons/images/' + href;
             }
@@ -402,11 +456,11 @@ marked.use({
     }
 });
 
-// Rendre le markdown
+// Render markdown
 document.getElementById('markdown-content').innerHTML = marked.parse(markdownContent);
 
 function confirmerSuppressionLesson(titre, lessonId) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer la lesson "${titre}" ?\n\nLes decks et exercices associés ne seront PAS supprimés.`)) {
+    if (confirm(`Are you sure you want to delete the lesson "${titre}"?\n\nAssociated decks and exercises will NOT be deleted.`)) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/delete-lesson/' + lessonId;
@@ -416,7 +470,7 @@ function confirmerSuppressionLesson(titre, lessonId) {
 }
 
 function confirmerSuppressionExercice(titre, exerciceId) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer l'exercice "${titre}" ?\n\nCette action est irréversible.`)) {
+    if (confirm(`Are you sure you want to delete the exercise "${titre}"?\n\nThis action is irreversible.`)) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/delete-exercice/' + exerciceId;

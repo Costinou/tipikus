@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Modifier la lesson - Tipikus{% endblock %}
+{% block title %}Edit Lesson - Tipikus{% endblock %}
 
 {% block page_header %}
 <div class="page-header">
     <div class="flex flex-between" style="align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1>✏️ Modifier la lesson</h1>
+            <h1>✏️ Edit Lesson</h1>
             <p class="text-muted">Lesson {{ lesson.numero }} • {{ lesson.niveau }}</p>
         </div>
         
         <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
-            ← Retour
+            ← Back
         </a>
     </div>
 </div>
@@ -21,31 +21,31 @@
 <div style="max-width: 800px; margin: 0 auto;">
     <form method="POST" action="{{ url_for('edit_lesson_post', lesson_id=lesson.id) }}" enctype="multipart/form-data">
         
-        <!-- Informations -->
+        <!-- Information -->
         <div class="card mb-2">
-            <h3 class="card-title">📝 Informations</h3>
+            <h3 class="card-title">📝 Information</h3>
             
-            <!-- Info non modifiables -->
+            <!-- Non-editable info -->
             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
                     <div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Niveau</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Level</div>
                         <div style="font-weight: 600; color: var(--accent);">{{ lesson.niveau }}</div>
                     </div>
                     <div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Numéro</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Number</div>
                         <div style="font-weight: 600; color: var(--accent);">{{ lesson.numero }}</div>
                     </div>
                 </div>
                 <small class="text-muted" style="display: block; margin-top: 0.5rem;">
-                    ℹ️ Le niveau et le numéro ne peuvent pas être modifiés
+                    ℹ️ Level and number cannot be modified
                 </small>
             </div>
             
-            <!-- Titre modifiable -->
+            <!-- Editable title -->
             <div class="form-group">
                 <label for="titre" class="form-label">
-                    Titre de la lesson <span style="color: var(--accent);">*</span>
+                    Lesson Title <span style="color: var(--accent);">*</span>
                 </label>
                 <input 
                     type="text" 
@@ -59,27 +59,27 @@
             </div>
         </div>
         
-        <!-- Contenu actuel -->
+        <!-- Current content -->
         <div class="card mb-2">
-            <h3 class="card-title">📄 Contenu actuel</h3>
+            <h3 class="card-title">📄 Current Content</h3>
             
             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; max-height: 200px; overflow-y: auto;">
                 <pre style="white-space: pre-wrap; font-size: 0.875rem; color: var(--text-secondary); margin: 0;">{{ lesson.content_markdown[:500] }}{% if lesson.content_markdown|length > 500 %}...{% endif %}</pre>
             </div>
             
             <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
-                📊 {{ lesson.content_markdown|length }} caractères • 
-                {{ lesson.content_markdown.split('\n')|length }} lignes
+                📊 {{ lesson.content_markdown|length }} characters • 
+                {{ lesson.content_markdown.split('\n')|length }} lines
             </div>
         </div>
         
-        <!-- Nouveau contenu (optionnel) -->
+        <!-- New content (optional) -->
         <div class="card mb-2">
-            <h3 class="card-title">📝 Modifier le contenu (optionnel)</h3>
+            <h3 class="card-title">📝 Modify Content (Optional)</h3>
             
             <div class="form-group">
                 <label for="fichier_md" class="form-label">
-                    Nouveau fichier Markdown (.md)
+                    New Markdown File (.md)
                 </label>
                 <input 
                     type="file" 
@@ -90,26 +90,26 @@
                     onchange="previewMarkdown()"
                 >
                 <small class="text-muted">
-                    ⚠️ Laissez vide pour garder le contenu actuel
+                    ⚠️ Leave empty to keep current content
                 </small>
             </div>
             
-            <!-- Aperçu du nouveau fichier -->
-            <div id="markdown-preview" class="hidden mt-2" style="background: var(--accent); background: rgba(252, 163, 17, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--accent);">
-                <strong>📄 Nouveau contenu :</strong>
+            <!-- Preview new file -->
+            <div id="markdown-preview" class="hidden mt-2" style="background: rgba(252, 163, 17, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--accent);">
+                <strong>📄 New Content:</strong>
                 <pre id="preview-content" style="margin-top: 0.5rem; white-space: pre-wrap; font-size: 0.875rem; color: var(--text-secondary); max-height: 200px; overflow-y: auto;"></pre>
             </div>
         </div>
         
-        <!-- Boutons -->
+        <!-- Buttons -->
         <div class="card">
             <div class="flex gap-2">
                 <button type="submit" class="btn btn-primary" style="flex: 1;">
-                    ✓ Enregistrer les modifications
+                    ✓ Save Changes
                 </button>
                 
                 <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
-                    Annuler
+                    Cancel
                 </a>
             </div>
         </div>
@@ -119,7 +119,7 @@
 
 {% block extra_js %}
 <script>
-// Prévisualiser le nouveau fichier Markdown
+// Preview new Markdown file
 function previewMarkdown() {
     const fileInput = document.getElementById('fichier_md');
     const preview = document.getElementById('markdown-preview');
@@ -133,7 +133,7 @@ function previewMarkdown() {
     const file = fileInput.files[0];
     
     if (!file.name.endsWith('.md')) {
-        alert('Veuillez sélectionner un fichier .md');
+        alert('Please select a .md file');
         fileInput.value = '';
         return;
     }
@@ -143,10 +143,10 @@ function previewMarkdown() {
     reader.onload = function(e) {
         const content = e.target.result;
         
-        // Limiter l'aperçu aux 800 premiers caractères
+        // Limit preview to first 800 characters
         let displayContent = content;
         if (content.length > 800) {
-            displayContent = content.substring(0, 800) + '\n\n... (fichier tronqué)';
+            displayContent = content.substring(0, 800) + '\n\n... (file truncated)';
         }
         
         const lines = content.split('\n').length;
@@ -154,7 +154,7 @@ function previewMarkdown() {
         const images = (content.match(/!\[.*?\]\(.*?\)/g) || []).length;
         
         previewContent.textContent = 
-            `📊 ${lines} lignes • ${chars} caractères • ${images} image(s)\n\n` + 
+            `📊 ${lines} lines • ${chars} characters • ${images} image(s)\n\n` + 
             displayContent;
         
         preview.classList.remove('hidden');
@@ -163,7 +163,7 @@ function previewMarkdown() {
     reader.readAsText(file);
 }
 
-// Validation du formulaire
+// Form validation
 document.querySelector('form').addEventListener('submit', function(e) {
     const fileInput = document.getElementById('fichier_md');
     
@@ -171,15 +171,15 @@ document.querySelector('form').addEventListener('submit', function(e) {
         const file = fileInput.files[0];
         if (!file.name.endsWith('.md')) {
             e.preventDefault();
-            alert('Le fichier doit être au format .md');
+            alert('The file must be in .md format');
             return;
         }
     }
     
-    // Afficher un loader
+    // Show loader
     const btn = this.querySelector('button[type="submit"]');
     btn.disabled = true;
-    btn.innerHTML = '⏳ Enregistrement...';
+    btn.innerHTML = '⏳ Saving...';
 });
 </script>
 {% endblock %}

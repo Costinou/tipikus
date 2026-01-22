@@ -87,7 +87,7 @@
     font-size: 0.9rem;
     margin-top: 1rem;
     padding: 0.75rem;
-    background: rgba(102, 126, 234, 0.1);
+    background: rgba(252, 163, 17, 0.1);
     border-radius: 8px;
 }
 
@@ -158,11 +158,11 @@
 
 {% block content %}
 <div class="exercice-container">
-    <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="back-link">
-        ← Retour à la lesson
+    <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary" style="display: inline-flex; margin-bottom: 1rem;">
+        ← Back to Lesson
     </a>
     
-    <!-- En-tête -->
+    <!-- Header -->
     <div class="card mb-2 exercice-header">
         <h1>✍️ {{ exercice.titre }}</h1>
         {% if exercice.description %}
@@ -172,14 +172,14 @@
         {% if stats.nb_tentatives > 0 %}
         <div style="margin-top: 1rem;">
             <span class="stats-badge">
-                Meilleur score: {{ stats.meilleur_score }}/{{ stats.meilleur_total }} 
+                Best score: {{ stats.meilleur_score }}/{{ stats.meilleur_total }} 
                 ({{ stats.meilleur_pourcentage }}%)
             </span>
         </div>
         {% endif %}
     </div>
     
-    <!-- Progression -->
+    <!-- Progress -->
     <div class="card mb-2">
         <div class="progress-info">
             <div class="progress-text">
@@ -211,30 +211,30 @@
         
         <div class="flex flex-center gap-2">
             <button class="btn btn-primary" onclick="verifierReponse()" id="btn-verifier">
-                Vérifier
+                Check
             </button>
             
             <button class="btn btn-secondary hidden" onclick="questionSuivante()" id="btn-suivant">
-                Suivant →
+                Next →
             </button>
         </div>
     </div>
     
-    <!-- Écran de fin -->
+    <!-- Completion screen -->
     <div id="completion-container" class="hidden">
         <div class="card completion-screen">
             <div class="completion-icon" id="completion-icon">🎉</div>
-            <h2 id="completion-title">Félicitations !</h2>
+            <h2 id="completion-title">Congratulations!</h2>
             <div class="score-display" id="final-score"></div>
             <p class="text-muted" id="completion-message"></p>
             
             <div class="flex flex-center gap-2 mt-3" style="flex-wrap: wrap;">
                 <button class="btn btn-secondary" onclick="recommencer()">
-                    🔄 Recommencer
+                    🔄 Restart
                 </button>
                 
                 <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-primary">
-                    ← Retour à la lesson
+                    ← Back to Lesson
                 </a>
             </div>
         </div>
@@ -244,7 +244,7 @@
 
 {% block extra_js %}
 <script>
-// Données
+// Data
 const exerciceId = {{ exercice.id }};
 const questions = {{ contenu|tojson }};
 let currentIndex = 0;
@@ -253,7 +253,7 @@ let questionsAnswered = 0;
 let startTime = Date.now();
 let currentInput = null;
 
-// Éléments DOM
+// DOM elements
 const questionContainer = document.getElementById('question-container');
 const completionContainer = document.getElementById('completion-container');
 const phraseText = document.getElementById('phrase-text');
@@ -267,7 +267,7 @@ const currentQuestion = document.getElementById('current-question');
 const currentScore = document.getElementById('current-score');
 const questionsAnsweredEl = document.getElementById('questions-answered');
 
-// Afficher la première question
+// Show first question
 afficherQuestion();
 
 function afficherQuestion() {
@@ -278,18 +278,18 @@ function afficherQuestion() {
     
     const q = questions[currentIndex].contenu;
     
-    // Réinitialiser l'interface
+    // Reset interface
     feedback.textContent = '';
     feedback.className = 'feedback';
     indiceText.classList.add('hidden');
     btnVerifier.classList.remove('hidden');
     btnSuivant.classList.add('hidden');
     
-    // Afficher la phrase avec input
+    // Display sentence with input
     const phrase = q.phrase.replace('{0}', '<input type="text" class="phrase-input" id="user-input" autocomplete="off">');
     phraseText.innerHTML = phrase;
     
-    // Afficher la traduction si disponible
+    // Display translation if available
     if (q.traduction) {
         traductionText.textContent = q.traduction;
         traductionText.classList.remove('hidden');
@@ -297,15 +297,15 @@ function afficherQuestion() {
         traductionText.classList.add('hidden');
     }
     
-    // Stocker l'indice pour plus tard
+    // Store hint for later
     indiceText.textContent = q.indice || '';
     
-    // Focus sur l'input
+    // Focus on input
     currentInput = document.getElementById('user-input');
     if (currentInput) {
         currentInput.focus();
         
-        // Permettre d'appuyer sur Entrée pour vérifier
+        // Allow pressing Enter to check
         currentInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 verifierReponse();
@@ -313,7 +313,7 @@ function afficherQuestion() {
         });
     }
     
-    // Mettre à jour les compteurs
+    // Update counters
     currentQuestion.textContent = currentIndex + 1;
     updateProgress();
 }
@@ -325,9 +325,9 @@ function verifierReponse() {
     const q = questions[currentIndex].contenu;
     const reponses = q.reponses_valides;
     
-    // Vérifier si la réponse est correcte
+    // Check if answer is correct
     const isCorrect = reponses.some(r => {
-        // Comparaison insensible à la casse
+        // Case insensitive comparison
         return r.toLowerCase() === userAnswer.toLowerCase();
     });
     
@@ -338,23 +338,23 @@ function verifierReponse() {
         score++;
         currentScore.textContent = score;
         currentInput.classList.add('correct');
-        feedback.textContent = '✓ Correct !';
+        feedback.textContent = '✓ Correct!';
         feedback.className = 'feedback correct';
     } else {
         currentInput.classList.add('incorrect');
-        feedback.textContent = '✗ Incorrect - Réponse: ' + reponses[0];
+        feedback.textContent = '✗ Incorrect - Answer: ' + reponses[0];
         feedback.className = 'feedback incorrect';
         
-        // Afficher l'indice si disponible
+        // Show hint if available
         if (q.indice) {
             indiceText.classList.remove('hidden');
         }
     }
     
-    // Désactiver l'input
+    // Disable input
     currentInput.disabled = true;
     
-    // Changer les boutons
+    // Change buttons
     btnVerifier.classList.add('hidden');
     btnSuivant.classList.remove('hidden');
     btnSuivant.focus();
@@ -374,7 +374,7 @@ function terminerExercice() {
     const duration = Math.floor((Date.now() - startTime) / 1000);
     const percentage = Math.round((score / questions.length) * 100);
     
-    // Enregistrer le résultat
+    // Save result
     fetch('/api/exercice/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -387,11 +387,11 @@ function terminerExercice() {
         })
     });
     
-    // Afficher l'écran de fin
+    // Show completion screen
     questionContainer.classList.add('hidden');
     completionContainer.classList.remove('hidden');
     
-    // Personnaliser le message
+    // Customize message
     const finalScoreEl = document.getElementById('final-score');
     const completionIcon = document.getElementById('completion-icon');
     const completionTitle = document.getElementById('completion-title');
@@ -401,20 +401,20 @@ function terminerExercice() {
     
     if (percentage === 100) {
         completionIcon.textContent = '🏆';
-        completionTitle.textContent = 'Parfait !';
-        completionMessage.textContent = 'Score parfait ! Excellent travail !';
+        completionTitle.textContent = 'Perfect!';
+        completionMessage.textContent = 'Perfect score! Excellent work!';
     } else if (percentage >= 80) {
         completionIcon.textContent = '🎉';
-        completionTitle.textContent = 'Très bien !';
-        completionMessage.textContent = 'Vous maîtrisez bien le sujet !';
+        completionTitle.textContent = 'Great job!';
+        completionMessage.textContent = 'You have a good grasp of the topic!';
     } else if (percentage >= 60) {
         completionIcon.textContent = '👍';
-        completionTitle.textContent = 'Bien joué !';
-        completionMessage.textContent = 'Continuez à pratiquer pour progresser.';
+        completionTitle.textContent = 'Well done!';
+        completionMessage.textContent = 'Keep practicing to improve.';
     } else {
         completionIcon.textContent = '📚';
-        completionTitle.textContent = 'Continuez vos efforts !';
-        completionMessage.textContent = 'Révisez la leçon et réessayez.';
+        completionTitle.textContent = 'Keep going!';
+        completionMessage.textContent = 'Review the lesson and try again.';
     }
 }
 

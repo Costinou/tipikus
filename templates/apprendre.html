@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Apprendre - Tipikus{% endblock %}
+{% block title %}Learn - Tipikus{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -187,14 +187,14 @@
 
 {% block content %}
 <div class="flashcard-container">
-    <!-- Progression -->
+    <!-- Progress -->
     <div class="card mb-2">
         <div class="progress-info">
             <div class="progress-text">
-                Cartes restantes : <span id="remaining-cards">{{ mots|length }}</span>
+                Cards Remaining: <span id="remaining-cards">{{ mots|length }}</span>
             </div>
             <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                Carte <span id="current-position">1</span> / <span id="total-in-deck">{{ mots|length }}</span>
+                Card <span id="current-position">1</span> / <span id="total-in-deck">{{ mots|length }}</span>
             </div>
         </div>
         
@@ -208,36 +208,36 @@
     <!-- Flashcard -->
     <div class="flashcard-wrapper">
         <div class="card flashcard" id="flashcard">
-            <!-- Face avant (français) -->
+            <!-- Front side (French) -->
             <div class="flashcard-content flashcard-front" id="front-content">
-                <div class="flashcard-label">Français</div>
+                <div class="flashcard-label">French</div>
                 <div class="flashcard-text" id="mot-francais"></div>
-                <div class="flashcard-hint">👆 Cliquez ou swipez</div>
+                <div class="flashcard-hint">👆 Click or swipe</div>
             </div>
             
-            <!-- Face arrière (hongrois) -->
+            <!-- Back side (Hungarian) -->
             <div class="flashcard-content flashcard-back" id="back-content">
-                <div class="flashcard-label">Hongrois</div>
+                <div class="flashcard-label">Hungarian</div>
                 <div class="flashcard-text" id="traduction"></div>
-                <button class="audio-btn" onclick="playAudio(event)" title="Écouter">🔊</button>
-                <div class="flashcard-hint">⬅️ Je connais | Je ne connais pas ➡️</div>
+                <button class="audio-btn" onclick="playAudio(event)" title="Listen">🔊</button>
+                <div class="flashcard-hint">⬅️ I know | I don't know ➡️</div>
             </div>
         </div>
     </div>
     
-    <!-- Instructions swipe -->
+    <!-- Swipe instructions -->
     <div class="swipe-instruction">
-        ⬅️ Swipe gauche : Je connais | Swipe droite : Je ne connais pas ➡️
+        ⬅️ Swipe left: I know | Swipe right: I don't know ➡️
     </div>
     
-    <!-- Contrôles -->
+    <!-- Controls -->
     <div class="controls">
         <button class="btn btn-primary" onclick="markAsKnown()" id="btn-known">
-            ✓ Je connais
+            ✓ I Know
         </button>
         
         <button class="btn btn-secondary" onclick="markAsUnknown()" id="btn-unknown">
-            ✗ Je ne connais pas
+            ✗ I Don't Know
         </button>
     </div>
     
@@ -245,7 +245,7 @@
     <div class="card mt-2">
         <div class="flex flex-between" style="gap: 0.875rem; flex-wrap: wrap;">
             <a href="{{ url_for('niveau', niveau=mots[0].get('niveau', 'A1') if mots else 'A1') }}" class="btn btn-secondary">
-                ← Retour
+                ← Back
             </a>
             
             <a href="{{ url_for('quiz', deck_id=deck_id) }}" class="btn btn-primary">
@@ -255,16 +255,16 @@
     </div>
 </div>
 
-<!-- Modal de fin -->
+<!-- Completion modal -->
 <div id="completion-modal" class="hidden">
     <div class="card completion-card">
         <div class="completion-icon">🎉</div>
-        <h2>Félicitations !</h2>
-        <p class="text-muted">Vous avez terminé toutes les cartes</p>
+        <h2>Congratulations!</h2>
+        <p class="text-muted">You've completed all the cards</p>
         
         <div class="flex flex-center gap-2 mt-3" style="flex-wrap: wrap;">
             <button class="btn btn-secondary" onclick="restartSession()">
-                🔄 Recommencer
+                🔄 Restart
             </button>
             
             <a href="{{ url_for('quiz', deck_id=deck_id) }}" class="btn btn-primary">
@@ -272,7 +272,7 @@
             </a>
             
             <a href="{{ url_for('niveau', niveau=mots[0].get('niveau', 'A1') if mots else 'A1') }}" class="btn btn-secondary">
-                ← Retour
+                ← Back
             </a>
         </div>
     </div>
@@ -281,24 +281,24 @@
 
 {% block extra_js %}
 <script>
-// Données
+// Data
 const allMots = {{ mots|tojson }};
 const deckId = {{ deck_id }};
-let remainingCards = [...allMots]; // Cartes restantes à réviser
+let remainingCards = [...allMots]; // Remaining cards to review
 let currentCard = null;
-let cardsSeenCount = 0; // Nombre de cartes vues (uniques)
-let currentCardPosition = 1; // Position dans le deck original (ne change qu'en avançant)
+let cardsSeenCount = 0; // Number of cards seen (unique)
+let currentCardPosition = 1; // Position in original deck (only changes when advancing)
 let isFlipped = false;
 let startTime = Date.now();
-let sessionEnregistree = false; // Flag pour éviter les doublons
+let sessionEnregistree = false; // Flag to avoid duplicates
 
-// Gestion tactile
+// Touch management
 let touchStartX = 0;
 let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
 
-// Éléments DOM
+// DOM elements
 const flashcard = document.getElementById('flashcard');
 const remainingCardsEl = document.getElementById('remaining-cards');
 const currentPositionEl = document.getElementById('current-position');
@@ -312,43 +312,43 @@ const completionModal = document.getElementById('completion-modal');
 totalInDeckEl.textContent = allMots.length;
 showNextCard();
 
-// Afficher la prochaine carte
+// Show next card
 function showNextCard() {
     if (remainingCards.length === 0) {
         endSession();
         return;
     }
     
-    // Prendre la première carte de la pile
+    // Take the first card from the stack
     currentCard = remainingCards[0];
     isFlipped = false;
     flashcard.classList.remove('flipped', 'swipe-left', 'swipe-right');
     
-    // Afficher le contenu
+    // Display content
     motFrancais.textContent = currentCard.mot_francais;
     traduction.textContent = currentCard.traduction;
     
-    // Mettre à jour les compteurs
+    // Update counters
     updateCounters();
 }
 
-// Mettre à jour les compteurs
+// Update counters
 function updateCounters() {
     remainingCardsEl.textContent = remainingCards.length;
     currentPositionEl.textContent = currentCardPosition;
     
-    // Progression basée sur la position dans le deck (pas les cartes vues)
+    // Progress based on position in deck (not cards seen)
     const progress = ((currentCardPosition - 1) / allMots.length) * 100;
     progressFill.style.width = Math.min(progress, 100) + '%';
 }
 
-// Retourner la carte
+// Flip card
 function flipCard() {
     isFlipped = !isFlipped;
     flashcard.classList.toggle('flipped');
 }
 
-// Marquer comme connue (swipe gauche)
+// Mark as known (swipe left)
 function markAsKnown() {
     if (!isFlipped) {
         flipCard();
@@ -358,15 +358,15 @@ function markAsKnown() {
     flashcard.classList.add('swipe-left');
     
     setTimeout(() => {
-        // Retirer la carte de la pile (ne pas la rajouter)
+        // Remove card from stack (don't add it back)
         remainingCards.shift();
         cardsSeenCount++;
-        currentCardPosition++; // Incrémenter la position seulement ici
+        currentCardPosition++; // Only increment position here
         showNextCard();
     }, 300);
 }
 
-// Marquer comme inconnue (swipe droite)
+// Mark as unknown (swipe right)
 function markAsUnknown() {
     if (!isFlipped) {
         flipCard();
@@ -376,11 +376,11 @@ function markAsUnknown() {
     flashcard.classList.add('swipe-right');
     
     setTimeout(() => {
-        // Retirer la carte et la remettre à la fin de la pile
+        // Remove card and put it back at the end of the stack
         const card = remainingCards.shift();
         remainingCards.push(card);
         cardsSeenCount++;
-        // Ne PAS incrémenter currentCardPosition ici (on rejette la carte)
+        // DO NOT increment currentCardPosition here (we're rejecting the card)
         showNextCard();
     }, 300);
 }
@@ -393,7 +393,7 @@ function playAudio(event) {
     audio.play();
 }
 
-// Fin session
+// End session
 function endSession() {
     const duration = Math.floor((Date.now() - startTime) / 1000);
     
@@ -411,24 +411,24 @@ function endSession() {
     }).then(() => {
         document.querySelector('.flashcard-container').classList.add('hidden');
         completionModal.classList.remove('hidden');
-        // Marquer que la session a été enregistrée
+        // Mark that session has been saved
         sessionEnregistree = true;
     });
 }
 
-// Recommencer
+// Restart
 function restartSession() {
     completionModal.classList.add('hidden');
     document.querySelector('.flashcard-container').classList.remove('hidden');
     remainingCards = [...allMots];
     cardsSeenCount = 0;
-    currentCardPosition = 1; // Réinitialiser la position
+    currentCardPosition = 1; // Reset position
     startTime = Date.now();
-    sessionEnregistree = false; // Nouvelle session
+    sessionEnregistree = false; // New session
     showNextCard();
 }
 
-// GESTION TACTILE (SWIPE)
+// TOUCH MANAGEMENT (SWIPE)
 flashcard.addEventListener('touchstart', function(e) {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
@@ -444,35 +444,35 @@ function handleSwipe() {
     const diffX = touchEndX - touchStartX;
     const diffY = touchEndY - touchStartY;
     
-    // Vérifier que le swipe est plus horizontal que vertical
+    // Check that swipe is more horizontal than vertical
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        // Seuil minimum de 50px
+        // Minimum threshold of 50px
         if (Math.abs(diffX) > 50) {
             if (diffX > 0) {
-                // Swipe droite → Je ne connais pas
+                // Swipe right → I don't know
                 markAsUnknown();
             } else {
-                // Swipe gauche → Je connais
+                // Swipe left → I know
                 markAsKnown();
             }
         }
     } else {
-        // Swipe vertical → Flip
+        // Vertical swipe → Flip
         if (Math.abs(diffY) > 50) {
             flipCard();
         }
     }
 }
 
-// Click pour flip
+// Click to flip
 flashcard.addEventListener('click', function(e) {
-    // Ne pas flip si on clique sur le bouton audio
+    // Don't flip if clicking audio button
     if (!e.target.closest('.audio-btn')) {
         flipCard();
     }
 });
 
-// Raccourcis clavier
+// Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowLeft') {
         markAsKnown();
@@ -484,12 +484,12 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Enregistrer la session seulement si elle n'a pas déjà été enregistrée
+// Save session only if not already saved
 window.addEventListener('beforeunload', function() {
     if (cardsSeenCount > 0 && !sessionEnregistree) {
         const duration = Math.floor((Date.now() - startTime) / 1000);
         
-        // Utiliser sendBeacon pour garantir l'envoi même si la page se ferme
+        // Use sendBeacon to ensure sending even if page closes
         const data = JSON.stringify({
             deck_id: deckId,
             type_session: 'flashcard',

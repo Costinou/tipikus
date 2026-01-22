@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Créer une lesson - Tipikus{% endblock %}
+{% block title %}Create Lesson - Tipikus{% endblock %}
 
 {% block page_header %}
 <div class="page-header text-center">
-    <h1>📖 Créer une nouvelle lesson</h1>
-    <p class="text-muted">Ajoutez du contenu théorique avec Markdown et des images</p>
+    <h1>📖 Create a New Lesson</h1>
+    <p class="text-muted">Add theoretical content with Markdown and images</p>
 </div>
 {% endblock %}
 
@@ -13,66 +13,66 @@
 <div style="max-width: 800px; margin: 0 auto;">
     <form method="POST" action="{{ url_for('create_lesson_post') }}" enctype="multipart/form-data">
         
-        <!-- Informations de base -->
+        <!-- Basic information -->
         <div class="card mb-2">
-            <h3 class="card-title">📝 Informations de la lesson</h3>
+            <h3 class="card-title">📝 Lesson Information</h3>
             
-            <!-- Niveau -->
+            <!-- Level -->
             <div class="form-group">
                 <label for="niveau" class="form-label">
-                    Niveau <span style="color: var(--accent);">*</span>
+                    Level <span style="color: var(--accent);">*</span>
                 </label>
                 <select id="niveau" name="niveau" class="form-select" required>
-                    <option value="">Sélectionnez un niveau</option>
+                    <option value="">Select a level</option>
                     {% for niv in niveaux %}
                     <option value="{{ niv }}">{{ niv }}</option>
                     {% endfor %}
                 </select>
             </div>
             
-            <!-- Numéro -->
+            <!-- Number -->
             <div class="form-group">
                 <label for="numero" class="form-label">
-                    Numéro de la lesson <span style="color: var(--accent);">*</span>
+                    Lesson Number <span style="color: var(--accent);">*</span>
                 </label>
                 <input 
                     type="number" 
                     id="numero" 
                     name="numero" 
                     class="form-input" 
-                    placeholder="Ex: 1"
+                    placeholder="e.g. 1"
                     min="1"
                     required
                 >
                 <small class="text-muted">
-                    Ce numéro détermine l'ordre d'affichage des lessons
+                    This number determines the display order of lessons
                 </small>
             </div>
             
-            <!-- Titre -->
+            <!-- Title -->
             <div class="form-group">
                 <label for="titre" class="form-label">
-                    Titre de la lesson <span style="color: var(--accent);">*</span>
+                    Lesson Title <span style="color: var(--accent);">*</span>
                 </label>
                 <input 
                     type="text" 
                     id="titre" 
                     name="titre" 
                     class="form-input" 
-                    placeholder="Ex: Se présenter en hongrois"
+                    placeholder="e.g. Introducing Yourself in Hungarian"
                     required
                     autofocus
                 >
             </div>
         </div>
         
-        <!-- Contenu Markdown -->
+        <!-- Markdown content -->
         <div class="card mb-2">
-            <h3 class="card-title">📄 Contenu de la lesson</h3>
+            <h3 class="card-title">📄 Lesson Content</h3>
             
             <div class="form-group">
                 <label for="fichier_md" class="form-label">
-                    Fichier Markdown (.md) <span style="color: var(--accent);">*</span>
+                    Markdown File (.md) <span style="color: var(--accent);">*</span>
                 </label>
                 <input 
                     type="file" 
@@ -84,70 +84,70 @@
                     onchange="previewMarkdown()"
                 >
                 <small class="text-muted">
-                    Uploadez un fichier .md avec votre contenu formaté en Markdown
+                    Upload a .md file with your content formatted in Markdown
                 </small>
             </div>
             
-            <!-- Aperçu du fichier -->
+            <!-- File preview -->
             <div id="markdown-preview" class="hidden mt-2" style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; max-height: 300px; overflow-y: auto;">
-                <strong>📄 Aperçu :</strong>
+                <strong>📄 Preview:</strong>
                 <pre id="preview-content" style="margin-top: 0.5rem; white-space: pre-wrap; font-size: 0.875rem; color: var(--text-secondary);"></pre>
             </div>
         </div>
         
-        <!-- Guide Markdown -->
+        <!-- Markdown guide -->
         <div class="card mb-2">
-            <h3 class="card-title">💡 Guide Markdown</h3>
+            <h3 class="card-title">💡 Markdown Guide</h3>
             
             <div style="font-size: 0.9rem; line-height: 1.8;">
-                <p><strong>Syntaxe de base :</strong></p>
+                <p><strong>Basic syntax:</strong></p>
                 
                 <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                     <code style="display: block; white-space: pre-wrap;">
-# Titre principal (H1)
-## Sous-titre (H2)
+# Main Title (H1)
+## Subtitle (H2)
 ### Section (H3)
 
-**Texte en gras**
-*Texte en italique*
-`Code inline`
+**Bold text**
+*Italic text*
+`Inline code`
 
-- Liste à puces
-- Élément 2
+- Bullet list
+- Item 2
 
-1. Liste numérotée
-2. Élément 2
+1. Numbered list
+2. Item 2
 
-![Description](nom_image.jpg)
+![Description](image_name.jpg)
 
-[Lien](https://example.com)
+[Link](https://example.com)
 
-> Citation
+> Quote
 
-| Français | Hongrois |
-|----------|----------|
-| Bonjour  | Jó napot |
+| French | Hungarian |
+|--------|-----------|
+| Hello  | Jó napot  |
                     </code>
                 </div>
                 
-                <p><strong>📷 Images :</strong></p>
+                <p><strong>📷 Images:</strong></p>
                 <ul style="margin-left: 1.5rem; color: var(--text-secondary);">
-                    <li>Placez vos images dans <code>static/lessons/images/</code></li>
-                    <li>Référencez-les simplement : <code>![Alt](image.jpg)</code></li>
-                    <li>Formats : JPG, PNG, GIF, WebP</li>
+                    <li>Place your images in <code>static/lessons/images/</code></li>
+                    <li>Reference them simply: <code>![Alt](image.jpg)</code></li>
+                    <li>Formats: JPG, PNG, GIF, WebP</li>
                 </ul>
             </div>
         </div>
         
-        <!-- Boutons -->
+        <!-- Buttons -->
         <div class="card">
             <div class="flex gap-2">
                 <button type="submit" class="btn btn-primary" style="flex: 1;">
-                    ✓ Créer la lesson
+                    ✓ Create Lesson
                 </button>
                 
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">
-                    Annuler
+                    Cancel
                 </a>
             </div>
         </div>
@@ -157,7 +157,7 @@
 
 {% block extra_js %}
 <script>
-// Prévisualiser le fichier Markdown
+// Preview Markdown file
 function previewMarkdown() {
     const fileInput = document.getElementById('fichier_md');
     const preview = document.getElementById('markdown-preview');
@@ -171,7 +171,7 @@ function previewMarkdown() {
     const file = fileInput.files[0];
     
     if (!file.name.endsWith('.md')) {
-        alert('Veuillez sélectionner un fichier .md');
+        alert('Please select a .md file');
         fileInput.value = '';
         return;
     }
@@ -181,49 +181,49 @@ function previewMarkdown() {
     reader.onload = function(e) {
         const content = e.target.result;
         
-        // Limiter l'aperçu aux 1000 premiers caractères
+        // Limit preview to first 1000 characters
         let displayContent = content;
         if (content.length > 1000) {
-            displayContent = content.substring(0, 1000) + '\n\n... (fichier tronqué)';
+            displayContent = content.substring(0, 1000) + '\n\n... (file truncated)';
         }
         
         previewContent.textContent = displayContent;
         preview.classList.remove('hidden');
         
-        // Compter les lignes et caractères
+        // Count lines and characters
         const lines = content.split('\n').length;
         const chars = content.length;
         const images = (content.match(/!\[.*?\]\(.*?\)/g) || []).length;
         
         previewContent.textContent = 
-            `📊 ${lines} lignes • ${chars} caractères • ${images} image(s)\n\n` + 
+            `📊 ${lines} lines • ${chars} characters • ${images} image(s)\n\n` + 
             displayContent;
     };
     
     reader.readAsText(file);
 }
 
-// Validation du formulaire
+// Form validation
 document.querySelector('form').addEventListener('submit', function(e) {
     const fileInput = document.getElementById('fichier_md');
     
     if (!fileInput.files || !fileInput.files[0]) {
         e.preventDefault();
-        alert('Veuillez sélectionner un fichier Markdown');
+        alert('Please select a Markdown file');
         return;
     }
     
     const file = fileInput.files[0];
     if (!file.name.endsWith('.md')) {
         e.preventDefault();
-        alert('Le fichier doit être au format .md');
+        alert('The file must be in .md format');
         return;
     }
     
-    // Afficher un loader
+    // Show loader
     const btn = this.querySelector('button[type="submit"]');
     btn.disabled = true;
-    btn.innerHTML = '⏳ Création en cours...';
+    btn.innerHTML = '⏳ Creating...';
 });
 </script>
 {% endblock %}

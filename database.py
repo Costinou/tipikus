@@ -4,20 +4,20 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 DATABASE = 'tipikus.db'
 
-# Niveaux disponibles
-NIVEAUX_DISPONIBLES = ['A1', 'A1+', 'A2', 'A2+', 'B1', 'B1+', 'Custom']
+# Available levels
+AVAILABLE_LEVELS = ['A1', 'A1+', 'A2', 'A2+', 'B1', 'B1+', 'Custom']
 
 def get_db():
-    """Connexion à la base de données"""
+    """Database connection"""
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    """Initialise la base de données avec les tables nécessaires"""
+    """Initialize the database with necessary tables"""
     conn = get_db()
     
-    # Table des utilisateurs
+    # Users table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,7 +27,7 @@ def init_db():
         )
     ''')
     
-    # Table des decks (avec niveau et is_commun)
+    # Decks table (with level and is_common)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS decks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +40,7 @@ def init_db():
         )
     ''')
     
-    # Table des mots
+    # Words table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS mots (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +51,7 @@ def init_db():
         )
     ''')
     
-    # Table des sessions
+    # Sessions table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,33 +68,33 @@ def init_db():
     
     conn.commit()
     conn.close()
-    print("Base de données initialisée avec succès!")
+    print("Database initialized successfully!")
 
-# ========== FONCTIONS POUR LES UTILISATEURS ==========
+# ========== USER FUNCTIONS ==========
 
 def get_all_users():
-    """Retourne tous les utilisateurs"""
+    """Returns all users"""
     conn = get_db()
     users = conn.execute('SELECT * FROM users ORDER BY nom').fetchall()
     conn.close()
     return [dict(user) for user in users]
 
 def get_user_by_id(user_id):
-    """Retourne un utilisateur par son ID"""
+    """Returns a user by ID"""
     conn = get_db()
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     conn.close()
     return dict(user) if user else None
 
 def get_user_by_name(nom):
-    """Retourne un utilisateur par son nom"""
+    """Returns a user by name"""
     conn = get_db()
     user = conn.execute('SELECT * FROM users WHERE nom = ?', (nom,)).fetchone()
     conn.close()
     return dict(user) if user else None
 
 def create_user(nom, password):
-    """Crée un nouvel utilisateur avec mot de passe"""
+    """Creates a new user with password"""
     conn = get_db()
     try:
         password_hash = generate_password_hash(password)
@@ -105,10 +105,10 @@ def create_user(nom, password):
         return user_id
     except sqlite3.IntegrityError:
         conn.close()
-        return None  # L'utilisateur existe déjà
+        return None  # User already exists
 
 def verify_user_password(nom, password):
-    """Vérifie le nom d'utilisateur et le mot de passe"""
+    """Verifies username and password"""
     user = get_user_by_name(nom)
     if not user:
         return None
@@ -118,7 +118,7 @@ def verify_user_password(nom, password):
     return None
 
 def update_user_password(user_id, new_password):
-    """Met à jour le mot de passe d'un utilisateur"""
+    """Updates a user's password"""
     conn = get_db()
     password_hash = generate_password_hash(new_password)
     conn.execute('UPDATE users SET password_hash = ? WHERE id = ?', (password_hash, user_id))
@@ -126,34 +126,34 @@ def update_user_password(user_id, new_password):
     conn.close()
 
 def delete_user(user_id):
-    """Supprime un utilisateur et toutes ses données associées"""
+    """Deletes a user and all associated data"""
     conn = get_db()
     
-    # Récupérer tous les decks de l'utilisateur
+    # Get all user's decks
     decks = conn.execute('SELECT id FROM decks WHERE user_id = ?', (user_id,)).fetchall()
     deck_ids = [deck['id'] for deck in decks]
     
-    # Supprimer les sessions des decks de l'utilisateur
+    # Delete sessions for user's decks
     for deck_id in deck_ids:
         conn.execute('DELETE FROM sessions WHERE deck_id = ?', (deck_id,))
     
-    # Supprimer les mots des decks de l'utilisateur
+    # Delete words from user's decks
     for deck_id in deck_ids:
         conn.execute('DELETE FROM mots WHERE deck_id = ?', (deck_id,))
     
-    # Supprimer les decks de l'utilisateur
+    # Delete user's decks
     conn.execute('DELETE FROM decks WHERE user_id = ?', (user_id,))
     
-    # Supprimer l'utilisateur
+    # Delete the user
     conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
     
     conn.commit()
     conn.close()
 
-# ========== FONCTIONS POUR LES LESSONS ==========
+# ========== LESSON FUNCTIONS ==========
 
 def get_lessons_by_niveau(niveau):
-    """Retourne toutes les lessons d'un niveau, triées par numéro"""
+    """Returns all lessons for a level, sorted by number"""
     conn = get_db()
     lessons = conn.execute(
         '''SELECT l.*, COUNT(d.id) as nb_decks
@@ -168,14 +168,14 @@ def get_lessons_by_niveau(niveau):
     return [dict(lesson) for lesson in lessons]
 
 def get_lesson_by_id(lesson_id):
-    """Retourne une lesson par son ID"""
+    """Returns a lesson by ID"""
     conn = get_db()
     lesson = conn.execute('SELECT * FROM lessons WHERE id = ?', (lesson_id,)).fetchone()
     conn.close()
     return dict(lesson) if lesson else None
 
 def create_lesson(niveau, numero, titre, content_markdown):
-    """Crée une nouvelle lesson"""
+    """Creates a new lesson"""
     conn = get_db()
     try:
         cursor = conn.execute(
@@ -188,10 +188,10 @@ def create_lesson(niveau, numero, titre, content_markdown):
         return lesson_id
     except sqlite3.IntegrityError:
         conn.close()
-        return None  # Cette lesson existe déjà (niveau + numéro unique)
+        return None  # This lesson already exists (unique level + number)
 
 def update_lesson(lesson_id, titre, content_markdown):
-    """Met à jour une lesson existante"""
+    """Updates an existing lesson"""
     conn = get_db()
     conn.execute(
         'UPDATE lessons SET titre = ?, content_markdown = ? WHERE id = ?',
@@ -201,17 +201,17 @@ def update_lesson(lesson_id, titre, content_markdown):
     conn.close()
 
 def delete_lesson(lesson_id):
-    """Supprime une lesson (et détache les decks associés)"""
+    """Deletes a lesson (and detaches associated decks)"""
     conn = get_db()
-    # Détacher les decks de cette lesson
+    # Detach decks from this lesson
     conn.execute('UPDATE decks SET lesson_id = NULL WHERE lesson_id = ?', (lesson_id,))
-    # Supprimer la lesson
+    # Delete the lesson
     conn.execute('DELETE FROM lessons WHERE id = ?', (lesson_id,))
     conn.commit()
     conn.close()
 
 def get_decks_by_lesson(lesson_id):
-    """Retourne tous les decks d'une lesson"""
+    """Returns all decks for a lesson"""
     conn = get_db()
     decks = conn.execute(
         'SELECT * FROM decks WHERE lesson_id = ? ORDER BY nom',
@@ -221,36 +221,36 @@ def get_decks_by_lesson(lesson_id):
     return [dict(deck) for deck in decks]
 
 def associate_deck_to_lesson(deck_id, lesson_id):
-    """Associe un deck à une lesson"""
+    """Associates a deck with a lesson"""
     conn = get_db()
     conn.execute('UPDATE decks SET lesson_id = ? WHERE id = ?', (lesson_id, deck_id))
     conn.commit()
     conn.close()
 
 def detach_deck_from_lesson(deck_id):
-    """Détache un deck de sa lesson"""
+    """Detaches a deck from its lesson"""
     conn = get_db()
     conn.execute('UPDATE decks SET lesson_id = NULL WHERE id = ?', (deck_id,))
     conn.commit()
     conn.close()
 
-# ========== FONCTIONS POUR LA PROGRESSION ==========
+# ========== PROGRESS FUNCTIONS ==========
 
 def get_deck_total_words(deck_id):
-    """Retourne le nombre total de mots dans un deck"""
+    """Returns the total number of words in a deck"""
     conn = get_db()
     count = conn.execute('SELECT COUNT(*) FROM mots WHERE deck_id = ?', (deck_id,)).fetchone()[0]
     conn.close()
     return count
 
 def has_user_seen_all_cards(user_id, deck_id):
-    """Vérifie si un utilisateur a vu toutes les cartes d'un deck au moins une fois"""
+    """Checks if a user has seen all cards in a deck at least once"""
     total_words = get_deck_total_words(deck_id)
     if total_words == 0:
-        return True  # Pas de mots = considéré comme "vu"
+        return True  # No words = considered "seen"
     
     conn = get_db()
-    # Vérifier s'il y a au moins une session flashcard complète avec toutes les cartes
+    # Check if there's at least one complete flashcard session with all cards
     complete_sessions = conn.execute(
         '''SELECT COUNT(*) FROM sessions 
         WHERE deck_id = ? 
@@ -264,7 +264,7 @@ def has_user_seen_all_cards(user_id, deck_id):
     return complete_sessions > 0
 
 def get_quiz_success_rate(user_id, deck_id):
-    """Retourne le taux de réussite moyen aux quiz d'un deck (%)"""
+    """Returns the average quiz success rate for a deck (%)"""
     conn = get_db()
     stats = conn.execute(
         '''SELECT 
@@ -282,32 +282,32 @@ def get_quiz_success_rate(user_id, deck_id):
     return (stats['total_score'] / stats['total_questions']) * 100
 
 def calculate_lesson_progress(user_id, lesson_id):
-    """Calcule la progression d'une lesson (0-100%)
+    """Calculates lesson progress (0-100%)
     
-    50% = Toutes les cartes vues dans tous les decks
-    50% = Taux de réussite >80% aux quiz de tous les decks
+    50% = All cards seen in all decks
+    50% = Success rate >80% in all deck quizzes
     """
     decks = get_decks_by_lesson(lesson_id)
     
     if not decks:
-        return 100.0  # Lesson sans decks = 100%
+        return 100.0  # Lesson without decks = 100%
     
-    # 1. Vérifier si toutes les cartes ont été vues (50%)
+    # 1. Check if all cards have been seen (50%)
     all_cards_seen = all(has_user_seen_all_cards(user_id, deck['id']) for deck in decks)
     cards_progress = 50.0 if all_cards_seen else 0.0
     
-    # 2. Calculer le taux de réussite moyen aux quiz (50%)
+    # 2. Calculate average quiz success rate (50%)
     quiz_rates = [get_quiz_success_rate(user_id, deck['id']) for deck in decks]
     avg_quiz_rate = sum(quiz_rates) / len(quiz_rates) if quiz_rates else 0.0
     
-    # Si le taux moyen est >80%, on obtient 50%
+    # If average rate is >80%, get 50%
     quiz_progress = 50.0 if avg_quiz_rate >= 80.0 else 0.0
     
     return cards_progress + quiz_progress
 
 def get_user_seen_cards_count(user_id, deck_id):
-    """Retourne le nombre de cartes vues par un utilisateur dans un deck
-    (basé sur le max de mots vus dans une session flashcard complète)"""
+    """Returns the number of cards seen by a user in a deck
+    (based on max words seen in a complete flashcard session)"""
     conn = get_db()
     max_seen = conn.execute(
         '''SELECT MAX(nombre_mots_vus) as max_seen
@@ -324,59 +324,59 @@ def get_user_seen_cards_count(user_id, deck_id):
     return 0
 
 def calculate_niveau_progress(user_id, niveau):
-    """Calcule la progression globale d'un niveau (0-100%)
+    """Calculates overall progress for a level (0-100%)
     
-    50% = Progression moyenne des lessons (granulaire)
-    50% = Cartes vues dans les decks hors lessons (linéaire)
+    50% = Average lesson progress (granular)
+    50% = Cards seen in decks outside lessons (linear)
     """
-    # 1. Récupérer toutes les lessons du niveau
+    # 1. Get all lessons for the level
     lessons = get_lessons_by_niveau(niveau)
     
     lessons_progress = 0.0
     if lessons:
-        # Calculer la progression moyenne de toutes les lessons
+        # Calculate average progress of all lessons
         total_lessons_progress = sum(calculate_lesson_progress(user_id, lesson['id']) for lesson in lessons)
-        lessons_progress = (total_lessons_progress / len(lessons)) * 0.5  # 50% du total
+        lessons_progress = (total_lessons_progress / len(lessons)) * 0.5  # 50% of total
     else:
-        # Pas de lessons = 50% automatique
+        # No lessons = automatic 50%
         lessons_progress = 50.0
     
-    # 2. Récupérer les decks HORS lessons
+    # 2. Get decks OUTSIDE lessons
     all_decks = get_decks_by_niveau(niveau, user_id, include_in_lessons=True)
-    decks_hors_lessons = [d for d in all_decks if d['lesson_id'] is None]
+    decks_outside_lessons = [d for d in all_decks if d['lesson_id'] is None]
     
     cards_progress = 0.0
-    if decks_hors_lessons:
-        # Calculer le nombre total de cartes et le nombre vu
+    if decks_outside_lessons:
+        # Calculate total number of cards and number seen
         total_cards = 0
         seen_cards = 0
         
-        for deck in decks_hors_lessons:
+        for deck in decks_outside_lessons:
             deck_total = get_deck_total_words(deck['id'])
             deck_seen = get_user_seen_cards_count(user_id, deck['id'])
             
             total_cards += deck_total
-            seen_cards += min(deck_seen, deck_total)  # Ne pas dépasser le total
+            seen_cards += min(deck_seen, deck_total)  # Don't exceed total
         
         if total_cards > 0:
-            # Progression linéaire : (cartes vues / cartes totales) * 50%
+            # Linear progress: (cards seen / total cards) * 50%
             cards_progress = (seen_cards / total_cards) * 50.0
         else:
-            # Pas de cartes = 50% automatique
+            # No cards = automatic 50%
             cards_progress = 50.0
     else:
-        # Pas de decks hors lessons = 50% automatique
+        # No decks outside lessons = automatic 50%
         cards_progress = 50.0
     
     return lessons_progress + cards_progress
 
-# ========== FONCTIONS POUR LES NIVEAUX ==========
+# ========== LEVEL FUNCTIONS ==========
 
 def get_niveaux_with_counts(user_id):
-    """Retourne un dictionnaire des niveaux avec le nombre de decks (communs + perso)"""
+    """Returns a dictionary of levels with deck counts (common + personal)"""
     conn = get_db()
     
-    # Compter les decks communs + decks personnels de l'user
+    # Count common decks + user's personal decks
     niveaux = conn.execute(
         '''SELECT niveau, COUNT(*) as count FROM decks 
         WHERE is_commun = 1 OR user_id = ?
@@ -387,26 +387,26 @@ def get_niveaux_with_counts(user_id):
     conn.close()
     return {niveau['niveau']: niveau['count'] for niveau in niveaux}
 
-# ========== FONCTIONS POUR LES DECKS ==========
+# ========== DECK FUNCTIONS ==========
 
 def get_decks_by_niveau(niveau, user_id, include_in_lessons=False):
-    """Retourne tous les decks d'un niveau
+    """Returns all decks for a level
     
-    Pour l'admin 'c': TOUS les decks (communs + tous les decks perso)
-    Pour les autres: decks communs + leurs decks perso uniquement
+    For admin 'c': ALL decks (common + all personal decks)
+    For others: common decks + their personal decks only
     
-    Par défaut, exclut les decks qui sont dans des lessons
+    By default, excludes decks that are in lessons
     """
     conn = get_db()
     
-    # Vérifier si l'utilisateur est l'admin
+    # Check if user is admin
     user = get_user_by_id(user_id)
     is_admin = user and user['nom'] == 'c'
     
     if include_in_lessons:
-        # Récupérer TOUS les decks (y compris ceux dans des lessons)
+        # Get ALL decks (including those in lessons)
         if is_admin:
-            # Admin voit TOUS les decks
+            # Admin sees ALL decks
             decks = conn.execute(
                 '''SELECT d.*, u.nom as createur_nom 
                 FROM decks d
@@ -416,7 +416,7 @@ def get_decks_by_niveau(niveau, user_id, include_in_lessons=False):
                 (niveau,)
             ).fetchall()
         else:
-            # Utilisateur normal voit seulement les decks communs + ses decks perso
+            # Normal user sees only common decks + their personal decks
             decks = conn.execute(
                 '''SELECT d.*, u.nom as createur_nom 
                 FROM decks d
@@ -426,9 +426,9 @@ def get_decks_by_niveau(niveau, user_id, include_in_lessons=False):
                 (niveau, user_id)
             ).fetchall()
     else:
-        # Récupérer uniquement les decks HORS lessons
+        # Get only decks OUTSIDE lessons
         if is_admin:
-            # Admin voit TOUS les decks hors lessons
+            # Admin sees ALL decks outside lessons
             decks = conn.execute(
                 '''SELECT d.*, u.nom as createur_nom 
                 FROM decks d
@@ -438,7 +438,7 @@ def get_decks_by_niveau(niveau, user_id, include_in_lessons=False):
                 (niveau,)
             ).fetchall()
         else:
-            # Utilisateur normal voit seulement les decks communs + ses decks perso (hors lessons)
+            # Normal user sees only common decks + their personal decks (outside lessons)
             decks = conn.execute(
                 '''SELECT d.*, u.nom as createur_nom 
                 FROM decks d
@@ -453,7 +453,7 @@ def get_decks_by_niveau(niveau, user_id, include_in_lessons=False):
     return [dict(deck) for deck in decks]
 
 def create_deck(nom, niveau, user_id, is_commun=False):
-    """Crée un nouveau deck"""
+    """Creates a new deck"""
     conn = get_db()
     cursor = conn.execute(
         'INSERT INTO decks (nom, niveau, user_id, is_commun) VALUES (?, ?, ?, ?)',
@@ -465,7 +465,7 @@ def create_deck(nom, niveau, user_id, is_commun=False):
     return deck_id
 
 def get_deck_by_id(deck_id):
-    """Retourne un deck par son ID"""
+    """Returns a deck by ID"""
     conn = get_db()
     deck = conn.execute(
         'SELECT * FROM decks WHERE id = ?', 
@@ -475,13 +475,13 @@ def get_deck_by_id(deck_id):
     return dict(deck) if deck else None
 
 def add_mots_to_deck(deck_id, mots_dict):
-    """Ajoute des mots à un deck depuis un dictionnaire"""
+    """Adds words to a deck from a dictionary"""
     conn = get_db()
     
-    # Vider les anciens mots du deck
+    # Clear old words from deck
     conn.execute('DELETE FROM mots WHERE deck_id = ?', (deck_id,))
     
-    # Ajouter les nouveaux mots
+    # Add new words
     for mot_francais, traduction in mots_dict.items():
         conn.execute(
             'INSERT INTO mots (deck_id, mot_francais, traduction) VALUES (?, ?, ?)',
@@ -492,7 +492,7 @@ def add_mots_to_deck(deck_id, mots_dict):
     conn.close()
 
 def get_mots_by_deck(deck_id):
-    """Retourne tous les mots d'un deck"""
+    """Returns all words from a deck"""
     conn = get_db()
     rows = conn.execute(
         'SELECT * FROM mots WHERE deck_id = ? ORDER BY RANDOM()',
@@ -502,7 +502,7 @@ def get_mots_by_deck(deck_id):
     return [dict(row) for row in rows]
 
 def get_mots_by_deck_ordered(deck_id):
-    """Retourne tous les mots d'un deck dans l'ordre alphabétique"""
+    """Returns all words from a deck in alphabetical order"""
     conn = get_db()
     rows = conn.execute(
         'SELECT mot_francais, traduction FROM mots WHERE deck_id = ? ORDER BY mot_francais',
@@ -512,40 +512,39 @@ def get_mots_by_deck_ordered(deck_id):
     return {row['mot_francais']: row['traduction'] for row in rows}
 
 def delete_deck(deck_id):
-    """Supprime un deck et tous ses mots associés"""
+    """Deletes a deck and all associated words"""
     conn = get_db()
     
-    # Supprimer les mots
+    # Delete words
     conn.execute('DELETE FROM mots WHERE deck_id = ?', (deck_id,))
     
-    # Supprimer les sessions
+    # Delete sessions
     conn.execute('DELETE FROM sessions WHERE deck_id = ?', (deck_id,))
     
-    # Supprimer le deck
+    # Delete deck
     conn.execute('DELETE FROM decks WHERE id = ?', (deck_id,))
     
     conn.commit()
     conn.close()
 
 def can_delete_deck(deck_id, user_nom):
-    """Vérifie si un utilisateur peut supprimer un deck"""
+    """Checks if a user can delete a deck"""
     deck = get_deck_by_id(deck_id)
     if not deck:
         return False
     
-    # Si c'est un deck commun, seul l'user 'c' peut le supprimer
+    # If it's a common deck, only user 'c' can delete it
     if deck['is_commun']:
         return user_nom == 'c'
     
-    # Sinon, on vérifie que c'est le propriétaire
-    # (cette vérification sera faite dans app.py)
+    # Otherwise, check that they're the owner
+    # (this verification will be done in app.py)
     return True
 
-# ========== FONCTIONS POUR LES SESSIONS ==========
-
+# ========== SESSION FUNCTIONS ==========
 
 def create_session(deck_id, user_id, type_session, nombre_mots_vus, score, duree_secondes, complete):
-    """Enregistre une nouvelle session d'apprentissage avec user_id"""
+    """Records a new learning session with user_id"""
     conn = get_db()
     cursor = conn.execute(
         '''INSERT INTO sessions 
@@ -559,54 +558,7 @@ def create_session(deck_id, user_id, type_session, nombre_mots_vus, score, duree
     return session_id
 
 def get_stats_deck(deck_id, user_id, days=30):
-    """Calcule les statistiques d'un deck pour un utilisateur spécifique"""
-    conn = get_db()
-    
-    stats = conn.execute(
-        '''SELECT 
-            COUNT(*) as total_sessions,
-            SUM(nombre_mots_vus) as total_mots,
-            SUM(CASE WHEN type_session = 'quiz' THEN score ELSE 0 END) as total_score,
-            SUM(CASE WHEN type_session = 'quiz' THEN nombre_mots_vus ELSE 0 END) as total_questions_quiz,
-            SUM(duree_secondes) as total_duree,
-            AVG(duree_secondes) as duree_moyenne
-        FROM sessions
-        WHERE deck_id = ?
-        AND user_id = ?
-        AND date_session >= datetime('now', '-' || ? || ' days')''',
-        (deck_id, user_id, days)
-    ).fetchone()
-    
-    dernieres_sessions = conn.execute(
-        '''SELECT type_session, duree_secondes, nombre_mots_vus, score, date_session
-        FROM sessions
-        WHERE deck_id = ?
-        AND user_id = ?
-        ORDER BY date_session DESC
-        LIMIT 5''',
-        (deck_id, user_id)
-    ).fetchall()
-    
-    jours = conn.execute(
-        '''SELECT DISTINCT DATE(date_session) as jour
-        FROM sessions
-        WHERE deck_id = ?
-        AND user_id = ?
-        AND date_session >= datetime('now', '-' || ? || ' days')
-        ORDER BY jour DESC''',
-        (deck_id, user_id, days)
-    ).fetchall()
-    
-    conn.close()
-    
-    result = dict(stats) if stats else {}
-    result['dernieres_sessions'] = [dict(row) for row in dernieres_sessions]
-    result['jours_utilises'] = [row['jour'] for row in jours]
-    
-    return result
-
-def get_stats_deck(deck_id, user_id, days=30):
-    """Calcule les statistiques d'un deck pour un utilisateur spécifique"""
+    """Calculates deck statistics for a specific user"""
     conn = get_db()
     
     stats = conn.execute(
@@ -653,7 +605,7 @@ def get_stats_deck(deck_id, user_id, days=30):
     return result
 
 def get_stats_niveau(niveau, user_id, days=30):
-    """Calcule les statistiques d'un niveau pour un utilisateur"""
+    """Calculates level statistics for a user"""
     conn = get_db()
     
     stats = conn.execute(
@@ -683,7 +635,7 @@ def get_stats_niveau(niveau, user_id, days=30):
         (niveau, user_id, days)
     ).fetchall()
     
-    # Récupérer les dernières sessions avec le nom du deck
+    # Get recent sessions with deck name
     dernieres_sessions = conn.execute(
         '''SELECT 
             s.type_session,
@@ -711,7 +663,7 @@ def get_stats_niveau(niveau, user_id, days=30):
     return result
 
 def calculer_streak(jours_utilises):
-    """Calcule le nombre de jours consécutifs d'utilisation"""
+    """Calculates the number of consecutive days of use"""
     if not jours_utilises:
         return 0
     
@@ -731,7 +683,7 @@ def calculer_streak(jours_utilises):
     return streak
 
 def get_stats_globales(user_id, days=30):
-    """Calcule les statistiques globales pour un utilisateur"""
+    """Calculates global statistics for a user"""
     conn = get_db()
     
     stats = conn.execute(
@@ -756,7 +708,7 @@ def get_stats_globales(user_id, days=30):
         (user_id, days)
     ).fetchall()
     
-    # Récupérer les dernières sessions avec le nom du deck et le niveau
+    # Get recent sessions with deck name and level
     dernieres_sessions = conn.execute(
         '''SELECT 
             s.type_session,
@@ -813,14 +765,14 @@ def get_stats_globales(user_id, days=30):
     return result
 
 def get_all_users_stats():
-    """Retourne les statistiques de tous les utilisateurs pour l'admin
+    """Returns statistics for all users for the admin
     
-    Compte uniquement les sessions faites par chaque utilisateur
-    (grâce à la colonne user_id dans sessions)
+    Only counts sessions done by each user
+    (thanks to the user_id column in sessions)
     """
     conn = get_db()
     
-    # Récupérer tous les utilisateurs
+    # Get all users
     users = conn.execute('SELECT * FROM users ORDER BY nom').fetchall()
     
     users_stats = []
@@ -828,7 +780,7 @@ def get_all_users_stats():
     for user in users:
         user_id = user['id']
         
-        # Statistiques des sessions de cet utilisateur uniquement
+        # Statistics for this user's sessions only
         stats = conn.execute(
             '''SELECT 
                 COUNT(*) as total_sessions,
@@ -842,13 +794,13 @@ def get_all_users_stats():
             (user_id,)
         ).fetchone()
         
-        # Nombre de decks personnels
+        # Number of personal decks
         nb_decks = conn.execute(
             'SELECT COUNT(*) as count FROM decks WHERE user_id = ? AND is_commun = 0',
             (user_id,)
         ).fetchone()['count']
         
-        # Jours d'activité pour calculer le streak
+        # Activity days to calculate streak
         jours = conn.execute(
             '''SELECT DISTINCT DATE(date_session) as jour
             FROM sessions
@@ -860,7 +812,7 @@ def get_all_users_stats():
         jours_liste = [row['jour'] for row in jours]
         streak = calculer_streak(jours_liste)
         
-        # Calculer le taux de réussite
+        # Calculate success rate
         taux_reussite = None
         if stats['total_questions'] and stats['total_questions'] > 0:
             taux_reussite = (stats['total_score'] / stats['total_questions']) * 100
@@ -883,14 +835,14 @@ def get_all_users_stats():
     return users_stats
 
 def get_users_with_stats():
-    """Retourne tous les utilisateurs avec leurs statistiques"""
+    """Returns all users with their statistics"""
     conn = get_db()
     
     users = get_all_users()
     users_stats = []
     
     for user in users:
-        # Stats pour cet utilisateur
+        # Stats for this user
         stats = conn.execute(
             '''SELECT 
                 COUNT(*) as total_sessions,
@@ -904,7 +856,7 @@ def get_users_with_stats():
             (user['id'],)
         ).fetchone()
         
-        # Calculer le streak
+        # Calculate streak
         jours = conn.execute(
             '''SELECT DISTINCT DATE(s.date_session) as jour
             FROM sessions s
@@ -916,7 +868,7 @@ def get_users_with_stats():
         
         streak = calculer_streak([row['jour'] for row in jours])
         
-        # Calculer le taux de réussite
+        # Calculate success rate
         total_quiz = stats['total_questions_quiz'] or 0
         taux_reussite = None
         if total_quiz > 0:
@@ -936,7 +888,7 @@ def get_users_with_stats():
     return users_stats
 
 def get_recent_sessions(limit=10):
-    """Retourne les N dernières sessions avec nom utilisateur et deck"""
+    """Returns the N most recent sessions with username and deck"""
     conn = get_db()
     
     sessions = conn.execute(
@@ -961,10 +913,10 @@ def get_recent_sessions(limit=10):
     return [dict(session) for session in sessions]
 
 
-# ========== FONCTIONS POUR LES EXERCICES ==========
+# ========== EXERCISE FUNCTIONS ==========
 
 def create_exercice(lesson_id, type_exercice, titre, description='', ordre=0, config=None):
-    """Crée un nouvel exercice"""
+    """Creates a new exercise"""
     import json
     conn = get_db()
     
@@ -982,7 +934,7 @@ def create_exercice(lesson_id, type_exercice, titre, description='', ordre=0, co
 
 
 def get_exercices_by_lesson(lesson_id):
-    """Retourne tous les exercices d'une lesson, triés par ordre"""
+    """Returns all exercises for a lesson, sorted by order"""
     import json
     conn = get_db()
     exercices = conn.execute(
@@ -994,7 +946,7 @@ def get_exercices_by_lesson(lesson_id):
     result = []
     for ex in exercices:
         ex_dict = dict(ex)
-        # Parser le config JSON
+        # Parse JSON config
         if ex_dict.get('config'):
             try:
                 ex_dict['config'] = json.loads(ex_dict['config'])
@@ -1008,7 +960,7 @@ def get_exercices_by_lesson(lesson_id):
 
 
 def get_exercice_by_id(exercice_id):
-    """Retourne un exercice par son ID"""
+    """Returns an exercise by ID"""
     import json
     conn = get_db()
     exercice = conn.execute(
@@ -1021,7 +973,7 @@ def get_exercice_by_id(exercice_id):
         return None
     
     ex_dict = dict(exercice)
-    # Parser le config JSON
+    # Parse JSON config
     if ex_dict.get('config'):
         try:
             ex_dict['config'] = json.loads(ex_dict['config'])
@@ -1034,19 +986,19 @@ def get_exercice_by_id(exercice_id):
 
 
 def delete_exercice(exercice_id):
-    """Supprime un exercice et tout son contenu"""
+    """Deletes an exercise and all its content"""
     conn = get_db()
-    # Les contenus et résultats seront supprimés automatiquement (CASCADE)
+    # Content and results will be deleted automatically (CASCADE)
     conn.execute('DELETE FROM exercices WHERE id = ?', (exercice_id,))
     conn.commit()
     conn.close()
 
 
 def add_exercice_contenu(exercice_id, contenu_list):
-    """Ajoute du contenu à un exercice
+    """Adds content to an exercise
     
-    contenu_list: liste de dictionnaires avec le contenu
-    Exemple pour fill_blank:
+    contenu_list: list of dictionaries with content
+    Example for fill_blank:
     [
         {
             "phrase": "Én {0} magyarul.",
@@ -1072,7 +1024,7 @@ def add_exercice_contenu(exercice_id, contenu_list):
 
 
 def get_exercice_contenu(exercice_id):
-    """Retourne tout le contenu d'un exercice, trié par ordre"""
+    """Returns all content for an exercise, sorted by order"""
     import json
     conn = get_db()
     contenus = conn.execute(
@@ -1084,7 +1036,7 @@ def get_exercice_contenu(exercice_id):
     result = []
     for c in contenus:
         c_dict = dict(c)
-        # Parser le contenu JSON
+        # Parse JSON content
         try:
             c_dict['contenu'] = json.loads(c_dict['contenu'])
         except:
@@ -1095,7 +1047,7 @@ def get_exercice_contenu(exercice_id):
 
 
 def delete_exercice_contenu(exercice_id):
-    """Supprime tout le contenu d'un exercice"""
+    """Deletes all content for an exercise"""
     conn = get_db()
     conn.execute('DELETE FROM exercices_contenu WHERE exercice_id = ?', (exercice_id,))
     conn.commit()
@@ -1103,7 +1055,7 @@ def delete_exercice_contenu(exercice_id):
 
 
 def create_exercice_resultat(exercice_id, user_id, score, total_questions, temps_secondes, complete):
-    """Enregistre le résultat d'un exercice"""
+    """Records an exercise result"""
     conn = get_db()
     cursor = conn.execute(
         '''INSERT INTO exercices_resultats 
@@ -1118,7 +1070,7 @@ def create_exercice_resultat(exercice_id, user_id, score, total_questions, temps
 
 
 def get_exercice_meilleur_resultat(exercice_id, user_id):
-    """Retourne le meilleur résultat d'un utilisateur pour un exercice"""
+    """Returns a user's best result for an exercise"""
     conn = get_db()
     resultat = conn.execute(
         '''SELECT * FROM exercices_resultats
@@ -1132,7 +1084,7 @@ def get_exercice_meilleur_resultat(exercice_id, user_id):
 
 
 def is_exercice_completed(exercice_id, user_id):
-    """Vérifie si un exercice est complété par un utilisateur"""
+    """Checks if an exercise is completed by a user"""
     conn = get_db()
     result = conn.execute(
         '''SELECT complete FROM exercices_resultats
@@ -1146,13 +1098,13 @@ def is_exercice_completed(exercice_id, user_id):
 
 
 def get_exercice_stats(exercice_id, user_id):
-    """Retourne les statistiques d'un exercice pour un utilisateur"""
+    """Returns exercise statistics for a user"""
     conn = get_db()
     
-    # Meilleur score
+    # Best score
     meilleur = get_exercice_meilleur_resultat(exercice_id, user_id)
     
-    # Nombre de tentatives
+    # Number of attempts
     nb_tentatives = conn.execute(
         'SELECT COUNT(*) as count FROM exercices_resultats WHERE exercice_id = ? AND user_id = ?',
         (exercice_id, user_id)
