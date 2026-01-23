@@ -441,6 +441,28 @@
 // Lesson markdown content
 const markdownContent = {{ lesson.content_markdown|tojson }};
 
+// Pre-process markdown to convert !youtube[ID](Title) to HTML
+function preprocessYouTube(markdown) {
+    // Regex to match !youtube[VIDEO_ID](Optional Title)
+    const youtubeRegex = /!youtube\[([a-zA-Z0-9_-]{11})\]\(([^)]*)\)/g;
+    
+    return markdown.replace(youtubeRegex, (match, videoId, title) => {
+        const titleHtml = title.trim() ? `<div class="youtube-title">${title.trim()}</div>` : '';
+        
+        return `
+<div class="youtube-container">
+    <iframe 
+        src="https://www.youtube.com/embed/${videoId}" 
+        frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+        allowfullscreen
+        loading="lazy">
+    </iframe>
+</div>
+${titleHtml}`;
+    });
+}
+
 // Configure marked to handle images
 marked.use({
     renderer: {
@@ -456,8 +478,10 @@ marked.use({
     }
 });
 
-// Render markdown
-document.getElementById('markdown-content').innerHTML = marked.parse(markdownContent);
+// Pre-process YouTube syntax, then render markdown
+const processedMarkdown = preprocessYouTube(markdownContent);
+const renderedHtml = marked.parse(processedMarkdown);
+document.getElementById('markdown-content').innerHTML = renderedHtml;
 
 function confirmerSuppressionLesson(titre, lessonId) {
     if (confirm(`Are you sure you want to delete the lesson "${titre}"?\n\nAssociated decks and exercises will NOT be deleted.`)) {
