@@ -17,7 +17,8 @@ from database import (
     calculate_lesson_progress, calculate_niveau_progress, get_all_users_stats, 
     get_users_with_stats, get_recent_sessions, delete_exercice, get_exercice_by_id, create_exercice_resultat,
     get_exercice_stats, get_exercice_contenu,get_exercices_by_lesson,create_exercice,add_exercice_contenu,
-    AVAILABLE_LEVELS
+    AVAILABLE_LEVELS, calculate_niveau_total_xp, calculate_user_xp_for_niveau,
+    calculate_niveau_progress_xp, get_xp_breakdown, get_unlocked_niveaux_xp
 )
 
 # Import for text-to-speech
@@ -296,20 +297,34 @@ def index():
     # Get levels with deck counter
     niveaux_counts = get_niveaux_with_counts(user_id)
     
-    # Calculate progress for each level
+    # Calculate XP-based progress for each level
     niveaux_progress = {}
-    for niveau in AVAILABLE_LEVELS:
-        niveaux_progress[niveau] = calculate_niveau_progress(user_id, niveau)
+    niveaux_xp = {}
     
-    # NEW: Get unlocked levels
-    unlocked_niveaux = get_unlocked_niveaux(user_id)
+    for niveau in AVAILABLE_LEVELS:
+        # Progression XP
+        niveaux_progress[niveau] = calculate_niveau_progress_xp(user_id, niveau)
+        
+        # Détails XP
+        xp_data = calculate_user_xp_for_niveau(user_id, niveau)
+        xp_total = calculate_niveau_total_xp(niveau)
+        
+        niveaux_xp[niveau] = {
+            'xp_gagne': xp_data['xp_total'],
+            'xp_total': xp_total
+        }
+    
+    # Get unlocked levels (XP-based)
+    unlocked_niveaux = get_unlocked_niveaux_xp(user_id)
     
     return render_template('index.html', 
                          AVAILABLE_LEVELS=AVAILABLE_LEVELS,
                          niveaux_counts=niveaux_counts,
                          niveaux_progress=niveaux_progress,
+                         niveaux_xp=niveaux_xp,
                          unlocked_niveaux=unlocked_niveaux,
                          user=user)
+
 
 
 @app.route('/niveau/<niveau>')
@@ -324,21 +339,29 @@ def niveau(niveau):
         flash(f'Level "{niveau}" not supported')
         return redirect(url_for('index'))
     
-    # Check if level is unlocked
-    unlocked_niveaux = get_unlocked_niveaux(user_id)
+    # Check if level is unlocked (XP-based) - STRICT CHECK
+    unlocked_niveaux = get_unlocked_niveaux_xp(user_id)
     if niveau not in unlocked_niveaux:
-        flash(f'⚠️ Level {niveau} is locked. Complete the previous level to 80% to unlock it.')
+        # Get previous level info for error message
+        prev_index = AVAILABLE_LEVELS.index(niveau) - 1
+        prev_niveau = AVAILABLE_LEVELS[prev_index] if prev_index >= 0 else 'A1'
+        if prev_niveau == 'Custom' and prev_index > 0:
+            prev_niveau = AVAILABLE_LEVELS[prev_index - 1]
+        
+        prev_progress = calculate_niveau_progress_xp(user_id, prev_niveau)
+        
+        flash(f'🔒 Level {niveau} is locked. Complete level {prev_niveau} to 80% to unlock it. (Current: {prev_progress:.1f}%)')
         return redirect(url_for('index'))
     
     # Get lessons for this level
     lessons = get_lessons_by_niveau(niveau)
     
-    # Calculate progress for each lesson
+    # Calculate progress for each lesson (keep old system for lessons)
     lessons_progress = {}
     for lesson in lessons:
         lessons_progress[lesson['id']] = calculate_lesson_progress(user_id, lesson['id'])
     
-    # Get decks OUTSIDE lessons (common + personal for normal user, ALL for admin)
+    # Get decks OUTSIDE lessons
     all_decks = get_decks_by_niveau(niveau, user_id, include_in_lessons=False)
     
     user = get_user_by_id(user_id)
@@ -348,14 +371,15 @@ def niveau(niveau):
     decks_communs = [d for d in all_decks if d['is_commun']]
     
     if is_admin:
-        # For admin: separate admin personal decks + other users' personal decks
         decks_perso_admin = [d for d in all_decks if not d['is_commun'] and d['user_id'] == user_id]
         decks_perso_autres = [d for d in all_decks if not d['is_commun'] and d['user_id'] != user_id]
     else:
-        # For normal user: only their personal decks
         decks_perso_admin = []
         decks_perso_autres = []
         decks_perso = [d for d in all_decks if not d['is_commun']]
+    
+    # Get XP breakdown for this level
+    xp_breakdown = get_xp_breakdown(user_id, niveau)
     
     return render_template('niveau.html', 
                          niveau=niveau,
@@ -365,7 +389,8 @@ def niveau(niveau):
                          decks_perso=decks_perso if not is_admin else decks_perso_admin,
                          decks_perso_autres=decks_perso_autres if is_admin else [],
                          user=user,
-                         is_admin=is_admin)
+                         is_admin=is_admin,
+                         xp_breakdown=xp_breakdown)
 
 # ========== LESSON ROUTES ==========
 
@@ -1042,52 +1067,90 @@ def page_not_found(e):
     return redirect(url_for('index'))
 
 
+# 4. REMPLACER la fonction get_unlocked_niveaux() (ligne ~780)
 def get_unlocked_niveaux(user_id):
-    """Returns list of unlocked levels for a user
-    
-    For admin 'c': ALL levels are unlocked
-    For others: A level is unlocked if previous one has >= 80% progress
-    First level (A1) is always unlocked
     """
-    from database import AVAILABLE_LEVELS, calculate_niveau_progress, get_user_by_id
+    DEPRECATED: Use get_unlocked_niveaux_xp instead
+    Kept for compatibility
+    """
+    return get_unlocked_niveaux_xp(user_id)
+
+@app.route('/api/xp-gain', methods=['POST'])
+def get_xp_gain():
+    """API pour calculer les gains XP d'une activité"""
+    user_id = session.get('user_id')
     
-    # Check if user is admin
-    user = get_user_by_id(user_id)
-    if user and user['nom'] == 'c':
-        # Admin has access to ALL levels
-        return AVAILABLE_LEVELS.copy()
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
     
-    # For other users, normal logic
-    unlocked = []
-    
-    for i, niveau in enumerate(AVAILABLE_LEVELS):
-        # A1 and Custom are always unlocked
-        if niveau == 'A1' or niveau == 'Custom':
-            unlocked.append(niveau)
-            continue
+    try:
+        data = request.get_json()
         
-        # Check previous level
-        if i > 0:
-            niveau_precedent = AVAILABLE_LEVELS[i - 1]
+        activity_type = data.get('type')  # 'flashcard', 'quiz', 'exercice'
+        deck_id = data.get('deck_id')
+        exercice_id = data.get('exercice_id')
+        score = data.get('score', 0)
+        total = data.get('total', 0)
+        
+        xp_gain = 0
+        bonus = 0
+        details = []
+        
+        if activity_type == 'flashcard':
+            # 10 XP par carte vue
+            xp_gain = total * 10
+            details.append(f"+{xp_gain} XP - {total} card(s) seen")
+        
+        elif activity_type == 'quiz':
+            # 20 XP par bonne réponse, 5 XP par mauvaise
+            correct = score
+            incorrect = total - score
             
-            # If it's Custom, take the one before
-            if niveau_precedent == 'Custom':
-                if i > 1:
-                    niveau_precedent = AVAILABLE_LEVELS[i - 2]
-                else:
-                    # Unlikely case but for safety
-                    unlocked.append(niveau)
-                    continue
+            xp_gain = (correct * 20) + (incorrect * 5)
+            details.append(f"+{correct * 20} XP - {correct} correct answer(s)")
+            if incorrect > 0:
+                details.append(f"+{incorrect * 5} XP - {incorrect} attempt(s)")
             
-            progression_precedent = calculate_niveau_progress(user_id, niveau_precedent)
+            # Bonus
+            if total > 0:
+                success_rate = score / total
+                if success_rate >= 0.8:
+                    bonus += 10
+                    details.append(f"+10 XP - Bonus 80%+")
+                if success_rate == 1.0:
+                    bonus += 20
+                    details.append(f"+20 XP - Perfect score!")
+        
+        elif activity_type == 'exercice':
+            # 25 XP par bonne réponse, 8 XP par mauvaise
+            correct = score
+            incorrect = total - score
             
-            # Unlock if >= 80%
-            if progression_precedent >= 80.0:
-                unlocked.append(niveau)
-        else:
-            # Safety case
-            unlocked.append(niveau)
-    
+            xp_gain = (correct * 25) + (incorrect * 8)
+            details.append(f"+{correct * 25} XP - {correct} correct answer(s)")
+            if incorrect > 0:
+                details.append(f"+{incorrect * 8} XP - {incorrect} attempt(s)")
+            
+            # Bonus
+            if total > 0:
+                success_rate = score / total
+                if success_rate >= 0.8:
+                    bonus += 25
+                    details.append(f"+25 XP - Bonus 80%+")
+                if success_rate == 1.0:
+                    bonus += 50
+                    details.append(f"+50 XP - Perfect score!")
+        
+        total_xp = xp_gain + bonus
+        
+        return jsonify({
+            'success': True,
+            'xp_gain': total_xp,
+            'details': details
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     return unlocked
 
 @app.route('/service-worker.js')

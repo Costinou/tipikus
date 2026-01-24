@@ -13,12 +13,20 @@
 <!-- Levels grid -->
 <div class="niveaux-grid">
     {% for niveau in AVAILABLE_LEVELS %}
-    <a href="{{ url_for('niveau', niveau=niveau) }}" 
-       class="card niveau-card {% if niveau not in unlocked_niveaux %}locked{% endif %}"
-       style="text-decoration: none;">
+    {% set is_unlocked = niveau in unlocked_niveaux %}
+    
+    {% if is_unlocked %}
+        <a href="{{ url_for('niveau', niveau=niveau) }}" 
+           class="card niveau-card"
+           style="text-decoration: none;">
+    {% else %}
+        <div class="card niveau-card locked" style="cursor: not-allowed; opacity: 0.6;">
+    {% endif %}
         
         <div class="card-header">
-            <h3 class="card-title">{{ niveau }}</h3>
+            <h3 class="card-title">
+                {% if not is_unlocked %}🔒 {% endif %}{{ niveau }}
+            </h3>
             
             {% if niveau in niveaux_counts %}
                 <span class="card-badge">{{ niveaux_counts[niveau] }} deck{{ 's' if niveaux_counts[niveau] > 1 else '' }}</span>
@@ -27,11 +35,20 @@
             {% endif %}
         </div>
         
+        <!-- XP Display -->
+        {% if niveau in niveaux_xp %}
+        <div style="margin-bottom: 0.5rem; text-align: center;">
+            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                <strong style="color: {% if is_unlocked %}var(--accent){% else %}var(--text-secondary){% endif %};">{{ niveaux_xp[niveau].xp_gagne }}</strong> XP / {{ niveaux_xp[niveau].xp_total }} XP
+            </div>
+        </div>
+        {% endif %}
+        
         <!-- Progress bar -->
-        {% if niveau in niveaux_progress and niveaux_progress[niveau] > 0 %}
+        {% if niveau in niveaux_progress %}
         <div class="progress-container">
             <div class="progress-bar">
-                <div class="progress-fill" style="width: {{ niveaux_progress[niveau] }}%"></div>
+                <div class="progress-fill" style="width: {{ niveaux_progress[niveau] }}%; {% if not is_unlocked %}opacity: 0.5;{% endif %}"></div>
             </div>
             <div class="progress-label">
                 <span>Progress</span>
@@ -40,13 +57,31 @@
         </div>
         {% endif %}
         
-        <!-- Locked badge -->
-        {% if niveau not in unlocked_niveaux %}
-        <p class="text-muted mt-2" style="font-size: 0.875rem;">
-            ⚠️ Complete {{ AVAILABLE_LEVELS[AVAILABLE_LEVELS.index(niveau) - 1] }} to 80% to unlock
-        </p>
+        <!-- Locked badge with requirement -->
+        {% if not is_unlocked %}
+        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 4px solid #ef4444;">
+            <div style="font-size: 0.875rem; font-weight: 600; color: #ef4444; margin-bottom: 0.25rem;">
+                🔒 Level Locked
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                {% set prev_index = AVAILABLE_LEVELS.index(niveau) - 1 %}
+                {% set prev_niveau = AVAILABLE_LEVELS[prev_index] if prev_index >= 0 else 'A1' %}
+                {% if prev_niveau == 'Custom' and prev_index > 0 %}
+                    {% set prev_niveau = AVAILABLE_LEVELS[prev_index - 1] %}
+                {% endif %}
+                Complete <strong>{{ prev_niveau }}</strong> to 80% XP to unlock
+                {% if prev_niveau in niveaux_progress %}
+                    <br>(Current: {{ "%.1f"|format(niveaux_progress[prev_niveau]) }}%)
+                {% endif %}
+            </div>
+        </div>
         {% endif %}
-    </a>
+    
+    {% if is_unlocked %}
+        </a>
+    {% else %}
+        </div>
+    {% endif %}
     {% endfor %}
 </div>
 
@@ -82,13 +117,20 @@
     <div class="markdown-content">
         <p>Tipikus is a Hungarian learning application based on:</p>
         <ul>
-            <li><strong>Flashcards</strong>: Memorize vocabulary effectively</li>
-            <li><strong>Quizzes</strong>: Test your knowledge</li>
-            <li><strong>Lessons</strong>: Follow a structured learning path</li>
-            <li><strong>Progression</strong>: Unlock levels progressively</li>
+            <li><strong>Flashcards</strong>: Memorize vocabulary effectively (10 XP per card)</li>
+            <li><strong>Quizzes</strong>: Test your knowledge (20 XP per correct answer)</li>
+            <li><strong>Exercises</strong>: Practice with fill-in exercises (25 XP per correct answer)</li>
+            <li><strong>Progression</strong>: Unlock levels progressively with XP</li>
         </ul>
         
-        <p><strong>💡 Tip</strong>: Complete a level to at least 80% to unlock the next one!</p>
+        <p><strong>💡 Tip</strong>: Earn at least 80% of available XP to unlock the next level!</p>
+        
+        <p><strong>🎮 XP System</strong>:</p>
+        <ul>
+            <li>Every action earns you XP points</li>
+            <li>Bonus XP for excellent performance (80%+ and 100%)</li>
+            <li>Even mistakes earn you XP for trying!</li>
+        </ul>
     </div>
 </div>
 {% endblock %}

@@ -27,6 +27,92 @@
 
 {% block content %}
 
+<!-- XP PROGRESS CARD -->
+{% if xp_breakdown %}
+<div class="card mb-2">
+    <div class="card-header">
+        <h2>🎮 Your XP Progress</h2>
+    </div>
+    
+    <!-- Global Progress -->
+    <div style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-size: 1.125rem; font-weight: 600;">Overall Progress</span>
+            <span style="font-size: 1.25rem; font-weight: 700; color: var(--accent);">
+                {{ xp_breakdown.xp_gagne.xp_total }} XP / {{ xp_breakdown.xp_total_possible }} XP
+            </span>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ xp_breakdown.progression }}%"></div>
+            </div>
+            <div class="progress-label">
+                <span>Level Progress</span>
+                <span><strong>{{ "%.1f"|format(xp_breakdown.progression) }}%</strong></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- XP Breakdown by Activity -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <!-- Flashcards -->
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.5rem;">🎴</span>
+                <span style="font-weight: 600;">Flashcards</span>
+            </div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                {{ xp_breakdown.details.flashcards.actuel }} / {{ xp_breakdown.details.flashcards.max }} XP
+            </div>
+            <div class="progress-bar" style="height: 8px;">
+                <div class="progress-fill" style="width: {{ xp_breakdown.details.flashcards.pourcentage }}%; background: #06b6d4;"></div>
+            </div>
+        </div>
+        
+        <!-- Quiz -->
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.5rem;">🎯</span>
+                <span style="font-weight: 600;">Quiz</span>
+            </div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                {{ xp_breakdown.details.quiz.actuel }} / {{ xp_breakdown.details.quiz.max }} XP
+            </div>
+            <div class="progress-bar" style="height: 8px;">
+                <div class="progress-fill" style="width: {{ xp_breakdown.details.quiz.pourcentage }}%; background: #10b981;"></div>
+            </div>
+        </div>
+        
+        <!-- Exercises -->
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.5rem;">✍️</span>
+                <span style="font-weight: 600;">Exercises</span>
+            </div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                {{ xp_breakdown.details.exercices.actuel }} / {{ xp_breakdown.details.exercices.max }} XP
+            </div>
+            <div class="progress-bar" style="height: 8px;">
+                <div class="progress-fill" style="width: {{ xp_breakdown.details.exercices.pourcentage }}%; background: #f59e0b;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- XP Tips -->
+    <div style="margin-top: 1rem; padding: 1rem; background: rgba(252, 163, 17, 0.1); border-radius: 8px; border-left: 4px solid var(--accent);">
+        <div style="font-weight: 600; margin-bottom: 0.5rem;">💡 How to Earn XP:</div>
+        <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6;">
+            <li>🎴 See a flashcard: <strong>10 XP</strong></li>
+            <li>🎯 Correct quiz answer: <strong>20 XP</strong> (wrong: 5 XP)</li>
+            <li>✍️ Correct exercise answer: <strong>25 XP</strong> (wrong: 8 XP)</li>
+            <li>🌟 Score ≥ 80%: <strong>Bonus XP!</strong></li>
+            <li>🏆 Perfect score (100%): <strong>Extra Bonus!</strong></li>
+        </ul>
+    </div>
+</div>
+{% endif %}
+
 <!-- ========== LESSONS ========== -->
 {% if lessons %}
 <section class="decks-section">

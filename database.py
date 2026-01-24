@@ -1120,6 +1120,363 @@ def get_exercice_stats(exercice_id, user_id):
         'complete': meilleur['complete'] if meilleur else False
     }
 
+def calculate_niveau_total_xp(niveau):
+    """
+    Calcule l'XP total possible pour un niveau
+    
+    XP Total = Flashcards (10/mot) + Quiz (20/mot) + Exercices (25/question)
+    """
+    conn = get_db()
+    
+    total_xp = 0
+    
+    # 1. XP des decks (flashcards + quiz)
+    # Tous les decks du niveau (communs + personnels, dans leçons ou libres)
+    decks = conn.execute(
+        '''SELECT d.id, COUNT(m.id) as nb_mots
+        FROM decks d
+        LEFT JOIN mots m ON d.id = m.deck_id
+        WHERE d.niveau = ?
+        GROUP BY d.id''',
+        (niveau,)
+    ).fetchall()
+    
+    for deck in decks:
+        nb_mots = deck['nb_mots'] or 0
+        # Flashcards : 10 XP par mot
+        total_xp += nb_mots * 10
+        # Quiz : 20 XP par mot
+        total_xp += nb_mots * 20
+    
+    # 2. XP des exercices
+    exercices = conn.execute(
+        '''SELECT e.id, COUNT(ec.id) as nb_questions
+        FROM exercices e
+        JOIN lessons l ON e.lesson_id = l.id
+        LEFT JOIN exercices_contenu ec ON e.id = ec.exercice_id
+        WHERE l.niveau = ?
+        GROUP BY e.id''',
+        (niveau,)
+    ).fetchall()
+    
+    for exercice in exercices:
+        nb_questions = exercice['nb_questions'] or 0
+        # Exercices : 25 XP par question
+        total_xp += nb_questions * 25
+    
+    conn.close()
+    return total_xp
+
+
+def calculate_user_xp_for_niveau(user_id, niveau):
+    """
+    Calcule l'XP gagné par un utilisateur pour un niveau
+    
+    Retourne un dictionnaire avec détails :
+    {
+        'xp_flashcards': int,
+        'xp_quiz': int,
+        'xp_exercices': int,
+        'xp_total': int,
+        'bonus_quiz': int,
+        'bonus_exercices': int
+    }
+    """
+    conn = get_db()
+    
+    xp_flashcards = 0
+    xp_quiz = 0
+    xp_exercices = 0
+    bonus_quiz = 0
+    bonus_exercices = 0
+    
+    # 1. XP FLASHCARDS
+    # On compte le nombre maximum de cartes vues dans une session complète
+    flashcard_sessions = conn.execute(
+        '''SELECT s.deck_id, MAX(s.nombre_mots_vus) as max_vus
+        FROM sessions s
+        JOIN decks d ON s.deck_id = d.id
+        WHERE s.user_id = ?
+        AND d.niveau = ?
+        AND s.type_session = 'flashcard'
+        AND s.complete = 1
+        GROUP BY s.deck_id''',
+        (user_id, niveau)
+    ).fetchall()
+    
+    for session in flashcard_sessions:
+        cartes_vues = session['max_vus'] or 0
+        xp_flashcards += cartes_vues * 10
+    
+    # 2. XP QUIZ
+    # On compte toutes les sessions de quiz (bonnes et mauvaises réponses)
+    quiz_sessions = conn.execute(
+        '''SELECT s.score, s.nombre_mots_vus
+        FROM sessions s
+        JOIN decks d ON s.deck_id = d.id
+        WHERE s.user_id = ?
+        AND d.niveau = ?
+        AND s.type_session = 'quiz'
+        AND s.nombre_mots_vus > 0''',
+        (user_id, niveau)
+    ).fetchall()
+    
+    for session in quiz_sessions:
+        score = session['score'] or 0
+        total_questions = session['nombre_mots_vus'] or 0
+        
+        if total_questions == 0:
+            continue
+        
+        # Bonnes réponses : 20 XP
+        xp_quiz += score * 20
+        # Mauvaises réponses : 5 XP (tentative)
+        xp_quiz += (total_questions - score) * 5
+        
+        # Bonus >= 80%
+        if score / total_questions >= 0.8:
+            bonus_quiz += 10
+        
+        # Bonus 100%
+        if score == total_questions:
+            bonus_quiz += 20
+    
+    # 3. XP EXERCICES
+    # On prend le meilleur résultat par exercice
+    exercice_results = conn.execute(
+        '''SELECT er.exercice_id, 
+               MAX(er.score) as best_score,
+               (SELECT ec.total_questions 
+                FROM exercices_resultats ec 
+                WHERE ec.exercice_id = er.exercice_id 
+                AND ec.user_id = er.user_id 
+                ORDER BY ec.score DESC 
+                LIMIT 1) as total_questions,
+               MAX(CASE WHEN er.complete = 1 THEN 1 ELSE 0 END) as completed
+        FROM exercices_resultats er
+        JOIN exercices e ON er.exercice_id = e.id
+        JOIN lessons l ON e.lesson_id = l.id
+        WHERE er.user_id = ?
+        AND l.niveau = ?
+        GROUP BY er.exercice_id''',
+        (user_id, niveau)
+    ).fetchall()
+    
+    exercices_completed = set()
+    
+    for result in exercice_results:
+        exercice_id = result['exercice_id']
+        best_score = result['best_score'] or 0
+        total_questions = result['total_questions'] or 0
+        completed = result['completed']
+        
+        if total_questions == 0:
+            continue
+        
+        # Bonnes réponses : 25 XP
+        xp_exercices += best_score * 25
+        # Mauvaises réponses : 8 XP (sur meilleur essai)
+        xp_exercices += (total_questions - best_score) * 8
+        
+        # Bonus >= 80%
+        if best_score / total_questions >= 0.8:
+            bonus_exercices += 25
+        
+        # Bonus 100%
+        if best_score == total_questions:
+            bonus_exercices += 50
+        
+        # Marquer comme complété
+        if completed:
+            exercices_completed.add(exercice_id)
+    
+    # Bonus premier exercice complet par leçon
+    if exercices_completed:
+        lessons_completed = conn.execute(
+            '''SELECT DISTINCT l.id
+            FROM lessons l
+            JOIN exercices e ON l.id = e.lesson_id
+            WHERE l.niveau = ?
+            AND e.id IN ({})'''.format(','.join('?' * len(exercices_completed))),
+            (niveau, *exercices_completed)
+        ).fetchall()
+        
+        # 100 XP par leçon avec au moins un exercice complet
+        bonus_exercices += len(lessons_completed) * 100
+    
+    conn.close()
+    
+    xp_total = xp_flashcards + xp_quiz + xp_exercices + bonus_quiz + bonus_exercices
+    
+    return {
+        'xp_flashcards': xp_flashcards,
+        'xp_quiz': xp_quiz,
+        'xp_exercices': xp_exercices,
+        'bonus_quiz': bonus_quiz,
+        'bonus_exercices': bonus_exercices,
+        'xp_total': xp_total
+    }
+
+
+def calculate_niveau_progress_xp(user_id, niveau):
+    """
+    Calcule la progression d'un niveau basée sur l'XP (0-100%)
+    """
+    xp_total_possible = calculate_niveau_total_xp(niveau)
+    
+    if xp_total_possible == 0:
+        return 100.0  # Niveau vide = 100%
+    
+    xp_data = calculate_user_xp_for_niveau(user_id, niveau)
+    xp_gagne = xp_data['xp_total']
+    
+    progression = (xp_gagne / xp_total_possible) * 100
+    return min(progression, 100.0)
+
+
+def get_xp_breakdown(user_id, niveau):
+    """
+    Retourne un résumé détaillé de l'XP pour un niveau
+    
+    Retourne :
+    {
+        'xp_total_possible': int,
+        'xp_gagne': {
+            'xp_flashcards': int,
+            'xp_quiz': int,
+            'xp_exercices': int,
+            'bonus_quiz': int,
+            'bonus_exercices': int,
+            'xp_total': int
+        },
+        'progression': float (0-100),
+        'details': {
+            'flashcards': {'actuel': int, 'max': int, 'pourcentage': float},
+            'quiz': {'actuel': int, 'max': int, 'pourcentage': float},
+            'exercices': {'actuel': int, 'max': int, 'pourcentage': float}
+        }
+    }
+    """
+    conn = get_db()
+    
+    xp_total_possible = calculate_niveau_total_xp(niveau)
+    xp_gagne = calculate_user_xp_for_niveau(user_id, niveau)
+    
+    # Calculer XP max par catégorie
+    # Flashcards
+    total_mots = conn.execute(
+        '''SELECT COUNT(m.id) as total
+        FROM mots m
+        JOIN decks d ON m.deck_id = d.id
+        WHERE d.niveau = ?''',
+        (niveau,)
+    ).fetchone()['total'] or 0
+    
+    xp_flashcards_max = total_mots * 10
+    
+    # Quiz
+    xp_quiz_max = total_mots * 20
+    
+    # Exercices
+    total_questions = conn.execute(
+        '''SELECT COUNT(ec.id) as total
+        FROM exercices_contenu ec
+        JOIN exercices e ON ec.exercice_id = e.id
+        JOIN lessons l ON e.lesson_id = l.id
+        WHERE l.niveau = ?''',
+        (niveau,)
+    ).fetchone()['total'] or 0
+    
+    xp_exercices_max = total_questions * 25
+    
+    conn.close()
+    
+    # Calculer pourcentages
+    progression = (xp_gagne['xp_total'] / xp_total_possible * 100) if xp_total_possible > 0 else 100.0
+    
+    flashcards_pct = (xp_gagne['xp_flashcards'] / xp_flashcards_max * 100) if xp_flashcards_max > 0 else 0
+    quiz_pct = ((xp_gagne['xp_quiz'] + xp_gagne['bonus_quiz']) / (xp_quiz_max + 100) * 100) if xp_quiz_max > 0 else 0
+    exercices_pct = ((xp_gagne['xp_exercices'] + xp_gagne['bonus_exercices']) / (xp_exercices_max + 500) * 100) if xp_exercices_max > 0 else 0
+    
+    return {
+        'xp_total_possible': xp_total_possible,
+        'xp_gagne': xp_gagne,
+        'progression': min(progression, 100.0),
+        'details': {
+            'flashcards': {
+                'actuel': xp_gagne['xp_flashcards'],
+                'max': xp_flashcards_max,
+                'pourcentage': min(flashcards_pct, 100.0)
+            },
+            'quiz': {
+                'actuel': xp_gagne['xp_quiz'] + xp_gagne['bonus_quiz'],
+                'max': xp_quiz_max,
+                'pourcentage': min(quiz_pct, 100.0)
+            },
+            'exercices': {
+                'actuel': xp_gagne['xp_exercices'] + xp_gagne['bonus_exercices'],
+                'max': xp_exercices_max,
+                'pourcentage': min(exercices_pct, 100.0)
+            }
+        }
+    }
+
+
+def get_unlocked_niveaux_xp(user_id):
+    """
+    Retourne les niveaux déverrouillés basés sur le système XP
+    
+    Un niveau est déverrouillé si :
+    - C'est A1 (toujours déverrouillé - premier niveau)
+    - C'est Custom (toujours déverrouillé - niveau libre)
+    - OU le niveau précédent >= 80% (XP) - REQUIS pour accès
+    - OU l'utilisateur est admin ('c')
+    
+    RÈGLE STRICTE : Les niveaux A1+, A2, A2+, B1, B1+ sont VERROUILLÉS
+    tant que le niveau précédent n'atteint pas 80% d'XP
+    """
+    # Vérifier si admin
+    user = get_user_by_id(user_id)
+    if user and user['nom'] == 'c':
+        return AVAILABLE_LEVELS.copy()
+    
+    unlocked = []
+    
+    for i, niveau in enumerate(AVAILABLE_LEVELS):
+        # A1 : toujours déverrouillé (premier niveau)
+        if niveau == 'A1':
+            unlocked.append(niveau)
+            continue
+        
+        # Custom : toujours déverrouillé (niveau libre)
+        if niveau == 'Custom':
+            unlocked.append(niveau)
+            continue
+        
+        # Pour tous les autres niveaux (A1+, A2, A2+, B1, B1+)
+        # OBLIGATOIRE : niveau précédent >= 80%
+        if i > 0:
+            niveau_precedent = AVAILABLE_LEVELS[i - 1]
+            
+            # Si le précédent est Custom, on cherche le niveau normal avant
+            if niveau_precedent == 'Custom':
+                if i > 1:
+                    niveau_precedent = AVAILABLE_LEVELS[i - 2]
+                else:
+                    # Cas spécial : si Custom est avant dans la liste
+                    # On déverrouille quand même (ne devrait pas arriver)
+                    unlocked.append(niveau)
+                    continue
+            
+            # Calculer progression du niveau précédent avec XP
+            progression_precedent = calculate_niveau_progress_xp(user_id, niveau_precedent)
+            
+            # DÉVERROUILLAGE STRICT : >= 80% REQUIS
+            if progression_precedent >= 80.0:
+                unlocked.append(niveau)
+            # Sinon le niveau reste VERROUILLÉ (ne pas l'ajouter à unlocked)
+    
+    return unlocked
 
 if __name__ == '__main__':
     init_db()
