@@ -115,7 +115,7 @@ def change_password_post():
 def login_google():
     """Initiate Google OAuth flow"""
     from flask import current_app
-    google = current_app.extensions['authlib.integrations.flask_client']['google']
+    google = current_app.config['OAUTH_GOOGLE']
     redirect_uri = url_for('auth.auth_google_callback', _external=True)
     return google.authorize_redirect(redirect_uri)
 
@@ -126,7 +126,7 @@ def auth_google_callback():
     from flask import current_app
 
     try:
-        google = current_app.extensions['authlib.integrations.flask_client']['google']
+        google = current_app.config['OAUTH_GOOGLE']
         token = google.authorize_access_token()
         user_info = token.get('userinfo')
 
@@ -170,7 +170,7 @@ def auth_google_callback():
 def login_github():
     """Initiate GitHub OAuth flow"""
     from flask import current_app
-    github = current_app.extensions['authlib.integrations.flask_client']['github']
+    github = current_app.config['OAUTH_GITHUB']
     redirect_uri = url_for('auth.auth_github_callback', _external=True)
     return github.authorize_redirect(redirect_uri)
 
@@ -181,7 +181,7 @@ def auth_github_callback():
     from flask import current_app
 
     try:
-        github = current_app.extensions['authlib.integrations.flask_client']['github']
+        github = current_app.config['OAUTH_GITHUB']
         token = github.authorize_access_token()
 
         # Get user info
