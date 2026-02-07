@@ -165,9 +165,9 @@
             <nav class="nav-actions">
                 {% if user %}
                     <!-- Logged in user -->
-                    <span class="text-muted">Hello, <strong>{{ user.display_name }}</strong></span>
+                    <span class="text-muted">Hello, <strong>{{ user.nom }}</strong></span>
                     
-                    {% if user.display_name == 'c' %}
+                    {% if user.nom == 'c' %}
                         <!-- Admin Actions -->
                         <a href="{{ url_for('admin_users') }}" class="btn btn-secondary btn-icon" title="User Management">
                             👥

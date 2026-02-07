@@ -86,7 +86,7 @@
 </div>
 
 <!-- Quick actions section (for admin) -->
-{% if user.display_name == 'c' %}
+{% if user.nom == 'c' %}
 <div class="card mt-3">
     <div class="card-header">
         <h3 class="card-title">⚡ Quick Actions (Admin)</h3>
