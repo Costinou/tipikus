@@ -911,6 +911,7 @@ def apprendre(deck_id):
     
     return render_template('apprendre.html', mots=mots, deck_id=deck_id)
 
+
 @app.route('/quiz/<int:deck_id>')
 def quiz(deck_id):
     """Multiple choice quiz page for a deck"""
