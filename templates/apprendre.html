@@ -710,7 +710,7 @@
             const word = words[currentIndex];
             const hungarianWord = word.mot_francais || word[0];
             
-            const audioUrl = `/api/tts?text=${encodeURIComponent(hungarianWord)}&lang=hu`;
+            const audioUrl = `/api/tts?text=${encodeURIComponent(word.traduction || word[1])}&lang=hu`;
             
             currentAudio = new Audio(audioUrl);
             
