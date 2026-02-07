@@ -10,7 +10,7 @@
             <p class="text-muted">{{ deck.nom }} • {{ deck.niveau }}</p>
         </div>
         
-        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary">
+        <a href="{{ url_for('decks.voir_deck', deck_id=deck.id) }}" class="btn btn-secondary">
             ← Back to Deck
         </a>
     </div>
@@ -144,10 +144,10 @@
     <p class="text-muted">Start using this deck to see your stats!</p>
     
     <div class="flex flex-center gap-2 mt-2">
-        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn btn-primary">
+        <a href="{{ url_for('decks.apprendre', deck_id=deck.id) }}" class="btn btn-primary">
             🎴 Flashcards
         </a>
-        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn btn-primary">
+        <a href="{{ url_for('decks.quiz', deck_id=deck.id) }}" class="btn btn-primary">
             🎯 Quiz
         </a>
     </div>

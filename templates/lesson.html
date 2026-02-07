@@ -336,7 +336,7 @@
 {% endblock %}
 
 {% block content %}
-<a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+<a href="{{ url_for('main.niveau', niveau=lesson.niveau) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
     ← Back to Level {{ lesson.niveau }}
 </a>
 
@@ -347,13 +347,13 @@
     </div>
     {% if user.display_name == 'c' %}
     <div class="admin-buttons">
-        <a href="{{ url_for('edit_lesson_form', lesson_id=lesson.id) }}" class="btn-admin" title="Edit Lesson">
+        <a href="{{ url_for('lessons.edit_lesson_form', lesson_id=lesson.id) }}" class="btn-admin" title="Edit Lesson">
             ✏️
         </a>
-        <a href="{{ url_for('manage_lesson_decks', lesson_id=lesson.id) }}" class="btn-admin" title="Manage Decks">
+        <a href="{{ url_for('lessons.manage_lesson_decks', lesson_id=lesson.id) }}" class="btn-admin" title="Manage Decks">
             ⚙️
         </a>
-        <a href="{{ url_for('create_exercice_form', lesson_id=lesson.id) }}" class="btn-admin" title="Create Exercise">
+        <a href="{{ url_for('exercises.create_exercice_form', lesson_id=lesson.id) }}" class="btn-admin" title="Create Exercise">
             ➕
         </a>
         <button onclick="confirmerSuppressionLesson('{{ lesson.titre }}', {{ lesson.id }})" class="btn-admin btn-delete-admin" title="Delete Lesson">
@@ -375,16 +375,16 @@
             <li class="deck-item-wrapper">
                 <div class="deck-item-content">
                     <div class="deck-main-buttons">
-                        <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="deck-btn deck-commun">
+                        <a href="{{ url_for('decks.apprendre', deck_id=deck.id) }}" class="deck-btn deck-commun">
                             📚 {{ deck.nom }}
                         </a>
-                        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="deck-btn quiz-commun">
+                        <a href="{{ url_for('decks.quiz', deck_id=deck.id) }}" class="deck-btn quiz-commun">
                             🎯 Quiz
                         </a>
                     </div>
                     <div class="deck-actions">
-                        <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" 
-                           class="btn-action btn-view" 
+                        <a href="{{ url_for('decks.voir_deck', deck_id=deck.id) }}"
+                           class="btn-action btn-view"
                            title="View Content">
                             👁️
                         </a>
@@ -408,7 +408,7 @@
             <li class="deck-item-wrapper">
                 <div class="deck-item-content">
                     <div class="deck-main-buttons">
-                        <a href="{{ url_for('exercice_fill_blank', exercice_id=ex.id) }}" class="deck-btn deck-exercice">
+                        <a href="{{ url_for('exercises.exercice_fill_blank', exercice_id=ex.id) }}" class="deck-btn deck-exercice">
                             ✍️ {{ ex.titre }}
                         </a>
                     </div>

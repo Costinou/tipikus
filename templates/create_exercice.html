@@ -10,7 +10,7 @@
             <p class="text-muted">For lesson: {{ lesson.titre }} ({{ lesson.niveau }})</p>
         </div>
         
-        <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
+        <a href="{{ url_for('lessons.view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
             ← Back to Lesson
         </a>
     </div>
@@ -19,7 +19,7 @@
 
 {% block content %}
 <div style="max-width: 800px; margin: 0 auto;">
-    <form method="POST" action="{{ url_for('create_exercice_post', lesson_id=lesson.id) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('exercises.create_exercice_post', lesson_id=lesson.id) }}" enctype="multipart/form-data">
         
         <!-- Basic information -->
         <div class="card mb-2">
@@ -122,7 +122,7 @@
                     ✓ Create Exercise
                 </button>
                 
-                <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
+                <a href="{{ url_for('lessons.view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
                     Cancel
                 </a>
             </div>

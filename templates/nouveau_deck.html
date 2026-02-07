@@ -11,7 +11,7 @@
 
 {% block content %}
 <div style="max-width: 700px; margin: 0 auto;">
-    <form method="POST" action="{{ url_for('creer_deck') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('decks.creer_deck') }}" enctype="multipart/form-data">
         <!-- Basic information -->
         <div class="card mb-2">
             <h3 class="card-title">📝 Deck Information</h3>
@@ -130,7 +130,7 @@ Goodbye;Viszlát</code></pre>
                     ✓ Create Deck
                 </button>
                 
-                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
                     Cancel
                 </a>
             </div>

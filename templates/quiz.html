@@ -242,11 +242,11 @@
                 🔄 Recommencer
             </button>
             
-            <a href="{{ url_for('apprendre', deck_id=deck_id) }}" class="btn btn-secondary">
+            <a href="{{ url_for('decks.apprendre', deck_id=deck_id) }}" class="btn btn-secondary">
                 🎴 Flashcards
             </a>
-            
-            <a href="{{ url_for('stats_deck', deck_id=deck_id) }}" class="btn btn-primary">
+
+            <a href="{{ url_for('stats.stats_deck', deck_id=deck_id) }}" class="btn btn-primary">
                 📊 Statistiques
             </a>
         </div>

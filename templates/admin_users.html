@@ -16,7 +16,7 @@
         <h3 class="card-title">➕ Create New User</h3>
     </div>
     
-    <form method="POST" action="{{ url_for('admin_create_user') }}">
+    <form method="POST" action="{{ url_for('admin.admin_create_user') }}">
         <div class="flex gap-2" style="flex-wrap: wrap; align-items: flex-end;">
             <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
                 <label for="nom" class="form-label">Username</label>
@@ -92,7 +92,7 @@
                 </button>
                 
                 <!-- Delete user -->
-                <form method="POST" action="{{ url_for('admin_delete_user', user_id=user_stat.id) }}" 
+                <form method="POST" action="{{ url_for('admin.admin_delete_user', user_id=user_stat.id) }}"
                       style="display: inline;"
                       onsubmit="return confirm('Delete {{ user_stat.nom }}? All their data will be lost!');">
                     <button type="submit" class="btn btn-danger btn-icon" title="Delete">
@@ -212,7 +212,7 @@
 <!-- Actions -->
 <div class="card mt-2">
     <div class="flex flex-between" style="gap: 0.875rem; flex-wrap: wrap;">
-        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
             ← Back to Home
         </a>
     </div>
@@ -262,7 +262,7 @@ const passwordInput = document.getElementById('new_password');
 
 function showResetPassword(userId, userName) {
     // Set form action URL
-    form.action = '{{ url_for("admin_reset_password", user_id=0) }}'.replace('0', userId);
+    form.action = '{{ url_for("admin.admin_reset_password", user_id=0) }}'.replace('0', userId);
     
     // Display username
     usernameEl.textContent = userName;

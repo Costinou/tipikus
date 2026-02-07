@@ -16,7 +16,7 @@
     {% set is_unlocked = niveau in unlocked_niveaux %}
     
     {% if is_unlocked %}
-        <a href="{{ url_for('niveau', niveau=niveau) }}" 
+        <a href="{{ url_for('main.niveau', niveau=niveau) }}"
            class="card niveau-card"
            style="text-decoration: none;">
     {% else %}
@@ -93,15 +93,15 @@
     </div>
     
     <div class="flex gap-2" style="flex-wrap: wrap;">
-        <a href="{{ url_for('nouveau_deck') }}" class="btn btn-primary">
+        <a href="{{ url_for('decks.nouveau_deck') }}" class="btn btn-primary">
             ➕ New common deck
         </a>
-        
-        <a href="{{ url_for('create_lesson_form') }}" class="btn btn-primary">
+
+        <a href="{{ url_for('lessons.create_lesson_form') }}" class="btn btn-primary">
             📖 New lesson
         </a>
-        
-        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+
+        <a href="{{ url_for('admin.admin_users') }}" class="btn btn-secondary">
             👥 Manage users
         </a>
     </div>

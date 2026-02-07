@@ -18,11 +18,11 @@
         </div>
         
         <div class="flex gap-1" style="flex-wrap: wrap;">
-            <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
+            <a href="{{ url_for('lessons.view_lesson', lesson_id=lesson.id) }}" class="btn btn-secondary">
                 👁️ View Lesson
             </a>
-            
-            <a href="{{ url_for('niveau', niveau=lesson.niveau) }}" class="btn btn-secondary">
+
+            <a href="{{ url_for('main.niveau', niveau=lesson.niveau) }}" class="btn btn-secondary">
                 ← Back
             </a>
         </div>
@@ -47,11 +47,11 @@
             </div>
             
             <div class="deck-actions">
-                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="View Words">
+                <a href="{{ url_for('decks.voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="View Words">
                     👁️
                 </a>
-                
-                <form method="POST" action="{{ url_for('detach_deck_route', deck_id=deck.id) }}" 
+
+                <form method="POST" action="{{ url_for('lessons.detach_deck_route', deck_id=deck.id) }}"
                       style="display: inline;"
                       onsubmit="return confirm('Remove this deck from the lesson?');">
                     <button type="submit" class="btn btn-danger btn-icon" title="Remove">
@@ -102,11 +102,11 @@
             </div>
             
             <div class="deck-actions">
-                <a href="{{ url_for('voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="View Words">
+                <a href="{{ url_for('decks.voir_deck', deck_id=deck.id) }}" class="btn btn-secondary btn-icon" title="View Words">
                     👁️
                 </a>
-                
-                <form method="POST" action="{{ url_for('associate_deck_route') }}" style="display: inline;">
+
+                <form method="POST" action="{{ url_for('lessons.associate_deck_route') }}" style="display: inline;">
                     <input type="hidden" name="deck_id" value="{{ deck.id }}">
                     <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
                     <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">
@@ -130,7 +130,7 @@
         <p>All common decks for this level are already associated</p>
         <small>Create new common decks to add more</small>
         
-        <a href="{{ url_for('nouveau_deck', niveau=lesson.niveau) }}" class="btn btn-primary mt-2">
+        <a href="{{ url_for('decks.nouveau_deck', niveau=lesson.niveau) }}" class="btn btn-primary mt-2">
             ➕ Create Common Deck
         </a>
     </div>

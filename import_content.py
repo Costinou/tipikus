@@ -12,7 +12,17 @@ Directory Structure Expected:
 - Free_decks/       : JSON decks not associated with lessons (A1_DeckName.json)
 
 Usage:
-    python import_content.py --content-dir /path/to/content --admin-user c
+    # Auto-detect admin user
+    python import_content.py --content-dir /path/to/content
+
+    # Specify admin user by ID
+    python import_content.py --content-dir /path/to/content --admin-user-id 1
+
+    # Preview changes without importing (dry-run)
+    python import_content.py --content-dir /path/to/content --dry-run
+
+    # Use custom database file
+    python import_content.py --content-dir /path/to/content --db /path/to/custom.db
 """
 
 import sqlite3
@@ -34,12 +44,11 @@ AVAILABLE_LEVELS = ['A1', 'A1+', 'A2', 'A2+', 'B1', 'B1+', 'Custom']
 class TipikusImporter:
     """Main importer class for Tipikus content"""
     
-    def __init__(self, content_dir: str, admin_user: str = 'c', dry_run: bool = False):
+    def __init__(self, content_dir: str, admin_user_id: Optional[int] = None, dry_run: bool = False):
         self.content_dir = Path(content_dir)
-        self.admin_user = admin_user
+        self.admin_user_id = admin_user_id
         self.dry_run = dry_run
         self.conn = None
-        self.admin_user_id = None
         
         # Directories
         self.lessons_dir = self.content_dir / 'Lessons'
@@ -65,18 +74,35 @@ class TipikusImporter:
             print("✓ Database connection closed")
     
     def get_admin_user_id(self) -> int:
-        """Get admin user ID"""
-        cursor = self.conn.execute(
-            'SELECT id FROM users WHERE nom = ?',
-            (self.admin_user,)
-        )
-        user = cursor.fetchone()
-        
-        if not user:
-            raise ValueError(f"Admin user '{self.admin_user}' not found in database!")
-        
-        self.admin_user_id = user['id']
-        print(f"✓ Found admin user '{self.admin_user}' with ID: {self.admin_user_id}")
+        """Get or verify admin user ID"""
+        if self.admin_user_id:
+            # Verify the provided user ID is an admin
+            cursor = self.conn.execute(
+                'SELECT id, display_name, is_admin FROM users WHERE id = ?',
+                (self.admin_user_id,)
+            )
+            user = cursor.fetchone()
+
+            if not user:
+                raise ValueError(f"User ID {self.admin_user_id} not found in database!")
+
+            if not user['is_admin']:
+                raise ValueError(f"User ID {self.admin_user_id} ({user['display_name']}) is not an admin!")
+
+            print(f"✓ Using admin user '{user['display_name']}' (ID: {self.admin_user_id})")
+        else:
+            # Auto-find first admin user
+            cursor = self.conn.execute(
+                'SELECT id, display_name FROM users WHERE is_admin = 1 LIMIT 1'
+            )
+            user = cursor.fetchone()
+
+            if not user:
+                raise ValueError("No admin users found in database! Please create an admin user first.")
+
+            self.admin_user_id = user['id']
+            print(f"✓ Auto-detected admin user '{user['display_name']}' (ID: {self.admin_user_id})")
+
         return self.admin_user_id
     
     def parse_filename(self, filename: str) -> Optional[Tuple[str, int, str]]:
@@ -445,7 +471,6 @@ class TipikusImporter:
             print("🚀 TIPIKUS CONTENT IMPORTER")
             print("="*60)
             print(f"Content directory: {self.content_dir}")
-            print(f"Admin user: {self.admin_user}")
             print(f"Dry run: {self.dry_run}")
             print("="*60)
             
@@ -493,10 +518,10 @@ def main():
         help='Path to content directory containing Lessons/, Lessons_decks/, etc.'
     )
     parser.add_argument(
-        '--admin-user',
-        type=str,
-        default='c',
-        help='Admin username (default: c)'
+        '--admin-user-id',
+        type=int,
+        default=None,
+        help='Admin user ID (default: auto-detect first admin user)'
     )
     parser.add_argument(
         '--dry-run',
@@ -525,7 +550,7 @@ def main():
     # Run importer
     importer = TipikusImporter(
         content_dir=str(content_dir),
-        admin_user=args.admin_user,
+        admin_user_id=args.admin_user_id,
         dry_run=args.dry_run
     )
     importer.run()

@@ -157,35 +157,35 @@
     <header class="header">
         <div class="header-content">
             <!-- Logo -->
-            <a href="{{ url_for('index') }}" class="logo">
+            <a href="{{ url_for('main.index') }}" class="logo">
                 <span>Tipikus</span>
             </a>
-            
+
             <!-- Navigation & Actions -->
             <nav class="nav-actions">
                 {% if user %}
                     <!-- Logged in user -->
                     <span class="text-muted">Hello, <strong>{{ user.display_name }}</strong></span>
-                    
+
                     {% if user.display_name == 'c' %}
                         <!-- Admin Actions -->
-                        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary btn-icon" title="User Management">
+                        <a href="{{ url_for('admin.admin_users') }}" class="btn btn-secondary btn-icon" title="User Management">
                             👥
                         </a>
                     {% endif %}
-                    
+
                     <!-- Change password -->
-                    <a href="{{ url_for('change_password') }}" class="btn btn-secondary btn-icon" title="Change Password">
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-secondary btn-icon" title="Change Password">
                         🔐
                     </a>
-                    
+
                     <!-- Statistics -->
-                    <a href="{{ url_for('stats_globales') }}" class="btn btn-secondary btn-icon" title="Statistics">
+                    <a href="{{ url_for('stats.stats_globales') }}" class="btn btn-secondary btn-icon" title="Statistics">
                         📊
                     </a>
-                    
+
                     <!-- Logout -->
-                    <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-icon" title="Log Out">
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-icon" title="Log Out">
                         🚪
                     </a>
                 {% endif %}

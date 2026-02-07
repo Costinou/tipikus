@@ -18,11 +18,11 @@
         </div>
         
         <div class="flex gap-1" style="flex-wrap: wrap;">
-            <a href="{{ url_for('apprendre', deck_id=deck.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('decks.apprendre', deck_id=deck.id) }}" class="btn btn-primary">
                 🎴 Learn
             </a>
-            
-            <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn btn-primary">
+
+            <a href="{{ url_for('decks.quiz', deck_id=deck.id) }}" class="btn btn-primary">
                 🎯 Quiz
             </a>
         </div>
@@ -39,19 +39,19 @@
         </div>
         
         <div class="flex gap-1" style="flex-wrap: wrap;">
-            <a href="{{ url_for('stats_deck', deck_id=deck.id) }}" class="btn btn-secondary">
+            <a href="{{ url_for('stats.stats_deck', deck_id=deck.id) }}" class="btn btn-secondary">
                 📊 Statistics
             </a>
-            
-            <a href="{{ url_for('exporter_deck', deck_id=deck.id, format='json') }}" class="btn btn-secondary">
+
+            <a href="{{ url_for('decks.exporter_deck', deck_id=deck.id, format='json') }}" class="btn btn-secondary">
                 💾 Export JSON
             </a>
-            
-            <a href="{{ url_for('exporter_deck', deck_id=deck.id, format='csv') }}" class="btn btn-secondary">
+
+            <a href="{{ url_for('decks.exporter_deck', deck_id=deck.id, format='csv') }}" class="btn btn-secondary">
                 💾 Export CSV
             </a>
-            
-            <a href="{{ url_for('niveau', niveau=deck.niveau) }}" class="btn btn-secondary">
+
+            <a href="{{ url_for('main.niveau', niveau=deck.niveau) }}" class="btn btn-secondary">
                 ← Back
             </a>
         </div>
