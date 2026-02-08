@@ -13,14 +13,14 @@
         }
 
         :root {
-            --bg-gradient-start: #667eea;
-            --bg-gradient-end: #764ba2;
+            --bg-gradient-start: #14213d;
+            --bg-gradient-end: #0f1729;
             --card-bg: white;
-            --card-text: #333;
+            --card-text: #000000;
             --header-bg: rgba(255, 255, 255, 0.95);
-            --header-text: #333;
-            --primary-color: #667eea;
-            --secondary-color: #999;
+            --header-text: #14213d;
+            --primary-color: #fca311;
+            --secondary-color: #14213d;
             --instruction-bg: rgba(255,255,255,0.15);
             --instruction-text: rgba(255,255,255,0.9);
             --success-color: #48bb78;
@@ -28,16 +28,16 @@
         }
 
         body.dark-mode {
-            --bg-gradient-start: #1a1a2e;
-            --bg-gradient-end: #16213e;
-            --card-bg: #2d3748;
-            --card-text: #e2e8f0;
-            --header-bg: rgba(45, 55, 72, 0.95);
-            --header-text: #e2e8f0;
-            --primary-color: #667eea;
-            --secondary-color: #a0aec0;
-            --instruction-bg: rgba(45, 55, 72, 0.6);
-            --instruction-text: rgba(226, 232, 240, 0.9);
+            --bg-gradient-start: #14213d;
+            --bg-gradient-end: #000000;
+            --card-bg: rgba(20, 33, 61, 0.8);
+            --card-text: #ffffff;
+            --header-bg: rgba(20, 33, 61, 0.95);
+            --header-text: #ffffff;
+            --primary-color: #fca311;
+            --secondary-color: #e5e5e5;
+            --instruction-bg: rgba(20, 33, 61, 0.6);
+            --instruction-text: rgba(255, 255, 255, 0.9);
             --success-color: #68d391;
             --skip-color: #fc8181;
         }
@@ -135,7 +135,7 @@
         }
 
         .reverse-btn:hover, .dark-mode-btn:hover {
-            background: #5568d3;
+            background: #e89b0f;
             transform: scale(1.05);
         }
 
@@ -292,7 +292,11 @@
             font-size: 13px;
             color: var(--secondary-color);
             opacity: 0.7;
-            transition: color 0.3s ease;
+            transition: all 0.3s ease;
+        }
+
+        .card-flipped .tap-hint {
+            opacity: 0;
         }
 
         /* Bouton audio */
@@ -451,8 +455,8 @@
         }
 
         .btn-continue {
-            background: white;
-            color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
             border: none;
             padding: 14px 32px;
             border-radius: 25px;
@@ -465,8 +469,9 @@
         }
 
         .btn-continue:hover {
+            background: #e89b0f;
             transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 20px rgba(252, 163, 17, 0.4);
         }
 
         /* Responsive mobile */
