@@ -58,13 +58,17 @@ def index():
     # Get unlocked levels (XP-based)
     unlocked_niveaux = get_unlocked_niveaux_xp(user_id)
 
+    # Check if user should see the onboarding tour
+    show_tour = session.get('tour_completed') is None
+
     return render_template('index.html',
                          AVAILABLE_LEVELS=AVAILABLE_LEVELS,
                          niveaux_counts=niveaux_counts,
                          niveaux_progress=niveaux_progress,
                          niveaux_xp=niveaux_xp,
                          unlocked_niveaux=unlocked_niveaux,
-                         user=user)
+                         user=user,
+                         show_tour=show_tour)
 
 
 @main_bp.route('/niveau/<niveau>')

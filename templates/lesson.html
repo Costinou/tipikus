@@ -438,6 +438,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
 
 <script>
+// Set lesson tour flag from backend
+{% if show_lesson_tour %}
+window.showLessonTour = true;
+{% else %}
+window.showLessonTour = false;
+{% endif %}
+
 // Lesson markdown content
 const markdownContent = {{ lesson.content_markdown|tojson }};
 

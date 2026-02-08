@@ -166,3 +166,41 @@ def get_xp_gain():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/tour-completed', methods=['POST'])
+def tour_completed():
+    """Mark the onboarding tour as completed"""
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    try:
+        # Store in session that user has completed the tour
+        session['tour_completed'] = True
+        session.modified = True
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/lesson-tour-completed', methods=['POST'])
+def lesson_tour_completed():
+    """Mark the lesson tour as completed"""
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    try:
+        # Store in session that user has completed the lesson tour
+        session['lesson_tour_completed'] = True
+        session.modified = True
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

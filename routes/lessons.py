@@ -45,11 +45,15 @@ def view_lesson(lesson_id):
 
     user = get_user_by_id(user_id)
 
+    # Check if user should see the lesson tour
+    show_lesson_tour = session.get('lesson_tour_completed') is None
+
     return render_template('lesson.html',
                          lesson=lesson,
                          decks=decks,
                          exercices=exercices,
-                         user=user)
+                         user=user,
+                         show_lesson_tour=show_lesson_tour)
 
 
 @lessons_bp.route('/create-lesson', methods=['GET'])
