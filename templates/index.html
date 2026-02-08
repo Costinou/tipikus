@@ -37,7 +37,7 @@
         
         <!-- XP Display -->
         {% if niveau in niveaux_xp %}
-        <div style="margin-bottom: 0.5rem; text-align: center;">
+        <div style="margin-bottom: 0.5rem; text-align: center; {% if not is_unlocked %}filter: blur(3px); user-select: none;{% endif %}">
             <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
                 <strong style="color: {% if is_unlocked %}var(--accent){% else %}var(--text-secondary){% endif %};">{{ niveaux_xp[niveau].xp_gagne }}</strong> XP / {{ niveaux_xp[niveau].xp_total }} XP
             </div>
@@ -128,7 +128,6 @@
         <p><strong>🎮 XP System</strong>:</p>
         <ul>
             <li>Every action earns you XP points</li>
-            <li>Bonus XP for excellent performance (80%+ and 100%)</li>
             <li>Even mistakes earn you XP for trying!</li>
         </ul>
     </div>

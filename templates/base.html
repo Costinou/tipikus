@@ -174,10 +174,12 @@
                         </a>
                     {% endif %}
 
-                    <!-- Change password -->
+                    <!-- Change password (only for local users) -->
+                    {% if session.has_local_password %}
                     <a href="{{ url_for('auth.change_password') }}" class="btn btn-secondary btn-icon" title="Change Password">
                         🔐
                     </a>
+                    {% endif %}
 
                     <!-- Statistics -->
                     <a href="{{ url_for('stats.stats_globales') }}" class="btn btn-secondary btn-icon" title="Statistics">

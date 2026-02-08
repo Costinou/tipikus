@@ -5,13 +5,41 @@
 {% block page_header %}
 <div class="page-header text-center">
     <h1>➕ Create a New Deck</h1>
-    <p class="text-muted">Import your words from a JSON or CSV file</p>
+    <p class="text-muted">Choose your preferred method to create a deck</p>
 </div>
 {% endblock %}
 
 {% block content %}
 <div style="max-width: 700px; margin: 0 auto;">
-    <form method="POST" action="{{ url_for('decks.creer_deck') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('decks.creer_deck') }}" enctype="multipart/form-data" id="deck-form">
+        <!-- Method Selection -->
+        <div class="card mb-2">
+            <h3 class="card-title">📋 Import Method</h3>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <label class="method-choice" style="flex: 1; min-width: 200px; cursor: pointer;">
+                    <input type="radio" name="import_method" value="file" checked onchange="switchMethod('file')" style="display: none;">
+                    <div class="method-card" style="padding: 1.5rem; border: 2px solid var(--border); border-radius: 8px; text-align: center; transition: all 0.2s ease; background: var(--bg-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                        <strong>File Import</strong>
+                        <small style="display: block; margin-top: 0.25rem; color: var(--text-secondary);">
+                            Upload JSON or CSV
+                        </small>
+                    </div>
+                </label>
+
+                <label class="method-choice" style="flex: 1; min-width: 200px; cursor: pointer;">
+                    <input type="radio" name="import_method" value="manual" onchange="switchMethod('manual')" style="display: none;">
+                    <div class="method-card" style="padding: 1.5rem; border: 2px solid var(--border); border-radius: 8px; text-align: center; transition: all 0.2s ease; background: var(--bg-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">✍️</div>
+                        <strong>Manual Creation</strong>
+                        <small style="display: block; margin-top: 0.25rem; color: var(--text-secondary);">
+                            Type words manually
+                        </small>
+                    </div>
+                </label>
+            </div>
+        </div>
+
         <!-- Basic information -->
         <div class="card mb-2">
             <h3 class="card-title">📝 Deck Information</h3>
@@ -71,20 +99,19 @@
         </div>
         
         <!-- Import file -->
-        <div class="card mb-2">
+        <div class="card mb-2" id="file-import-section">
             <h3 class="card-title">📁 Import Words</h3>
-            
+
             <div class="form-group">
                 <label for="fichier" class="form-label">
                     Vocabulary File <span style="color: var(--accent);">*</span>
                 </label>
-                <input 
-                    type="file" 
-                    id="fichier" 
-                    name="fichier" 
-                    class="form-input" 
+                <input
+                    type="file"
+                    id="fichier"
+                    name="fichier"
+                    class="form-input"
                     accept=".json,.csv"
-                    required
                     onchange="previewFile()"
                 >
                 <small class="text-muted">Accepted formats: JSON, CSV (separator , or ;)</small>
@@ -96,9 +123,50 @@
                 <pre id="preview-content" style="margin-top: 0.5rem; overflow-x: auto; font-size: 0.875rem; color: var(--text-secondary);"></pre>
             </div>
         </div>
-        
+
+        <!-- Manual Creation Section -->
+        <div class="card mb-2 hidden" id="manual-creation-section">
+            <h3 class="card-title">✍️ Add Words Manually</h3>
+
+            <div style="overflow-x: auto;">
+                <table id="words-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg-secondary);">
+                            <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border);">
+                                🌍 Your Language
+                            </th>
+                            <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border);">
+                                🇭🇺 Hungarian
+                            </th>
+                            <th style="padding: 0.75rem; width: 60px; border: 1px solid var(--border);">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="words-tbody">
+                        <!-- Rows will be added dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
+                <button type="button" onclick="addWordRow()" class="btn btn-secondary" style="flex: 0;">
+                    ➕ Add Row
+                </button>
+                <span id="word-count" class="text-muted" style="font-size: 0.875rem;">
+                    0 word(s)
+                </span>
+            </div>
+
+            <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                <small class="text-muted">
+                    💡 Tip: Add at least 3 words to create a useful deck. Empty rows will be ignored.
+                </small>
+            </div>
+        </div>
+
         <!-- Example formats -->
-        <div class="card mb-2">
+        <div class="card mb-2" id="file-formats-section">
             <h3 class="card-title">💡 File Formats</h3>
             
             <div style="margin-top: 1rem;">
@@ -141,6 +209,164 @@ Goodbye;Viszlát</code></pre>
 
 {% block extra_js %}
 <script>
+// Switch between file and manual import methods
+function switchMethod(method) {
+    const fileSection = document.getElementById('file-import-section');
+    const manualSection = document.getElementById('manual-creation-section');
+    const formatsSection = document.getElementById('file-formats-section');
+    const fileInput = document.getElementById('fichier');
+
+    if (method === 'file') {
+        fileSection.classList.remove('hidden');
+        manualSection.classList.add('hidden');
+        if (formatsSection) formatsSection.classList.remove('hidden');
+        fileInput.required = true;
+    } else {
+        fileSection.classList.add('hidden');
+        manualSection.classList.remove('hidden');
+        if (formatsSection) formatsSection.classList.add('hidden');
+        fileInput.required = false;
+
+        // Initialize with 3 empty rows
+        if (document.getElementById('words-tbody').children.length === 0) {
+            for (let i = 0; i < 3; i++) {
+                addWordRow();
+            }
+        }
+    }
+
+    // Update visual selection state
+    updateMethodSelection(method);
+}
+
+// Update visual selection of method cards
+function updateMethodSelection(method) {
+    const allCards = document.querySelectorAll('.method-card');
+    const allLabels = document.querySelectorAll('.method-choice');
+
+    allLabels.forEach((label, index) => {
+        const radio = label.querySelector('input[type="radio"]');
+        const card = label.querySelector('.method-card');
+
+        if (radio.value === method) {
+            // Selected card
+            card.style.borderColor = 'var(--accent)';
+            card.style.background = 'rgba(255, 140, 0, 0.1)';
+            card.style.transform = 'scale(1.02)';
+        } else {
+            // Unselected card
+            card.style.borderColor = 'var(--border)';
+            card.style.background = 'var(--bg-secondary)';
+            card.style.transform = 'scale(1)';
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial selection state
+    updateMethodSelection('file');
+
+    // Add click handlers to labels
+    document.querySelectorAll('.method-choice').forEach(label => {
+        label.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            switchMethod(radio.value);
+        });
+    });
+
+    // Add hover effect
+    document.querySelectorAll('.method-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            if (this.style.borderColor !== 'var(--accent)') {
+                this.style.borderColor = 'var(--text-secondary)';
+            }
+        });
+        card.addEventListener('mouseleave', function() {
+            const label = this.closest('.method-choice');
+            const radio = label.querySelector('input[type="radio"]');
+            if (!radio.checked) {
+                this.style.borderColor = 'var(--border)';
+            }
+        });
+    });
+});
+
+// Add a new word row to the table
+let rowCounter = 0;
+function addWordRow(french = '', hungarian = '') {
+    const tbody = document.getElementById('words-tbody');
+    const row = document.createElement('tr');
+    row.id = `row-${rowCounter}`;
+
+    row.innerHTML = `
+        <td style="padding: 0.5rem; border: 1px solid var(--border);">
+            <input
+                type="text"
+                name="word_french_${rowCounter}"
+                class="form-input word-french"
+                placeholder="e.g. Hello"
+                value="${french}"
+                style="margin: 0; width: 100%;"
+                oninput="updateWordCount()"
+            >
+        </td>
+        <td style="padding: 0.5rem; border: 1px solid var(--border);">
+            <input
+                type="text"
+                name="word_hungarian_${rowCounter}"
+                class="form-input word-hungarian"
+                placeholder="e.g. Jó napot"
+                value="${hungarian}"
+                style="margin: 0; width: 100%;"
+                oninput="updateWordCount()"
+            >
+        </td>
+        <td style="padding: 0.5rem; border: 1px solid var(--border); text-align: center;">
+            <button
+                type="button"
+                onclick="removeWordRow('row-${rowCounter}')"
+                class="btn-icon"
+                style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: #ef4444;"
+                title="Delete row"
+            >
+                🗑️
+            </button>
+        </td>
+    `;
+
+    tbody.appendChild(row);
+    rowCounter++;
+    updateWordCount();
+}
+
+// Remove a word row
+function removeWordRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.remove();
+        updateWordCount();
+    }
+}
+
+// Update word count
+function updateWordCount() {
+    const frenchInputs = document.querySelectorAll('.word-french');
+    const hungarianInputs = document.querySelectorAll('.word-hungarian');
+
+    let count = 0;
+    frenchInputs.forEach((input, index) => {
+        const french = input.value.trim();
+        const hungarian = hungarianInputs[index].value.trim();
+        if (french && hungarian) {
+            count++;
+        }
+    });
+
+    document.getElementById('word-count').textContent = `${count} word(s)`;
+}
+
 // Preview uploaded file
 function previewFile() {
     const fileInput = document.getElementById('fichier');
@@ -193,26 +419,49 @@ function previewFile() {
 
 // Form validation
 document.querySelector('form').addEventListener('submit', function(e) {
-    const fileInput = document.getElementById('fichier');
-    
-    if (!fileInput.files || !fileInput.files[0]) {
-        e.preventDefault();
-        alert('Please select a file');
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    const validExtensions = ['.json', '.csv'];
-    const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-    
-    if (!isValid) {
-        e.preventDefault();
-        alert('Invalid file format. Use .json or .csv');
-        return;
-    }
-    
-    // Show loader
+    const importMethod = document.querySelector('input[name="import_method"]:checked').value;
     const btn = this.querySelector('button[type="submit"]');
+
+    if (importMethod === 'file') {
+        const fileInput = document.getElementById('fichier');
+
+        if (!fileInput.files || !fileInput.files[0]) {
+            e.preventDefault();
+            alert('Please select a file');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const validExtensions = ['.json', '.csv'];
+        const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+        if (!isValid) {
+            e.preventDefault();
+            alert('Invalid file format. Use .json or .csv');
+            return;
+        }
+    } else {
+        // Manual mode validation
+        const frenchInputs = document.querySelectorAll('.word-french');
+        const hungarianInputs = document.querySelectorAll('.word-hungarian');
+
+        let validWordCount = 0;
+        frenchInputs.forEach((input, index) => {
+            const french = input.value.trim();
+            const hungarian = hungarianInputs[index].value.trim();
+            if (french && hungarian) {
+                validWordCount++;
+            }
+        });
+
+        if (validWordCount === 0) {
+            e.preventDefault();
+            alert('Please add at least one word pair (French and Hungarian)');
+            return;
+        }
+    }
+
+    // Show loader
     btn.disabled = true;
     btn.innerHTML = '⏳ Creating...';
 });

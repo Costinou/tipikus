@@ -24,28 +24,33 @@ def login():
 @auth_bp.route('/login', methods=['POST'])
 def login_post():
     """Process login"""
-    nom = request.form.get('nom', '').strip()
+    email = request.form.get('email', '').strip()
     password = request.form.get('password', '').strip()
 
-    if not nom or not password:
-        flash('Username and password required')
+    if not email or not password:
+        flash('Email and password required')
         return redirect(url_for('auth.login'))
 
-    # Verify credentials
-    user = verify_user_password(nom, password)
+    # Verify credentials using email
+    user = authenticate_local(email, password)
 
     if not user:
-        flash('Incorrect username or password')
+        flash('Incorrect email or password')
         return redirect(url_for('auth.login'))
 
     # Successful login
     session.clear()
     session.permanent = True
     session['user_id'] = user['id']
-    session['user_name'] = user['nom']
+    session['user_name'] = user.get('nom', user.get('display_name', ''))
+    session['email'] = user['email']
+    session['display_name'] = user.get('display_name', user.get('nom', ''))
     session['is_admin'] = user.get('is_admin', False)
+    session['avatar_url'] = user.get('avatar_url')
+    session['has_local_password'] = True  # Local user with password
     session.modified = True
 
+    flash(f'Welcome back, {session["display_name"]}!')
     return redirect(url_for('main.index'))
 
 
@@ -64,6 +69,11 @@ def change_password():
     if not user_id:
         return redirect(url_for('auth.login'))
 
+    # Only allow local users with passwords to change password
+    if not session.get('has_local_password'):
+        flash('Password change is not available for OAuth users')
+        return redirect(url_for('main.index'))
+
     user = get_user_by_id(user_id)
     return render_template('change_password.html', user=user)
 
@@ -76,6 +86,11 @@ def change_password_post():
 
     if not user_id:
         return redirect(url_for('auth.login'))
+
+    # Only allow local users with passwords to change password
+    if not session.get('has_local_password'):
+        flash('Password change is not available for OAuth users')
+        return redirect(url_for('main.index'))
 
     current_password = request.form.get('current_password', '')
     new_password = request.form.get('new_password', '')
@@ -155,6 +170,7 @@ def auth_google_callback():
         session['email'] = user['email']
         session['is_admin'] = user['is_admin']
         session['avatar_url'] = user.get('avatar_url')
+        session['has_local_password'] = False  # OAuth user, no local password
         session.modified = True
 
         flash(f'Welcome, {user["display_name"]}!')
@@ -219,6 +235,7 @@ def auth_github_callback():
         session['email'] = user['email']
         session['is_admin'] = user['is_admin']
         session['avatar_url'] = user.get('avatar_url')
+        session['has_local_password'] = False  # OAuth user, no local password
         session.modified = True
 
         flash(f'Welcome, {user["display_name"]}!')
@@ -255,6 +272,7 @@ def login_local():
     session['email'] = user['email']
     session['is_admin'] = user['is_admin']
     session['avatar_url'] = user.get('avatar_url')
+    session['has_local_password'] = True  # Local user with password
     session.modified = True
 
     flash(f'Welcome back, {user["display_name"]}!')

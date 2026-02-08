@@ -51,7 +51,7 @@ def creer_deck():
     niveau = request.form.get('niveau', '').strip()
     nom_deck = request.form.get('nom_deck', '').strip()
     is_commun = request.form.get('is_commun') == 'on'
-    fichier = request.files.get('fichier')
+    import_method = request.form.get('import_method', 'file')
 
     if niveau not in AVAILABLE_LEVELS:
         flash('Please select a valid level')
@@ -60,6 +60,39 @@ def creer_deck():
     if not nom_deck:
         flash('Deck name is required')
         return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
+
+    # Handle manual word creation
+    if import_method == 'manual':
+        mots_dict = {}
+
+        # Collect all word pairs from form
+        for key in request.form:
+            if key.startswith('word_french_'):
+                index = key.replace('word_french_', '')
+                french = request.form.get(f'word_french_{index}', '').strip()
+                hungarian = request.form.get(f'word_hungarian_{index}', '').strip()
+
+                if french and hungarian:
+                    mots_dict[french] = hungarian
+
+        if not mots_dict:
+            flash('Please add at least one word pair')
+            return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
+
+        try:
+            # Create deck
+            deck_id = create_deck(nom_deck, niveau, user_id, is_commun)
+            add_mots_to_deck(deck_id, mots_dict)
+
+            type_deck = "common" if is_commun else "personal"
+            flash(f'{type_deck.capitalize()} deck "{nom_deck}" created with {len(mots_dict)} words!')
+            return redirect(url_for('main.niveau', niveau=niveau))
+        except Exception as e:
+            flash(f'Error creating deck: {str(e)}')
+            return render_template('nouveau_deck.html', niveaux=AVAILABLE_LEVELS, niveau_preselect=niveau)
+
+    # Handle file import (existing logic)
+    fichier = request.files.get('fichier')
 
     if not fichier or fichier.filename == '':
         flash('Please select a file')
