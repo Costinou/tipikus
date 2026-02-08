@@ -168,7 +168,7 @@
                     <!-- Logged in user -->
                     <span class="text-muted">Hello, <strong>{{ user.display_name }}</strong></span>
 
-                    {% if user.display_name == 'c' %}
+                    {% if user.is_admin %}
                         <!-- Admin Actions -->
                         <a href="{{ url_for('admin.admin_users') }}" class="btn btn-secondary btn-icon" title="User Management">
                             👥
