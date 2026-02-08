@@ -29,84 +29,66 @@
 
 <!-- XP PROGRESS CARD -->
 {% if xp_breakdown %}
-<div class="card mb-2">
-    <div class="card-header">
-        <h2>🎮 Your XP Progress</h2>
-    </div>
-    
-    <!-- Global Progress -->
-    <div style="margin-bottom: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 1.125rem; font-weight: 600;">Overall Progress</span>
-            <span style="font-size: 1.25rem; font-weight: 700; color: var(--accent);">
-                {{ xp_breakdown.xp_gagne.xp_total }} XP / {{ xp_breakdown.xp_total_possible }} XP
+<div class="card mb-2" style="padding: 0.75rem 1rem;">
+    <div style="margin-bottom: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+            <span style="font-size: 0.875rem; font-weight: 600;">🎮 XP Progress</span>
+            <span style="font-size: 0.875rem; font-weight: 700; color: var(--accent);">
+                {{ xp_breakdown.xp_gagne.xp_total }} / {{ xp_breakdown.xp_total_possible }} XP
             </span>
         </div>
-        
-        <div class="progress-container">
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: {{ xp_breakdown.progression }}%"></div>
-            </div>
-            <div class="progress-label">
-                <span>Level Progress</span>
-                <span><strong>{{ "%.1f"|format(xp_breakdown.progression) }}%</strong></span>
-            </div>
+
+        <div class="progress-bar" style="height: 6px; margin-bottom: 0.25rem;">
+            <div class="progress-fill" style="width: {{ xp_breakdown.progression }}%"></div>
+        </div>
+        <div style="text-align: right; font-size: 0.75rem; color: var(--text-secondary);">
+            {{ "%.1f"|format(xp_breakdown.progression) }}%
         </div>
     </div>
-    
+
     <!-- XP Breakdown by Activity -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem;">
         <!-- Flashcards -->
-        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <span style="font-size: 1.5rem;">🎴</span>
-                <span style="font-weight: 600;">Flashcards</span>
+        <div style="background: var(--bg-secondary); padding: 0.5rem; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.25rem;">
+                <span style="font-size: 1rem;">🎴</span>
+                <span style="font-weight: 600; font-size: 0.75rem;">Flashcards</span>
             </div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
                 {{ xp_breakdown.details.flashcards.actuel }} / {{ xp_breakdown.details.flashcards.max }} XP
             </div>
-            <div class="progress-bar" style="height: 8px;">
+            <div class="progress-bar" style="height: 4px;">
                 <div class="progress-fill" style="width: {{ xp_breakdown.details.flashcards.pourcentage }}%; background: #06b6d4;"></div>
             </div>
         </div>
-        
+
         <!-- Quiz -->
-        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <span style="font-size: 1.5rem;">🎯</span>
-                <span style="font-weight: 600;">Quiz</span>
+        <div style="background: var(--bg-secondary); padding: 0.5rem; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.25rem;">
+                <span style="font-size: 1rem;">🎯</span>
+                <span style="font-weight: 600; font-size: 0.75rem;">Quiz</span>
             </div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
                 {{ xp_breakdown.details.quiz.actuel }} / {{ xp_breakdown.details.quiz.max }} XP
             </div>
-            <div class="progress-bar" style="height: 8px;">
+            <div class="progress-bar" style="height: 4px;">
                 <div class="progress-fill" style="width: {{ xp_breakdown.details.quiz.pourcentage }}%; background: #10b981;"></div>
             </div>
         </div>
-        
+
         <!-- Exercises -->
-        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <span style="font-size: 1.5rem;">✍️</span>
-                <span style="font-weight: 600;">Exercises</span>
+        <div style="background: var(--bg-secondary); padding: 0.5rem; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.25rem;">
+                <span style="font-size: 1rem;">✍️</span>
+                <span style="font-weight: 600; font-size: 0.75rem;">Exercises</span>
             </div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
                 {{ xp_breakdown.details.exercices.actuel }} / {{ xp_breakdown.details.exercices.max }} XP
             </div>
-            <div class="progress-bar" style="height: 8px;">
+            <div class="progress-bar" style="height: 4px;">
                 <div class="progress-fill" style="width: {{ xp_breakdown.details.exercices.pourcentage }}%; background: #f59e0b;"></div>
             </div>
         </div>
-    </div>
-    
-    <!-- XP Tips -->
-    <div style="margin-top: 1rem; padding: 1rem; background: rgba(252, 163, 17, 0.1); border-radius: 8px; border-left: 4px solid var(--accent);">
-        <div style="font-weight: 600; margin-bottom: 0.5rem;">💡 How to Earn XP:</div>
-        <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6;">
-            <li>🎴 See a flashcard: <strong>10 XP</strong></li>
-            <li>🎯 Correct quiz answer: <strong>20 XP</strong> (wrong: 5 XP)</li>
-            <li>✍️ Correct exercise answer: <strong>25 XP</strong> (wrong: 8 XP)</li>
-        </ul>
     </div>
 </div>
 {% endif %}
@@ -125,53 +107,48 @@
     
     <div class="lessons-grid">
         {% for lesson in lessons %}
-        <div class="card lesson-card">
-            <!-- Lesson number -->
-            <div class="lesson-number">{{ lesson.numero }}</div>
-            
-            <!-- Content -->
-            <div class="lesson-content">
-                <h3 class="lesson-title">{{ lesson.titre }}</h3>
-                <p class="lesson-meta">
-                    {{ lesson.nb_decks }} deck{{ 's' if lesson.nb_decks > 1 else '' }} associated
-                </p>
-                
-                <!-- Progress -->
-                {% if lesson.id in lessons_progress and lessons_progress[lesson.id] > 0 %}
-                <div class="progress-container">
-                    <div class="progress-bar">
+        <div class="card lesson-card" style="padding: 0.75rem; position: relative;">
+            <a href="{{ url_for('lessons.view_lesson', lesson_id=lesson.id) }}" style="text-decoration: none; color: inherit; display: block;">
+                <!-- Lesson number -->
+                <div class="lesson-number" style="font-size: 1.25rem; width: 2.5rem; height: 2.5rem; line-height: 2.5rem;">{{ lesson.numero }}</div>
+
+                <!-- Content -->
+                <div class="lesson-content">
+                    <h3 class="lesson-title" style="font-size: 1rem; margin-bottom: 0.25rem;">{{ lesson.titre }}</h3>
+                    <p class="lesson-meta" style="font-size: 0.75rem; margin-bottom: 0.5rem;">
+                        {{ lesson.nb_decks }} deck{{ 's' if lesson.nb_decks > 1 else '' }}
+                    </p>
+
+                    <!-- Progress -->
+                    {% if lesson.id in lessons_progress and lessons_progress[lesson.id] > 0 %}
+                    <div class="progress-bar" style="height: 4px; margin-top: 0.5rem;">
                         <div class="progress-fill" style="width: {{ lessons_progress[lesson.id] }}%"></div>
                     </div>
-                    <div class="progress-label">
-                        <span>Completed</span>
-                        <span><strong>{{ "%.0f"|format(lessons_progress[lesson.id]) }}%</strong></span>
+                    <div style="text-align: right; font-size: 0.65rem; color: var(--text-secondary); margin-top: 0.15rem;">
+                        {{ "%.0f"|format(lessons_progress[lesson.id]) }}%
                     </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-            </div>
-            
-            <!-- Actions -->
-            <div class="deck-actions">
-                <a href="{{ url_for('lessons.view_lesson', lesson_id=lesson.id) }}" class="btn btn-primary">
-                    👁️ View
-                </a>
+            </a>
 
-                {% if is_admin %}
-                <a href="{{ url_for('lessons.manage_lesson_decks', lesson_id=lesson.id) }}" class="btn btn-secondary btn-icon" title="Manage Decks">
+            <!-- Admin Actions (outside clickable area) -->
+            {% if is_admin %}
+            <div class="deck-actions" style="position: absolute; top: 0.5rem; right: 0.5rem; display: flex; gap: 0.25rem; z-index: 10;">
+                <a href="{{ url_for('lessons.manage_lesson_decks', lesson_id=lesson.id) }}" class="btn btn-secondary btn-icon" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" title="Manage Decks" onclick="event.stopPropagation();">
                     ⚙️
                 </a>
-                <a href="{{ url_for('lessons.edit_lesson_form', lesson_id=lesson.id) }}" class="btn btn-secondary btn-icon" title="Edit">
+                <a href="{{ url_for('lessons.edit_lesson_form', lesson_id=lesson.id) }}" class="btn btn-secondary btn-icon" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" title="Edit" onclick="event.stopPropagation();">
                     ✏️
                 </a>
                 <form method="POST" action="{{ url_for('lessons.delete_lesson_route', lesson_id=lesson.id) }}"
                       style="display: inline;"
-                      onsubmit="return confirm('Delete this lesson?');">
-                    <button type="submit" class="btn btn-danger btn-icon" title="Delete">
+                      onsubmit="event.stopPropagation(); return confirm('Delete this lesson?');">
+                    <button type="submit" class="btn btn-danger btn-icon" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" title="Delete">
                         🗑️
                     </button>
                 </form>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
