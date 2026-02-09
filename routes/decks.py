@@ -287,6 +287,10 @@ def apprendre(deck_id):
         flash('This deck contains no words')
         return redirect(url_for('main.index'))
 
+    # Track last studied deck for review suggestion
+    session['last_studied_deck_id'] = deck_id
+    session.modified = True
+
     return render_template('apprendre.html', mots=mots, deck_id=deck_id)
 
 

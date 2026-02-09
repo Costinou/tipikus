@@ -6,48 +6,63 @@
 <style>
 /* Styles pour le quiz */
 .quiz-container {
-    max-width: 800px;
-    margin: 2rem auto;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0.5rem;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .question-card {
-    min-height: 300px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem !important;
+}
+
+.question-card.hidden {
+    display: none !important;
 }
 
 .question-number {
     display: inline-block;
-    padding: 0.5rem 1rem;
+    padding: 0.25rem 0.75rem;
     background: var(--accent);
     color: var(--black);
-    border-radius: 20px;
+    border-radius: 15px;
     font-weight: 600;
-    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
 }
 
 .question-text {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: var(--text-primary);
     text-align: center;
-    margin: 2rem 0;
+    margin: 1rem 0;
+    flex-shrink: 0;
 }
 
 .options-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-top: 2rem;
+    gap: 0.75rem;
+    margin: 1rem 0;
 }
 
 .option-btn {
-    padding: 1.5rem;
+    padding: 1rem;
     background: var(--bg-secondary);
     border: 2px solid var(--border);
-    border-radius: 12px;
-    font-size: 1.25rem;
+    border-radius: 10px;
+    font-size: 1.1rem;
     cursor: pointer;
     transition: all 0.3s;
     color: var(--text-primary);
+    word-wrap: break-word;
 }
 
 .option-btn:hover:not(:disabled) {
@@ -88,10 +103,11 @@
 
 .feedback {
     text-align: center;
-    margin-top: 1.5rem;
-    font-size: 1.25rem;
+    margin: 0.75rem 0;
+    font-size: 1rem;
     font-weight: 600;
-    min-height: 2rem;
+    min-height: 1.5rem;
+    flex-shrink: 0;
 }
 
 .feedback.correct {
@@ -104,62 +120,184 @@
 
 .results-card {
     text-align: center;
-    padding: 3rem 2rem;
+    padding: 1.5rem 1rem;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+}
+
+.results-card:not(.hidden) {
+    display: flex;
+}
+
+.results-card.hidden {
+    display: none !important;
 }
 
 .score-display {
-    font-size: 5rem;
+    font-size: 3rem;
     font-weight: 700;
     color: var(--accent);
-    margin: 2rem 0;
+    margin: 1rem 0;
 }
 
 .score-percentage {
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: var(--text-secondary);
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .score-message {
-    font-size: 1.5rem;
-    margin-bottom: 2rem;
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin: 2rem 0;
+    gap: 0.75rem;
+    margin: 1rem 0;
 }
 
 .stat-item {
     background: var(--bg-secondary);
-    padding: 1rem;
+    padding: 0.75rem;
     border-radius: 8px;
 }
 
 .stat-value {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--accent);
 }
 
 .stat-label {
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
 }
 
 @media (max-width: 768px) {
+    .quiz-container {
+        padding: 0.25rem;
+        height: calc(100vh - 60px);
+    }
+
+    .progress-card {
+        padding: 0.5rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .progress-card .flex {
+        margin-bottom: 0.35rem !important;
+    }
+
+    .progress-card h3 {
+        font-size: 0.875rem !important;
+    }
+
+    .progress-card .text-muted {
+        font-size: 0.7rem !important;
+    }
+
+    .progress-bar {
+        height: 3px !important;
+    }
+
+    .question-card {
+        padding: 0.5rem !important;
+    }
+
+    .question-number {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.75rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .question-text {
+        font-size: 1.1rem;
+        margin: 0.5rem 0;
+    }
+
     .options-grid {
         grid-template-columns: 1fr;
+        gap: 0.35rem;
+        margin: 0.5rem 0;
     }
-    
-    .question-text {
-        font-size: 1.5rem;
+
+    .option-btn {
+        padding: 0.5rem;
+        font-size: 0.95rem;
     }
-    
+
+    .feedback {
+        margin: 0.5rem 0;
+        font-size: 0.875rem;
+        min-height: 1.2rem;
+    }
+
+    .next-btn-wrapper {
+        margin-top: 0.35rem !important;
+    }
+
+    #next-btn {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.9rem !important;
+    }
+
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .score-display {
+        font-size: 2.5rem;
+    }
+
+    .score-percentage {
+        font-size: 1.25rem;
+    }
+
+    .score-message {
+        font-size: 1rem;
+    }
+
+    .results-card {
+        padding: 1rem 0.5rem !important;
+    }
+
+    .results-card h2 {
+        font-size: 1.25rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .score-display {
+        margin: 0.75rem 0 !important;
+    }
+
+    .score-percentage {
+        margin-bottom: 0.75rem !important;
+    }
+
+    .score-message {
+        margin-bottom: 1rem !important;
+    }
+
+    .stats-grid {
+        margin: 0.75rem 0 !important;
+    }
+
+    .stat-item {
+        padding: 0.5rem !important;
+    }
+
+    .results-card .flex {
+        margin-top: 1rem !important;
+    }
+
+    .results-card .btn {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.875rem !important;
     }
 }
 </style>
@@ -167,88 +305,92 @@
 
 {% block content %}
 <div class="quiz-container">
-    <!-- Progression -->
-    <div class="card mb-2">
-        <div class="flex flex-between" style="align-items: center;">
+    <!-- Progress -->
+    <div class="card progress-card" style="padding: 0.75rem; margin-bottom: 0.5rem; flex-shrink: 0;">
+        <div class="flex flex-between" style="align-items: center; margin-bottom: 0.5rem;">
             <div>
-                <span class="text-muted">Progression</span>
-                <h3 class="mt-1" style="margin: 0;">
+                <span class="text-muted" style="font-size: 0.75rem;">Progress</span>
+                <h3 style="margin: 0; font-size: 1rem;">
                     <span id="current-question">1</span> / <span id="total-questions">{{ mots|length }}</span>
                 </h3>
             </div>
-            
-            <div>
-                <span class="text-muted">Score</span>
-                <h3 class="mt-1" style="margin: 0; color: var(--accent);">
+
+            <div style="text-align: right;">
+                <span class="text-muted" style="font-size: 0.75rem;">Score</span>
+                <h3 style="margin: 0; color: var(--accent); font-size: 1rem;">
                     <span id="score">0</span> / <span id="questions-answered">0</span>
                 </h3>
             </div>
         </div>
-        
-        <div class="progress-container mt-2">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
-            </div>
+
+        <div class="progress-bar" style="height: 4px;">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
         </div>
     </div>
     
     <!-- Question -->
     <div class="card question-card" id="question-card">
-        <div class="question-number">
-            Question <span id="q-number">1</span>
+        <div>
+            <div class="question-number">
+                Question <span id="q-number">1</span>
+            </div>
+
+            <div class="question-text" id="question-text"></div>
         </div>
-        
-        <div class="question-text" id="question-text"></div>
-        
+
         <div class="options-grid" id="options-grid"></div>
-        
-        <div class="feedback" id="feedback"></div>
-        
-        <div class="flex flex-center mt-3">
-            <button class="btn btn-primary hidden" id="next-btn" onclick="nextQuestion()">
-                Suivante →
-            </button>
+
+        <div>
+            <div class="feedback" id="feedback"></div>
+
+            <div class="flex flex-center next-btn-wrapper" style="margin-top: 0.5rem;">
+                <button class="btn btn-primary hidden" id="next-btn" onclick="nextQuestion()" style="padding: 0.6rem 1.5rem;">
+                    Next →
+                </button>
+            </div>
         </div>
     </div>
-    
-    <!-- Résultats (caché au début) -->
-    <div class="card results-card hidden" id="results-card">
-        <h2>🎉 Quiz terminé !</h2>
-        
-        <div class="score-display" id="final-score"></div>
-        <div class="score-percentage" id="final-percentage"></div>
-        
-        <div class="score-message" id="score-message"></div>
-        
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-value" id="stat-correct">0</div>
-                <div class="stat-label">Correctes</div>
-            </div>
-            
-            <div class="stat-item">
-                <div class="stat-value" id="stat-incorrect">0</div>
-                <div class="stat-label">Incorrectes</div>
-            </div>
-            
-            <div class="stat-item">
-                <div class="stat-value" id="stat-time">0s</div>
-                <div class="stat-label">Temps</div>
-            </div>
-        </div>
-        
-        <div class="flex flex-center gap-2 mt-3">
-            <button class="btn btn-secondary" onclick="restartQuiz()">
-                🔄 Recommencer
-            </button>
-            
-            <a href="{{ url_for('decks.apprendre', deck_id=deck_id) }}" class="btn btn-secondary">
-                🎴 Flashcards
-            </a>
 
-            <a href="{{ url_for('stats.stats_deck', deck_id=deck_id) }}" class="btn btn-primary">
-                📊 Statistiques
-            </a>
+    <!-- Results (hidden at start) -->
+    <div class="card results-card hidden" id="results-card">
+        <div>
+            <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">🎉 Quiz Complete!</h2>
+
+            <div class="score-display" id="final-score"></div>
+            <div class="score-percentage" id="final-percentage"></div>
+
+            <div class="score-message" id="score-message"></div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-correct">0</div>
+                    <div class="stat-label">Correct</div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-incorrect">0</div>
+                    <div class="stat-label">Incorrect</div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-time">0s</div>
+                    <div class="stat-label">Time</div>
+                </div>
+            </div>
+
+            <div class="flex flex-center gap-2" style="margin-top: 1.5rem; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="restartQuiz()" style="padding: 0.6rem 1rem;">
+                    🔄 Restart
+                </button>
+
+                <a href="{{ url_for('decks.apprendre', deck_id=deck_id) }}" class="btn btn-secondary" style="padding: 0.6rem 1rem;">
+                    🎴 Flashcards
+                </a>
+
+                <a href="{{ url_for('stats.stats_deck', deck_id=deck_id) }}" class="btn btn-primary" style="padding: 0.6rem 1rem;">
+                    📊 Statistics
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -256,7 +398,7 @@
 
 {% block extra_js %}
 <script>
-// Données
+// Data
 const allMots = {{ mots|tojson }};
 const deckId = {{ deck_id }};
 let questions = [];
@@ -264,7 +406,7 @@ let currentQuestionIndex = 0;
 let score = 0;
 let startTime = Date.now();
 
-// Éléments DOM
+// DOM elements
 const questionCard = document.getElementById('question-card');
 const resultsCard = document.getElementById('results-card');
 const questionText = document.getElementById('question-text');
@@ -273,7 +415,7 @@ const feedback = document.getElementById('feedback');
 const nextBtn = document.getElementById('next-btn');
 const progressFill = document.getElementById('progress-fill');
 
-// Mélanger un tableau
+// Shuffle an array
 function shuffle(array) {
     const arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -283,17 +425,17 @@ function shuffle(array) {
     return arr;
 }
 
-// Générer les questions
+// Generate questions
 function generateQuestions() {
     questions = shuffle(allMots).map(mot => {
-        // Générer 3 mauvaises réponses
+        // Generate 3 wrong answers
         const wrongAnswers = shuffle(allMots.filter(m => m.id !== mot.id))
             .slice(0, 3)
             .map(m => m.traduction);
-        
-        // Mélanger avec la bonne réponse
+
+        // Shuffle with the correct answer
         const options = shuffle([...wrongAnswers, mot.traduction]);
-        
+
         return {
             question: mot.mot_francais,
             correct: mot.traduction,
@@ -302,21 +444,21 @@ function generateQuestions() {
     });
 }
 
-// Afficher une question
+// Show a question
 function showQuestion() {
     if (currentQuestionIndex >= questions.length) {
         showResults();
         return;
     }
-    
+
     const q = questions[currentQuestionIndex];
-    
-    // Mettre à jour les textes
+
+    // Update texts
     document.getElementById('current-question').textContent = currentQuestionIndex + 1;
     document.getElementById('q-number').textContent = currentQuestionIndex + 1;
     questionText.textContent = q.question;
-    
-    // Créer les options
+
+    // Create options
     optionsGrid.innerHTML = '';
     q.options.forEach(option => {
         const btn = document.createElement('button');
@@ -325,94 +467,99 @@ function showQuestion() {
         btn.onclick = () => checkAnswer(option, btn);
         optionsGrid.appendChild(btn);
     });
-    
-    // Réinitialiser le feedback et le bouton
+
+    // Reset feedback and button
     feedback.textContent = '';
     feedback.className = 'feedback';
     nextBtn.classList.add('hidden');
-    
-    // Mettre à jour la progression
+
+    // Update progress
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
     progressFill.style.width = progress + '%';
 }
 
-// Vérifier la réponse
+// Check answer
 function checkAnswer(selected, btn) {
     const q = questions[currentQuestionIndex];
     const isCorrect = selected === q.correct;
-    
-    // Désactiver tous les boutons
+
+    // Disable all buttons
     const allBtns = optionsGrid.querySelectorAll('.option-btn');
     allBtns.forEach(b => b.disabled = true);
-    
-    // Colorer la réponse
+
+    // Color the answer
     if (isCorrect) {
         btn.classList.add('correct');
-        feedback.textContent = '✓ Correct !';
+        feedback.textContent = '✓ Correct!';
         feedback.className = 'feedback correct';
         score++;
+
+        // Auto-advance after 1 second for correct answers
+        setTimeout(() => {
+            nextQuestion();
+        }, 1000);
     } else {
         btn.classList.add('incorrect');
-        feedback.textContent = '✗ Incorrect. La bonne réponse : ' + q.correct;
+        feedback.textContent = '✗ Incorrect. Correct answer: ' + q.correct;
         feedback.className = 'feedback incorrect';
-        
-        // Montrer la bonne réponse
+
+        // Show the correct answer
         allBtns.forEach(b => {
             if (b.textContent === q.correct) {
                 b.classList.add('correct');
             }
         });
+
+        // Show next button for incorrect answers (manual advance)
+        if (currentQuestionIndex < questions.length - 1) {
+            nextBtn.textContent = 'Next →';
+        } else {
+            nextBtn.textContent = '✓ View Results';
+        }
+        nextBtn.classList.remove('hidden');
     }
-    
-    // Mettre à jour le score
+
+    // Update score
     document.getElementById('score').textContent = score;
     document.getElementById('questions-answered').textContent = currentQuestionIndex + 1;
-    
-    // Montrer le bouton suivant
-    if (currentQuestionIndex < questions.length - 1) {
-        nextBtn.textContent = 'Suivante →';
-    } else {
-        nextBtn.textContent = '✓ Voir les résultats';
-    }
-    nextBtn.classList.remove('hidden');
 }
 
-// Question suivante
+// Next question
 function nextQuestion() {
     currentQuestionIndex++;
     showQuestion();
 }
 
-// Afficher les résultats
+// Show results
 function showResults() {
     const duration = Math.floor((Date.now() - startTime) / 1000);
     const percentage = Math.round((score / questions.length) * 100);
-    
-    // Masquer la question, afficher les résultats
+
+    // Hide question, show results
     questionCard.classList.add('hidden');
     resultsCard.classList.remove('hidden');
-    
-    // Afficher le score
+
+    // Display score
     document.getElementById('final-score').textContent = score + ' / ' + questions.length;
     document.getElementById('final-percentage').textContent = percentage + '%';
     document.getElementById('stat-correct').textContent = score;
     document.getElementById('stat-incorrect').textContent = questions.length - score;
     document.getElementById('stat-time').textContent = duration + 's';
-    
-    // Message selon le score
+
+    // Message based on score
     let message = '';
     if (percentage === 100) {
-        message = '🏆 Parfait ! Excellent travail !';
+        message = '🏆 Perfect! Excellent work!';
     } else if (percentage >= 80) {
-        message = '🌟 Très bien ! Continue comme ça !';
+        message = '🌟 Great job! Keep it up!';
     } else if (percentage >= 60) {
-        message = '👍 Pas mal ! Encore un petit effort !';
+        message = '👍 Not bad! A little more effort!';
     } else {
-        message = '💪 Continue à t\'entraîner !';
+        message = '💪 Keep practicing!';
     }
     document.getElementById('score-message').textContent = message;
-    
-    // Enregistrer la session
+
+    // Save session
     fetch('/api/session', {
         method: 'POST',
         headers: {
@@ -429,24 +576,24 @@ function showResults() {
     });
 }
 
-// Recommencer le quiz
+// Restart quiz
 function restartQuiz() {
     currentQuestionIndex = 0;
     score = 0;
     startTime = Date.now();
-    
+
     document.getElementById('score').textContent = '0';
     document.getElementById('questions-answered').textContent = '0';
-    
+
     generateQuestions();
-    
+
     resultsCard.classList.add('hidden');
     questionCard.classList.remove('hidden');
-    
+
     showQuestion();
 }
 
-// Initialisation
+// Initialization
 document.getElementById('total-questions').textContent = allMots.length;
 generateQuestions();
 showQuestion();

@@ -311,7 +311,18 @@ class TipikusTour {
 
         // Mark tour as completed (call appropriate endpoint based on tour type)
         const endpoint = this.tourType === 'lesson' ? '/api/lesson-tour-completed' : '/api/tour-completed';
-        fetch(endpoint, { method: 'POST' })
+        fetch(endpoint, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Failed to mark tour as completed:', response.statusText);
+                }
+            })
             .catch(err => console.error('Failed to mark tour as completed:', err));
     }
 }

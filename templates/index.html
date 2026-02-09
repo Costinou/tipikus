@@ -10,6 +10,76 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- Last Studied Deck Suggestion -->
+{% if last_studied_deck %}
+<div class="card last-deck-suggestion" style="background: linear-gradient(135deg, var(--accent) 0%, #e89b0f 100%); color: white; margin-bottom: 2rem; padding: 1.25rem; border: none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+            <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔄</div>
+            <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: white;">Continue Learning!</h3>
+            <p style="margin: 0; font-size: 0.875rem; opacity: 0.95;">
+                Review <strong>{{ last_studied_deck.nom }}</strong> ({{ last_studied_deck.niveau }})
+            </p>
+        </div>
+        <div class="suggestion-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{{ url_for('decks.apprendre', deck_id=last_studied_deck.id) }}"
+               class="btn"
+               style="background: white; color: var(--accent); border: none; font-weight: 600; padding: 0.6rem 1.2rem; white-space: nowrap;">
+                📚 Review Flashcards
+            </a>
+            <a href="{{ url_for('decks.quiz', deck_id=last_studied_deck.id) }}"
+               class="btn"
+               style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.5); font-weight: 600; padding: 0.6rem 1.2rem; white-space: nowrap;">
+                🎯 Take Quiz
+            </a>
+            <button onclick="dismissSuggestion()"
+                    class="btn btn-icon"
+                    style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.5); padding: 0.6rem 0.8rem;"
+                    title="Dismiss">
+                ✕
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    .last-deck-suggestion .suggestion-buttons {
+        width: 100%;
+        justify-content: stretch;
+    }
+    .last-deck-suggestion .suggestion-buttons .btn {
+        flex: 1;
+        text-align: center;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.875rem;
+    }
+    .last-deck-suggestion .suggestion-buttons .btn-icon {
+        flex: 0 0 auto;
+    }
+}
+</style>
+
+<script>
+function dismissSuggestion() {
+    // Call API to clear last studied deck from session
+    fetch('/api/dismiss-last-deck', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(() => {
+        // Hide the suggestion with animation
+        const suggestion = event.target.closest('.card');
+        suggestion.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        suggestion.style.opacity = '0';
+        suggestion.style.transform = 'translateY(-20px)';
+        setTimeout(() => suggestion.remove(), 300);
+    }).catch(err => console.error('Failed to dismiss suggestion:', err));
+}
+</script>
+{% endif %}
+
 <!-- Levels grid -->
 <div class="niveaux-grid">
     {% for niveau in AVAILABLE_LEVELS %}

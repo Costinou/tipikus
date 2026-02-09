@@ -116,6 +116,11 @@ def get_xp_gain():
             xp_gain = total * 10
             details.append(f"+{xp_gain} XP - {total} card(s) seen")
 
+            # Track last studied deck for review suggestion
+            if deck_id:
+                session['last_studied_deck_id'] = deck_id
+                session.modified = True
+
         elif activity_type == 'quiz':
             # 20 XP per correct answer, 5 XP per incorrect
             correct = score
@@ -198,6 +203,25 @@ def lesson_tour_completed():
     try:
         # Store in session that user has completed the lesson tour
         session['lesson_tour_completed'] = True
+        session.modified = True
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/dismiss-last-deck', methods=['POST'])
+def dismiss_last_deck():
+    """Clear the last studied deck suggestion"""
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    try:
+        # Clear the last studied deck from session
+        session.pop('last_studied_deck_id', None)
         session.modified = True
 
         return jsonify({'success': True})

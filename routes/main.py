@@ -9,6 +9,7 @@ from database import (
     get_user_by_id,
     get_niveaux_with_counts,
     get_decks_by_niveau,
+    get_deck_by_id,
     get_lessons_by_niveau,
     calculate_niveau_progress_xp,
     calculate_user_xp_for_niveau,
@@ -61,6 +62,12 @@ def index():
     # Check if user should see the onboarding tour
     show_tour = session.get('tour_completed') is None
 
+    # Get last studied deck for review suggestion
+    last_deck = None
+    last_deck_id = session.get('last_studied_deck_id')
+    if last_deck_id:
+        last_deck = get_deck_by_id(last_deck_id)
+
     return render_template('index.html',
                          AVAILABLE_LEVELS=AVAILABLE_LEVELS,
                          niveaux_counts=niveaux_counts,
@@ -68,7 +75,8 @@ def index():
                          niveaux_xp=niveaux_xp,
                          unlocked_niveaux=unlocked_niveaux,
                          user=user,
-                         show_tour=show_tour)
+                         show_tour=show_tour,
+                         last_studied_deck=last_deck)
 
 
 @main_bp.route('/niveau/<niveau>')

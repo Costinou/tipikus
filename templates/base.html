@@ -233,8 +233,8 @@
     <!-- Onboarding Tour -->
     <script src="{{ url_for('static', filename='js/tour.js') }}"></script>
     <script>
-        // Set tour flag from backend
-        window.showTour = {{ 'true' if show_tour else 'false' }};
+        // Set tour flag from backend (defaults to false if not defined)
+        window.showTour = {{ 'true' if show_tour is defined and show_tour else 'false' }};
     </script>
 
     <!-- JavaScript -->
