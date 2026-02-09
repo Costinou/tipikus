@@ -701,9 +701,13 @@
             const isDark = savedTheme === 'dark' ||
                           (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
+            const icon = document.getElementById('dark-mode-icon');
             if (isDark) {
                 document.body.classList.add('dark-mode');
-                document.getElementById('dark-mode-icon').textContent = '☀️';
+                icon.textContent = '☀️';
+            } else {
+                document.body.classList.remove('dark-mode');
+                icon.textContent = '🌙';
             }
         }
 
