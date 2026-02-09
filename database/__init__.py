@@ -26,7 +26,9 @@ from .users import (
     get_all_users,
     create_user,
     update_user,
-    delete_user
+    delete_user,
+    mark_tour_completed,
+    mark_lesson_tour_completed
 )
 
 # Auth - Authentication and auth providers
@@ -117,6 +119,8 @@ __all__ = [
     'create_user',
     'update_user',
     'delete_user',
+    'mark_tour_completed',
+    'mark_lesson_tour_completed',
 
     # Auth
     'add_auth_provider',

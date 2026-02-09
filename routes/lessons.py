@@ -45,8 +45,8 @@ def view_lesson(lesson_id):
 
     user = get_user_by_id(user_id)
 
-    # Check if user should see the lesson tour
-    show_lesson_tour = session.get('lesson_tour_completed') is None
+    # Check if user should see the lesson tour (from database)
+    show_lesson_tour = not user.get('lesson_tour_completed', False)
 
     return render_template('lesson.html',
                          lesson=lesson,

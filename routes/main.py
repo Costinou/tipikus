@@ -59,8 +59,8 @@ def index():
     # Get unlocked levels (XP-based)
     unlocked_niveaux = get_unlocked_niveaux_xp(user_id)
 
-    # Check if user should see the onboarding tour
-    show_tour = session.get('tour_completed') is None
+    # Check if user should see the onboarding tour (from database)
+    show_tour = not user.get('tour_completed', False)
 
     # Get last studied deck for review suggestion
     last_deck = None

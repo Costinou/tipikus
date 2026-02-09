@@ -8,7 +8,9 @@ from io import BytesIO
 from flask import Blueprint, request, jsonify, session, send_file
 from database import (
     get_mots_by_deck,
-    create_session
+    create_session,
+    mark_tour_completed,
+    mark_lesson_tour_completed
 )
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -182,9 +184,8 @@ def tour_completed():
         return jsonify({'error': 'Not authenticated'}), 401
 
     try:
-        # Store in session that user has completed the tour
-        session['tour_completed'] = True
-        session.modified = True
+        # Store in database that user has completed the tour
+        mark_tour_completed(user_id)
 
         return jsonify({'success': True})
 
@@ -193,7 +194,7 @@ def tour_completed():
 
 
 @api_bp.route('/lesson-tour-completed', methods=['POST'])
-def lesson_tour_completed():
+def lesson_tour_completed_route():
     """Mark the lesson tour as completed"""
     user_id = session.get('user_id')
 
@@ -201,9 +202,8 @@ def lesson_tour_completed():
         return jsonify({'error': 'Not authenticated'}), 401
 
     try:
-        # Store in session that user has completed the lesson tour
-        session['lesson_tour_completed'] = True
-        session.modified = True
+        # Store in database that user has completed the lesson tour
+        mark_lesson_tour_completed(user_id)
 
         return jsonify({'success': True})
 

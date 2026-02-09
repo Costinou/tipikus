@@ -164,3 +164,21 @@ def get_user_by_name(name: str) -> Optional[Dict]:
 
     conn.close()
     return dict(user) if user else None
+
+
+def mark_tour_completed(user_id: int) -> bool:
+    """Mark the onboarding tour as completed for a user"""
+    conn = get_db()
+    conn.execute('UPDATE users SET tour_completed = 1 WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def mark_lesson_tour_completed(user_id: int) -> bool:
+    """Mark the lesson tour as completed for a user"""
+    conn = get_db()
+    conn.execute('UPDATE users SET lesson_tour_completed = 1 WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+    return True

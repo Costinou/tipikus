@@ -665,18 +665,42 @@
         // Audio
         let currentAudio = null;
 
-        // Dark mode
+        // Dark mode - Synced with main app
         function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
+            // Use the same localStorage key as main app
+            const currentTheme = localStorage.getItem('tipikus_theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            // Update body class
+            if (newTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+
+            // Update icon
             const icon = document.getElementById('dark-mode-icon');
-            icon.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
-            
-            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+            icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+
+            // Save to localStorage using main app's key
+            localStorage.setItem('tipikus_theme', newTheme);
         }
 
-        // Load dark mode preference
+        // Load dark mode preference from main app
         function loadDarkModePreference() {
-            const isDark = localStorage.getItem('darkMode') === 'true';
+            // Migrate old darkMode preference to new system
+            const oldDarkMode = localStorage.getItem('darkMode');
+            if (oldDarkMode !== null && !localStorage.getItem('tipikus_theme')) {
+                const migratedTheme = oldDarkMode === 'true' ? 'dark' : 'light';
+                localStorage.setItem('tipikus_theme', migratedTheme);
+                localStorage.removeItem('darkMode');
+            }
+
+            // Get current theme
+            const savedTheme = localStorage.getItem('tipikus_theme');
+            const isDark = savedTheme === 'dark' ||
+                          (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
             if (isDark) {
                 document.body.classList.add('dark-mode');
                 document.getElementById('dark-mode-icon').textContent = '☀️';
