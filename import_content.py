@@ -177,18 +177,22 @@ class TipikusImporter:
             print(f"  Level: {niveau}, Number: {numero}")
             print(f"  Content: {len(content_markdown)} characters")
             
-            if self.dry_run:
-                print("  [DRY RUN] Would create lesson")
-                self.lesson_map[lesson_key] = -1  # Fake ID for dry run
-                continue
-            
-            # Check if lesson already exists
+            # Check if lesson already exists (before dry-run bail for accurate reporting)
             cursor = self.conn.execute(
                 'SELECT id FROM lessons WHERE niveau = ? AND numero = ?',
                 (niveau, numero)
             )
             existing = cursor.fetchone()
-            
+
+            if self.dry_run:
+                if existing:
+                    print(f"  [DRY RUN] Would update lesson (ID: {existing['id']})")
+                    self.lesson_map[lesson_key] = existing['id']
+                else:
+                    print("  [DRY RUN] Would create lesson")
+                    self.lesson_map[lesson_key] = -1
+                continue
+
             if existing:
                 lesson_id = existing['id']
                 print(f"  ⚠️  Lesson already exists (ID: {lesson_id}), updating...")
@@ -250,17 +254,20 @@ class TipikusImporter:
         if lesson_id:
             print(f"    Associated with lesson ID: {lesson_id}")
         
-        if self.dry_run:
-            print("    [DRY RUN] Would create deck")
-            return -1
-        
-        # Check if deck already exists
+        # Check if deck already exists (before dry-run bail for accurate reporting)
         cursor = self.conn.execute(
             'SELECT id FROM decks WHERE nom = ? AND niveau = ? AND user_id = ?',
             (nom_deck, niveau, self.admin_user_id)
         )
         existing = cursor.fetchone()
-        
+
+        if self.dry_run:
+            if existing:
+                print(f"    [DRY RUN] Would update deck (ID: {existing['id']})")
+            else:
+                print("    [DRY RUN] Would create deck")
+            return existing['id'] if existing else -1
+
         if existing:
             deck_id = existing['id']
             print(f"    ⚠️  Deck already exists (ID: {deck_id}), updating...")
@@ -424,16 +431,19 @@ class TipikusImporter:
             print(f"    Level: {niveau}, Lesson: {lesson_key}")
             print(f"    Questions: {len(contenu_json)}")
             
-            if self.dry_run:
-                print("    [DRY RUN] Would create exercise")
-                continue
-
-            # Check if exercise already exists
+            # Check if exercise already exists (before dry-run bail for accurate reporting)
             cursor = self.conn.execute(
                 'SELECT id FROM exercices WHERE lesson_id = ? AND titre = ?',
                 (lesson_id, titre)
             )
             existing = cursor.fetchone()
+
+            if self.dry_run:
+                if existing:
+                    print(f"    [DRY RUN] Would update exercise (ID: {existing['id']})")
+                else:
+                    print("    [DRY RUN] Would create exercise")
+                continue
 
             # Get current order only when inserting a new exercise
             if not existing:
