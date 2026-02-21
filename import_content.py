@@ -108,24 +108,34 @@ class TipikusImporter:
     def parse_filename(self, filename: str) -> Optional[Tuple[str, int, str]]:
         """
         Parse filename to extract level, chapter number, and title.
-        
+
         Expected formats:
-        - A1_Chapter1_Title.md -> ('A1', 1, 'Title')
-        - A1_01_DeckName.json -> ('A1', 1, 'DeckName')
+        - A1_Chapter1_Title.md  -> ('A1', 1, 'Title')
+        - A1_01_DeckName.json   -> ('A1', 1, 'DeckName')
         - A1_02_Exercise_1.json -> ('A1', 2, 'Exercise_1')
-        
+        - A1_Common_Title.json  -> ('A1', 0, 'Common Title')  ← free decks
+
         Returns: (level, chapter_number, title) or None if parsing fails
         """
-        # Pattern: LEVEL_ChapterN_Title or LEVEL_NN_Title
+        # Pattern 1: standard chapter files — LEVEL_ChapterN_Title or LEVEL_NN_Title
         pattern = r'^([A-Z]\d\+?)_(Chapter)?(\d+)_(.+)\.(md|json)$'
         match = re.match(pattern, filename)
-        
+
         if match:
             level = match.group(1)
             chapter_num = int(match.group(3))
             title = match.group(4).replace('_', ' ')
             return (level, chapter_num, title)
-        
+
+        # Pattern 2: non-chapter free decks — LEVEL_Word_Rest.json (e.g. A1_Common_Colors_01.json)
+        pattern2 = r'^([A-Z]\d\+?)_([A-Za-z].+)\.(md|json)$'
+        match = re.match(pattern2, filename)
+
+        if match:
+            level = match.group(1)
+            title = match.group(2).replace('_', ' ')
+            return (level, 0, title)
+
         return None
     
     def import_lessons(self) -> Dict[str, int]:
@@ -417,25 +427,26 @@ class TipikusImporter:
             if self.dry_run:
                 print("    [DRY RUN] Would create exercise")
                 continue
-            
-            # Get current order (number of existing exercises for this lesson)
-            cursor = self.conn.execute(
-                'SELECT COUNT(*) as count FROM exercices WHERE lesson_id = ?',
-                (lesson_id,)
-            )
-            ordre = cursor.fetchone()['count']
-            
+
             # Check if exercise already exists
             cursor = self.conn.execute(
                 'SELECT id FROM exercices WHERE lesson_id = ? AND titre = ?',
                 (lesson_id, titre)
             )
             existing = cursor.fetchone()
+
+            # Get current order only when inserting a new exercise
+            if not existing:
+                cursor = self.conn.execute(
+                    'SELECT COUNT(*) as count FROM exercices WHERE lesson_id = ?',
+                    (lesson_id,)
+                )
+                ordre = cursor.fetchone()['count']
             
             if existing:
                 exercice_id = existing['id']
                 print(f"    ⚠️  Exercise already exists (ID: {exercice_id}), updating...")
-                
+
                 # Delete old content
                 self.conn.execute('DELETE FROM exercices_contenu WHERE exercice_id = ?', (exercice_id,))
             else:

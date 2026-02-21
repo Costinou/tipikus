@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Február {0} születtem.",
+    "reponses_valides": ["elsején", "Elsején"],
+    "traduction": "I was born on February 1st.",
+    "indice": "ordinal 1st + -án/-én (április elsején)"
+  },
+  {
+    "phrase": "A születésnapom szeptember {0} van.",
+    "reponses_valides": ["tizenötödikén", "Tizenötödikén"],
+    "traduction": "My birthday is on September 15th.",
+    "indice": "ordinal 15th + -én"
+  },
+  {
+    "phrase": "Ma {0} van.",
+    "reponses_valides": ["október tizedike", "Október tizedike"],
+    "traduction": "Today is October 10th.",
+    "indice": "month + ordinal (no suffix when stating the date)"
+  },
+  {
+    "phrase": "{0} van a névnapod?",
+    "reponses_valides": ["Mikor", "mikor"],
+    "traduction": "When is your name day?",
+    "indice": "question word: when"
+  },
+  {
+    "phrase": "Szeptemberben {0} van az iskolakezdés.",
+    "reponses_valides": ["elsején", "Elsején"],
+    "traduction": "School starts in September on the 1st.",
+    "indice": "on the 1st: első → elsején"
+  },
+  {
+    "phrase": "Boldog {0}!",
+    "reponses_valides": ["névnapot", "Névnapot"],
+    "traduction": "Happy name day!",
+    "indice": "name day + accusative (fixed expression)"
+  },
+  {
+    "phrase": "2024-{0} vagyunk.",
+    "reponses_valides": ["ben", "Ben"],
+    "traduction": "We are in 2024.",
+    "indice": "suffix for years: -ban/-ben"
+  },
+  {
+    "phrase": "Húsvét {0} van.",
+    "reponses_valides": ["márciusban", "Márciusban", "áprilisban", "Áprilisban"],
+    "traduction": "Easter is in March (or April).",
+    "indice": "month + -ban/-ben"
+  },
+  {
+    "phrase": "Március az év {0} hónapja.",
+    "reponses_valides": ["harmadik", "Harmadik"],
+    "traduction": "March is the third month of the year.",
+    "indice": "ordinal number: 3rd"
+  },
+  {
+    "phrase": "Ma {0} tizenötödike van.",
+    "reponses_valides": ["március", "Március"],
+    "traduction": "Today is March 15th.",
+    "indice": "month name: March"
+  }
+]

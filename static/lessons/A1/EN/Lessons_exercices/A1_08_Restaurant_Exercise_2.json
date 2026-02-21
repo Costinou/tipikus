@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Kérek egy {0}.",
+    "reponses_valides": ["bort", "Bort"],
+    "traduction": "I'd like a wine.",
+    "indice": "wine + accusative (bor → bort)"
+  },
+  {
+    "phrase": "Szeretem {0} csípős ételeket.",
+    "reponses_valides": ["a", "A"],
+    "traduction": "I like spicy food.",
+    "indice": "definite article (szeretem = definite, specific things)"
+  },
+  {
+    "phrase": "A kávé {0}.",
+    "reponses_valides": ["keserű", "Keserű"],
+    "traduction": "The coffee is bitter.",
+    "indice": "food adjective: bitter"
+  },
+  {
+    "phrase": "Szeretek {0}.",
+    "reponses_valides": ["főzni", "Főzni"],
+    "traduction": "I like to cook.",
+    "indice": "to cook, infinitive form (szeretek + infinitive)"
+  },
+  {
+    "phrase": "Kérem a {0}.",
+    "reponses_valides": ["számlát", "Számlát"],
+    "traduction": "The bill, please.",
+    "indice": "bill + accusative (számla → számlát)"
+  },
+  {
+    "phrase": "{0} vagyok.",
+    "reponses_valides": ["Szomjas", "szomjas"],
+    "traduction": "I am thirsty.",
+    "indice": "thirsty"
+  },
+  {
+    "phrase": "Kérek egy {0} és egy bort.",
+    "reponses_valides": ["salátát", "Salátát"],
+    "traduction": "I'd like a salad and a wine.",
+    "indice": "salad + accusative (saláta → salátát)"
+  },
+  {
+    "phrase": "{0} étvágyat!",
+    "reponses_valides": ["Jó", "jó"],
+    "traduction": "Enjoy your meal!",
+    "indice": "enjoy your meal (literally: good appetite)"
+  },
+  {
+    "phrase": "Szeretem {0} süteményt.",
+    "reponses_valides": ["ezt a", "Ezt a"],
+    "traduction": "I like this cake.",
+    "indice": "this + definite article (szeretem = definite)"
+  },
+  {
+    "phrase": "Mennyibe kerülnek {0} ételek?",
+    "reponses_valides": ["ezek az", "Ezek az"],
+    "traduction": "How much do these foods cost?",
+    "indice": "these + definite article (plural demonstrative)"
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "A születésnapom {0} van.",
+    "reponses_valides": ["januárban", "Januárban"],
+    "traduction": "My birthday is in January.",
+    "indice": "January + in (-ban/-ben)"
+  },
+  {
+    "phrase": "{0} van a születésnapod?",
+    "reponses_valides": ["Mikor", "mikor"],
+    "traduction": "When is your birthday?",
+    "indice": "question word for time: when"
+  },
+  {
+    "phrase": "Ez a {0} lecke.",
+    "reponses_valides": ["harmadik", "Harmadik"],
+    "traduction": "This is the third lesson.",
+    "indice": "ordinal number: 3rd"
+  },
+  {
+    "phrase": "{0} van ma?",
+    "reponses_valides": ["Hanyadika", "hanyadika"],
+    "traduction": "What's today's date?",
+    "indice": "what date is today? (special question)"
+  },
+  {
+    "phrase": "Karácsony december {0} van.",
+    "reponses_valides": ["huszonötödikén", "huszonötödike"],
+    "traduction": "Christmas is on December 25th.",
+    "indice": "ordinal 25th + -án/-én suffix"
+  },
+  {
+    "phrase": "Március {0} nemzeti ünnep.",
+    "reponses_valides": ["tizenötödike", "tizenötödikén"],
+    "traduction": "March 15th is a national holiday.",
+    "indice": "ordinal 15th"
+  },
+  {
+    "phrase": "1998-{0} születtem.",
+    "reponses_valides": ["ban", "Ban"],
+    "traduction": "I was born in 1998.",
+    "indice": "suffix for years (-ban/-ben)"
+  },
+  {
+    "phrase": "A {0} hónap a december.",
+    "reponses_valides": ["tizenkettedik", "Tizenkettedik"],
+    "traduction": "The twelfth month is December.",
+    "indice": "ordinal number: 12th"
+  },
+  {
+    "phrase": "Boldog {0}!",
+    "reponses_valides": ["születésnapot", "Születésnapot"],
+    "traduction": "Happy birthday!",
+    "indice": "birthday + accusative (in this fixed expression)"
+  },
+  {
+    "phrase": "Január az év {0} hónapja.",
+    "reponses_valides": ["első", "Első"],
+    "traduction": "January is the first month of the year.",
+    "indice": "ordinal number: 1st"
+  }
+]

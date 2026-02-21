@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "A konyhába {0}.",
+    "reponses_valides": ["megyek", "Megyek"],
+    "traduction": "I'm going to the kitchen.",
+    "indice": "to go, 1st person singular (-ba/-be = direction)"
+  },
+  {
+    "phrase": "Van egy {0} a nappaliban.",
+    "reponses_valides": ["kanapé", "Kanapé"],
+    "traduction": "There is a sofa in the living room.",
+    "indice": "furniture: sofa"
+  },
+  {
+    "phrase": "A lakásunk a harmadik {0} van.",
+    "reponses_valides": ["emeleten", "Emeleten"],
+    "traduction": "Our apartment is on the third floor.",
+    "indice": "floor / storey + -on/-en (on)"
+  },
+  {
+    "phrase": "A hálószobában {0} egy nagy ágy.",
+    "reponses_valides": ["van", "Van"],
+    "traduction": "In the bedroom there is a big bed.",
+    "indice": "there is (van)"
+  },
+  {
+    "phrase": "A fürdőszobáb{0} megyek zuhanyozni.",
+    "reponses_valides": ["a", "A"],
+    "traduction": "I'm going to the bathroom to shower.",
+    "indice": "direction suffix after fürdőszoba (-ba/-be)"
+  },
+  {
+    "phrase": "Egy {0} lakásban lakom.",
+    "reponses_valides": ["panelházban", "Panelházban"],
+    "traduction": "I live in a panel block building.",
+    "indice": "type of building + -ban/-ben"
+  },
+  {
+    "phrase": "Van {0} kertünk.",
+    "reponses_valides": ["egy szép", "Egy szép"],
+    "traduction": "We have a nice garden.",
+    "indice": "article + adjective: a nice"
+  },
+  {
+    "phrase": "A {0} a konyhában van.",
+    "reponses_valides": ["tűzhely", "Tűzhely"],
+    "traduction": "The stove is in the kitchen.",
+    "indice": "furniture: stove / cooker"
+  },
+  {
+    "phrase": "Szeretem a szobámat, mert nagyon {0}.",
+    "reponses_valides": ["csendes", "Csendes"],
+    "traduction": "I love my room because it's very quiet.",
+    "indice": "adjective: quiet"
+  },
+  {
+    "phrase": "A nappaliból a kertb{0} megyek.",
+    "reponses_valides": ["e", "E"],
+    "traduction": "I'm going from the living room to the garden.",
+    "indice": "direction suffix after kert (-ba/-be, front vowel)"
+  }
+]

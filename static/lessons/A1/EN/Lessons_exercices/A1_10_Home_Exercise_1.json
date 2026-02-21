@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "A tévé a {0} van.",
+    "reponses_valides": ["nappaliban", "Nappaliban"],
+    "traduction": "The TV is in the living room.",
+    "indice": "living room + -ban/-ben (location)"
+  },
+  {
+    "phrase": "A {0} nagy és kényelmes.",
+    "reponses_valides": ["hálószobám", "Hálószobám"],
+    "traduction": "My bedroom is big and comfortable.",
+    "indice": "bedroom + possessive 'my'"
+  },
+  {
+    "phrase": "A konyháb{0} eszem.",
+    "reponses_valides": ["an", "An"],
+    "traduction": "I eat in the kitchen.",
+    "indice": "location suffix (-ban/-ben) after konyha"
+  },
+  {
+    "phrase": "A hűtő a {0} van.",
+    "reponses_valides": ["konyhában", "Konyhában"],
+    "traduction": "The fridge is in the kitchen.",
+    "indice": "kitchen + -ban/-ben (location)"
+  },
+  {
+    "phrase": "Egy {0} lakásban lakom.",
+    "reponses_valides": ["kétszobás", "Kétszobás"],
+    "traduction": "I live in a two-room apartment.",
+    "indice": "two-room (két = two, szoba = room, -s = adjective suffix)"
+  },
+  {
+    "phrase": "A {0} a hálószobában van.",
+    "reponses_valides": ["ágy", "Ágy"],
+    "traduction": "The bed is in the bedroom.",
+    "indice": "furniture: bed"
+  },
+  {
+    "phrase": "A lakásom kicsi, de {0}.",
+    "reponses_valides": ["kényelmes", "Kényelmes"],
+    "traduction": "My apartment is small but comfortable.",
+    "indice": "adjective: comfortable"
+  },
+  {
+    "phrase": "A kertb{0} sétálok.",
+    "reponses_valides": ["en", "En"],
+    "traduction": "I walk in the garden.",
+    "indice": "location suffix after kert (front vowel word)"
+  },
+  {
+    "phrase": "Hol van {0} fürdőszoba?",
+    "reponses_valides": ["a", "A"],
+    "traduction": "Where is the bathroom?",
+    "indice": "definite article before fürdőszoba"
+  },
+  {
+    "phrase": "A szobám {0} és tágas.",
+    "reponses_valides": ["világos", "Világos"],
+    "traduction": "My room is bright and spacious.",
+    "indice": "adjective: bright / light"
+  }
+]

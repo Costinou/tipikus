@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Fél {0} van.",
+    "reponses_valides": ["három", "Három"],
+    "traduction": "It's half past two. (2:30)",
+    "indice": "fél + next hour = half past; half past two → fél ?"
+  },
+  {
+    "phrase": "{0} reggel kelek fel.",
+    "reponses_valides": ["Általában", "általában"],
+    "traduction": "I usually wake up in the morning.",
+    "indice": "frequency adverb: usually"
+  },
+  {
+    "phrase": "Nyolc{0} megyek az iskolába.",
+    "reponses_valides": ["kor", "Kor"],
+    "traduction": "I go to school at eight.",
+    "indice": "suffix for 'at [time]'"
+  },
+  {
+    "phrase": "Este főzök és {0}.",
+    "reponses_valides": ["vacsorázom", "Vacsorázom"],
+    "traduction": "In the evening I cook and have dinner.",
+    "indice": "to have dinner, 1st person (-ik verb)"
+  },
+  {
+    "phrase": "{0} óra van?",
+    "reponses_valides": ["Hány", "hány"],
+    "traduction": "What time is it?",
+    "indice": "question word: how many / what"
+  },
+  {
+    "phrase": "A bátyám {0} zuhanyozik.",
+    "reponses_valides": ["reggel", "Reggel"],
+    "traduction": "My older brother showers in the morning.",
+    "indice": "part of the day: early morning"
+  },
+  {
+    "phrase": "Tíz {0} alszunk.",
+    "reponses_valides": ["körül", "Körül"],
+    "traduction": "We sleep around ten.",
+    "indice": "around (approximate time)"
+  },
+  {
+    "phrase": "{0} dolgozol a hétvégén?",
+    "reponses_valides": ["Dolgozol", "dolgozol", "Ritkán", "ritkán"],
+    "traduction": "Do you rarely work on weekends?",
+    "indice": "frequency adverb: rarely"
+  },
+  {
+    "phrase": "Negyed {0} van.",
+    "reponses_valides": ["négy", "Négy"],
+    "traduction": "It's quarter past three. (3:15)",
+    "indice": "negyed + next hour = quarter past; quarter past three → negyed ?"
+  },
+  {
+    "phrase": "Este {0} pihenek és olvasok.",
+    "reponses_valides": ["délután", "Délután"],
+    "traduction": "In the afternoon I rest and read.",
+    "indice": "part of the day: afternoon"
+  }
+]

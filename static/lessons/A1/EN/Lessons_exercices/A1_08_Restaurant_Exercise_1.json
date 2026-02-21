@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Kérek egy {0}.",
+    "reponses_valides": ["kávét", "Kávét"],
+    "traduction": "I'd like a coffee.",
+    "indice": "coffee + accusative (-t)"
+  },
+  {
+    "phrase": "Szeretem {0} kávét.",
+    "reponses_valides": ["a", "A"],
+    "traduction": "I like coffee.",
+    "indice": "definite article before a specific noun (szeretem = definite)"
+  },
+  {
+    "phrase": "{0} kerül a leves?",
+    "reponses_valides": ["Mennyibe", "mennyibe"],
+    "traduction": "How much does the soup cost?",
+    "indice": "how much does it cost?"
+  },
+  {
+    "phrase": "Kérem {0} számlát.",
+    "reponses_valides": ["a", "A"],
+    "traduction": "The bill, please.",
+    "indice": "definite article"
+  },
+  {
+    "phrase": "Ez a leves nagyon {0}!",
+    "reponses_valides": ["finom", "Finom"],
+    "traduction": "This soup is very delicious!",
+    "indice": "delicious"
+  },
+  {
+    "phrase": "Kérnék egy pohár {0}.",
+    "reponses_valides": ["vizet", "Vizet"],
+    "traduction": "I'd like a glass of water.",
+    "indice": "water + accusative (víz → vizet)"
+  },
+  {
+    "phrase": "Szeretek {0} menni.",
+    "reponses_valides": ["étterembe", "Étterembe"],
+    "traduction": "I like going to restaurants.",
+    "indice": "restaurant + direction suffix -ba/-be"
+  },
+  {
+    "phrase": "{0} vagyok, szeretnék enni valamit.",
+    "reponses_valides": ["Éhes", "éhes"],
+    "traduction": "I'm hungry, I'd like to eat something.",
+    "indice": "hungry"
+  },
+  {
+    "phrase": "Mit {0}?",
+    "reponses_valides": ["kér", "Kér"],
+    "traduction": "What would you like?",
+    "indice": "to order / to ask for, 2nd person formal (definite)"
+  },
+  {
+    "phrase": "Kérek egy {0} és egy salátát.",
+    "reponses_valides": ["levest", "Levest"],
+    "traduction": "I'd like a soup and a salad.",
+    "indice": "soup + accusative (-t)"
+  }
+]

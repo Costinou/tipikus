@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Keresek egy zöld {0}.",
+    "reponses_valides": ["pulóvert", "Pulóvert"],
+    "traduction": "I'm looking for a green sweater.",
+    "indice": "sweater + accusative (pulóver → pulóvert)"
+  },
+  {
+    "phrase": "Nem {0} a sárga.",
+    "reponses_valides": ["tetszik", "Tetszik"],
+    "traduction": "I don't like the yellow one.",
+    "indice": "I like it / it pleases — negated"
+  },
+  {
+    "phrase": "Ez elég {0}.",
+    "reponses_valides": ["olcsó", "Olcsó"],
+    "traduction": "This is quite cheap.",
+    "indice": "cheap"
+  },
+  {
+    "phrase": "Közepes {0}, kérem.",
+    "reponses_valides": ["méretet", "Méretet"],
+    "traduction": "Medium size, please.",
+    "indice": "size + accusative (méret → méretet)"
+  },
+  {
+    "phrase": "Mennyibe kerülnek {0} cipők?",
+    "reponses_valides": ["ezek a", "Ezek a"],
+    "traduction": "How much do these shoes cost?",
+    "indice": "these + definite article (demonstrative plural)"
+  },
+  {
+    "phrase": "Van ez {0} színben is?",
+    "reponses_valides": ["piros", "Piros"],
+    "traduction": "Do you have this in red too?",
+    "indice": "color: red"
+  },
+  {
+    "phrase": "A {0} ott van.",
+    "reponses_valides": ["kassza", "Kassza"],
+    "traduction": "The checkout is there.",
+    "indice": "checkout / cash register"
+  },
+  {
+    "phrase": "Készpénzzel {0}.",
+    "reponses_valides": ["fizetek", "Fizetek"],
+    "traduction": "I'll pay in cash.",
+    "indice": "to pay, 1st person singular"
+  },
+  {
+    "phrase": "Ez a {0} nagyon szép.",
+    "reponses_valides": ["ruha", "Ruha"],
+    "traduction": "This dress is very nice.",
+    "indice": "dress / clothes"
+  },
+  {
+    "phrase": "Van {0} méretben?",
+    "reponses_valides": ["nagy", "Nagy"],
+    "traduction": "Do you have it in large size?",
+    "indice": "large (size)"
+  }
+]

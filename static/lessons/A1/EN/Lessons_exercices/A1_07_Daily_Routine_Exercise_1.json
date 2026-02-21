@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Reggel hatkor {0}.",
+    "reponses_valides": ["felkelek", "Felkelek"],
+    "traduction": "I wake up at six in the morning.",
+    "indice": "to wake up, 1st person singular"
+  },
+  {
+    "phrase": "Az apám egy bankban {0}.",
+    "reponses_valides": ["dolgozik", "Dolgozik"],
+    "traduction": "My father works in a bank.",
+    "indice": "to work, 3rd person (-ik verb)"
+  },
+  {
+    "phrase": "Hány {0} van?",
+    "reponses_valides": ["óra", "Óra"],
+    "traduction": "What time is it?",
+    "indice": "hour / clock"
+  },
+  {
+    "phrase": "{0} reggelizem.",
+    "reponses_valides": ["Fél nyolckor", "fél nyolckor"],
+    "traduction": "I have breakfast at half past seven.",
+    "indice": "at half past seven"
+  },
+  {
+    "phrase": "Általában {0} ebédelek.",
+    "reponses_valides": ["délben", "Délben"],
+    "traduction": "I usually have lunch at noon.",
+    "indice": "at noon (special form, not -kor)"
+  },
+  {
+    "phrase": "Este tíz körül {0}.",
+    "reponses_valides": ["lefekszem", "Lefekszem"],
+    "traduction": "I go to bed around ten in the evening.",
+    "indice": "to go to bed, 1st person singular"
+  },
+  {
+    "phrase": "Mi {0} este hatkor.",
+    "reponses_valides": ["hazamegyünk", "Hazamegyünk"],
+    "traduction": "We go home at six in the evening.",
+    "indice": "to go home, 1st person plural"
+  },
+  {
+    "phrase": "A nővérem {0} az egyetemen.",
+    "reponses_valides": ["tanul", "Tanul"],
+    "traduction": "My older sister studies at university.",
+    "indice": "to study, 3rd person singular"
+  },
+  {
+    "phrase": "{0} nem alszom délután.",
+    "reponses_valides": ["Soha", "soha"],
+    "traduction": "I never sleep in the afternoon.",
+    "indice": "never (used with 'nem')"
+  },
+  {
+    "phrase": "Hány {0} kelsz fel?",
+    "reponses_valides": ["órakor", "Órakor"],
+    "traduction": "What time do you wake up?",
+    "indice": "at what time? (-kor on óra)"
+  }
+]
