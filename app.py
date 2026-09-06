@@ -1,78 +1,56 @@
-"""
-Tipikus - Language Learning Platform
-=====================================
-Lightweight Flask application using modular blueprints
-
-Main application file - all routes have been moved to routes/ package
-"""
-
+from flask import Flask, jsonify, request, send_from_directory
+import json
 import os
-from flask import Flask, redirect, url_for
-from dotenv import load_dotenv
-from authlib.integrations.flask_client import OAuth
-from database import init_db
-from routes import register_blueprints
+import time
 
-# Load environment variables
-load_dotenv()
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# Create Flask application
-app = Flask(__name__)
-app.secret_key = 'tipikus_secret_key_2024'
-
-# Session configuration
-app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 year
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-
-# ========== OAUTH CONFIGURATION ==========
-
-# Initialize OAuth
-oauth = OAuth(app)
-
-# Google OAuth
-google = oauth.register(
-    name='google',
-    client_id=os.getenv('GOOGLE_CLIENT_ID'),
-    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid email profile'}
-)
-
-# GitHub OAuth
-github = oauth.register(
-    name='github',
-    client_id=os.getenv('GITHUB_CLIENT_ID'),
-    client_secret=os.getenv('GITHUB_CLIENT_SECRET'),
-    access_token_url='https://github.com/login/oauth/access_token',
-    authorize_url='https://github.com/login/oauth/authorize',
-    authorize_params=None,
-    api_base_url='https://api.github.com/',
-    client_kwargs={'scope': 'user:email'},
-)
-
-# Make OAuth clients available to blueprints
-app.config['OAUTH_GOOGLE'] = google
-app.config['OAUTH_GITHUB'] = github
-
-# ========== BLUEPRINT REGISTRATION ==========
-
-# Register all application blueprints
-register_blueprints(app)
-
-# ========== ERROR HANDLERS ==========
-
-@app.errorhandler(404)
-def page_not_found(e):
-    """Redirect 404 errors to index"""
-    return redirect(url_for('main.index'))
+DATA_FILE = 'data.json'
 
 
-# ========== APPLICATION INITIALIZATION ==========
+def load_data():
+    if not os.path.exists(DATA_FILE):
+        return {"profiles": [], "decks": [], "last_updated": 0}
+    with open(DATA_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def save_data(data):
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+@app.route('/')
+def index():
+    return send_from_directory('static', 'index.html')
+
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json')
+
+
+@app.route('/service-worker.js')
+def service_worker():
+    return send_from_directory('static', 'service-worker.js', mimetype='application/javascript')
+
+
+@app.route('/api/data', methods=['GET'])
+def get_data():
+    return jsonify(load_data())
+
+
+@app.route('/api/data', methods=['POST'])
+def post_data():
+    incoming = request.get_json()
+    if incoming is None:
+        return jsonify({"error": "invalid json"}), 400
+    incoming['last_updated'] = int(time.time() * 1000)
+    save_data(incoming)
+    return jsonify({"status": "ok", "last_updated": incoming['last_updated']})
+
 
 if __name__ == '__main__':
-    # Initialize database
-    init_db()
-
-    # Run application
+    if not os.path.exists(DATA_FILE):
+        save_data({"profiles": [], "decks": [], "last_updated": 0})
     app.run(debug=True, host='0.0.0.0', port=5000)

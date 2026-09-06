@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tipikus Lite</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<link rel="apple-touch-icon" href="/static/icon.svg">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div id="status-bar">
+  <span id="status-dot"></span>
+  <span id="status-text">En ligne</span>
+</div>
+
+<!-- VUE : SELECTION PROFIL -->
+<section id="view-profiles" class="view">
+  <h1>Tipikus</h1>
+  <p class="subtitle">Choisis ton profil</p>
+  <div id="profiles-list" class="card-list"></div>
+  <button class="btn-primary" id="btn-new-profile">+ Nouveau profil</button>
+
+  <h3 class="section-title">Statistiques par profil</h3>
+  <div class="table-wrap">
+    <table class="app-table">
+      <thead>
+        <tr>
+          <th>Profil</th>
+          <th>Connexions</th>
+          <th>Temps passé</th>
+          <th>Cartes vues</th>
+        </tr>
+      </thead>
+      <tbody id="kpi-tbody"></tbody>
+    </table>
+  </div>
+
+  <h3 class="section-title">Activité (6 derniers mois)</h3>
+  <div id="heatmaps-container"></div>
+  <div class="heatmap-legend">
+    <span class="legend-item"><span class="swatch level-0"></span> Pas de connexion</span>
+    <span class="legend-item"><span class="swatch level-1"></span> Connecté</span>
+    <span class="legend-item"><span class="swatch level-2"></span> +10 min</span>
+  </div>
+</section>
+
+<!-- VUE : LISTE DES DECKS -->
+<section id="view-decks" class="view hidden">
+  <header class="topbar">
+    <button class="btn-icon" id="btn-back-profiles">←</button>
+    <h2 id="current-profile-name">Decks</h2>
+    <button class="btn-icon" id="btn-switch-profile">👤</button>
+  </header>
+
+  <div class="table-wrap">
+    <table class="app-table">
+      <thead>
+        <tr>
+          <th data-sort="nom">Nom<span class="sort-arrow"></span></th>
+          <th data-sort="date">Date<span class="sort-arrow"></span></th>
+          <th data-sort="mots">Mots<span class="sort-arrow"></span></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="decks-tbody"></tbody>
+    </table>
+  </div>
+  <button class="btn-primary" id="btn-new-deck">+ Nouveau deck</button>
+</section>
+
+<!-- VUE : EDITION D'UN DECK -->
+<section id="view-deck-edit" class="view hidden">
+  <header class="topbar">
+    <button class="btn-icon" id="btn-back-decks">←</button>
+    <h2 id="edit-deck-name">Deck</h2>
+    <button class="btn-icon" id="btn-delete-deck">🗑</button>
+  </header>
+  <form id="form-add-mot" class="row-form">
+    <input type="text" id="input-mot-fr" placeholder="Mot (français)" required>
+    <input type="text" id="input-mot-trad" placeholder="Traduction" required>
+    <button type="submit" class="btn-primary btn-small">Ajouter</button>
+  </form>
+  <div id="mots-list" class="card-list"></div>
+  <button class="btn-secondary" id="btn-start-flashcards">▶ Démarrer les flashcards</button>
+</section>
+
+<!-- VUE : FLASHCARDS -->
+<section id="view-flashcards" class="view hidden">
+  <header class="topbar">
+    <button class="btn-icon" id="btn-back-deck-edit">←</button>
+    <h2>Flashcards</h2>
+    <span id="flashcard-progress"></span>
+  </header>
+  <div id="flashcard-empty" class="hidden">
+    <p>Ce deck n'a pas encore de mots.</p>
+  </div>
+  <div id="flashcard-zone" class="hidden">
+    <div id="flashcard" class="flashcard">
+      <div class="flashcard-face" id="flashcard-front"></div>
+    </div>
+    <p class="hint">Touche la carte pour retourner</p>
+    <div class="flashcard-actions hidden" id="flashcard-actions">
+      <button class="btn-danger" id="btn-know-no">Je savais pas</button>
+      <button class="btn-success" id="btn-know-yes">Je savais</button>
+    </div>
+  </div>
+  <div id="flashcard-done" class="hidden">
+    <h3>Terminé 🎉</h3>
+    <p id="flashcard-summary"></p>
+    <button class="btn-primary" id="btn-restart-flashcards">Recommencer</button>
+  </div>
+</section>
+
+<!-- MODALE simple pour saisie (nouveau profil / nouveau deck) -->
+<div id="modal-overlay" class="hidden">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <input type="text" id="modal-input" placeholder="Nom">
+    <div class="modal-actions">
+      <button class="btn-secondary" id="modal-cancel">Annuler</button>
+      <button class="btn-primary" id="modal-confirm">OK</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
