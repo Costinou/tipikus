@@ -9,6 +9,8 @@ __pycache__/
 # Initial tipikus db must be empty
 tipikus.db
 tipikus.db.backup
+data.json
+
 
 # Distribution / packaging
 .Python

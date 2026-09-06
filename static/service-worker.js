@@ -5,7 +5,8 @@ const APP_SHELL = [
   '/static/style.css',
   '/static/app.js',
   '/static/manifest.json',
-  '/static/icon.svg'
+  '/static/icon-192.png',
+  '/static/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -24,8 +25,8 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// HTML/CSS/JS : toujours vérifier le réseau d'abord pour avoir la dernière
-// version ; on ne retombe sur le cache que si le réseau échoue (hors-ligne).
+// HTML/CSS/JS : réseau en priorité (toujours la dernière version en ligne),
+// cache en secours uniquement si hors-ligne.
 function isAppShellFile(pathname) {
   return pathname === '/' || pathname.endsWith('.html') || pathname.endsWith('.js') || pathname.endsWith('.css');
 }
