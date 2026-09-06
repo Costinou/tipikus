@@ -4,13 +4,13 @@
       "id": "mtpqvb6ulqo8e",
       "nom": "C",
       "stats": {
-        "connexions": 3,
-        "temps_total_secondes": 9.444,
+        "connexions": 5,
+        "temps_total_secondes": 1209.6719999999998,
         "cartes_vues": 0,
         "daily": {
           "2026-09-06": {
-            "connexions": 2,
-            "temps_secondes": 6.0009999999999994
+            "connexions": 4,
+            "temps_secondes": 1206.2289999999998
           }
         }
       }
@@ -30,5 +30,5 @@
       ]
     }
   ],
-  "last_updated": 1788709576021
+  "last_updated": 1788711742670
 }
