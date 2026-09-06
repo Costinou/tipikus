@@ -5,12 +5,12 @@
       "nom": "C",
       "stats": {
         "connexions": 5,
-        "temps_total_secondes": 1209.6719999999998,
+        "temps_total_secondes": 1270.6719999999998,
         "cartes_vues": 0,
         "daily": {
           "2026-09-06": {
             "connexions": 4,
-            "temps_secondes": 1206.2289999999998
+            "temps_secondes": 1267.2289999999998
           }
         }
       }
@@ -30,5 +30,5 @@
       ]
     }
   ],
-  "last_updated": 1788711742670
+  "last_updated": 1788711803660
 }
