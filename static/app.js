@@ -100,7 +100,7 @@ function buildHeatmap(profile) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const DAYS_RANGE = 182; // ~ 6 mois
+  const DAYS_RANGE = 122; // ~ 4 mois
   const start = new Date(today);
   start.setDate(start.getDate() - (DAYS_RANGE - 1));
   start.setDate(start.getDate() - start.getDay()); // recule jusqu'au dimanche précédent
@@ -260,23 +260,29 @@ function setOnlineStatus(online) {
 window.addEventListener('online', syncWithServer);
 window.addEventListener('offline', () => setOnlineStatus(false));
 
-// Flush périodique pour ne pas perdre trop de temps en cas de fermeture brutale
-setInterval(() => {
+// Flush périodique + resynchro complète, pour que les changements faits sur
+// un autre appareil finissent par apparaître sans devoir recharger la page.
+async function periodicSync() {
   if (profileSessionStart) {
     flushProfileSessionTime();
-    pushToServer(state);
   }
-}, 30000);
+  await syncWithServer();
+}
+setInterval(periodicSync, 20000);
 
-// L'app passe en arrière-plan : on fige le temps compté, on ignore la durée
-// passée en arrière-plan quand on revient.
+// L'app passe en arrière-plan : on fige le temps compté. Au retour au premier
+// plan, on ignore la durée passée en arrière-plan ET on resynchronise tout de
+// suite (l'app a pu manquer des mises à jour faites ailleurs pendant ce temps).
 document.addEventListener('visibilitychange', () => {
   if (!currentProfileId) return;
   if (document.hidden) {
     flushProfileSessionTime();
     pushToServer(state);
-  } else if (profileSessionStart) {
-    profileSessionStart = Date.now();
+  } else {
+    if (profileSessionStart) {
+      profileSessionStart = Date.now();
+    }
+    syncWithServer();
   }
 });
 
@@ -476,17 +482,17 @@ document.getElementById('btn-start-flashcards').onclick = () => {
     mots: [...deck.mots].sort(() => Math.random() - 0.5),
     index: 0,
     flipped: false,
-    knownCount: 0,
-    lastCountedIndex: -1
+    countedIndices: new Set()
   };
   showView('view-flashcards');
   renderFlashcard();
 };
 
 function countCardAsSeen() {
-  if (flashcardSession.index === flashcardSession.lastCountedIndex) return;
-  if (flashcardSession.index >= flashcardSession.mots.length) return;
-  flashcardSession.lastCountedIndex = flashcardSession.index;
+  const i = flashcardSession.index;
+  if (i >= flashcardSession.mots.length) return;
+  if (flashcardSession.countedIndices.has(i)) return;
+  flashcardSession.countedIndices.add(i);
   const profile = state.profiles.find(p => p.id === currentProfileId);
   if (profile) {
     ensureProfileStats(profile).cartes_vues += 1;
@@ -507,31 +513,37 @@ function renderFlashcard() {
   if (flashcardSession.index >= flashcardSession.mots.length) {
     done.classList.remove('hidden');
     document.getElementById('flashcard-summary').textContent =
-      `${flashcardSession.knownCount} / ${flashcardSession.mots.length} mots connus`;
+      `Tu as revu les ${flashcardSession.mots.length} mots de ce deck.`;
     return;
   }
   zone.classList.remove('hidden');
   countCardAsSeen();
   const mot = flashcardSession.mots[flashcardSession.index];
   document.getElementById('flashcard-front').textContent = flashcardSession.flipped ? mot.trad : mot.fr;
-  document.getElementById('flashcard-actions').classList.toggle('hidden', !flashcardSession.flipped);
+  document.getElementById('btn-prev-card').disabled = flashcardSession.index === 0;
   document.getElementById('flashcard-progress').textContent =
     `${flashcardSession.index + 1} / ${flashcardSession.mots.length}`;
 }
 
 document.getElementById('flashcard').onclick = () => {
-  flashcardSession.flipped = !flashcardSession.flipped;
-  renderFlashcard();
+  if (!flashcardSession.flipped) {
+    flashcardSession.flipped = true;
+    renderFlashcard();
+  } else {
+    flashcardSession.index++;
+    flashcardSession.flipped = false;
+    renderFlashcard();
+  }
 };
 
-function nextCard(known) {
-  if (known) flashcardSession.knownCount++;
-  flashcardSession.index++;
-  flashcardSession.flipped = false;
-  renderFlashcard();
-}
-document.getElementById('btn-know-yes').onclick = () => nextCard(true);
-document.getElementById('btn-know-no').onclick = () => nextCard(false);
+document.getElementById('btn-prev-card').onclick = () => {
+  if (flashcardSession.index > 0) {
+    flashcardSession.index--;
+    flashcardSession.flipped = false;
+    renderFlashcard();
+  }
+};
+
 document.getElementById('btn-restart-flashcards').onclick = () => {
   document.getElementById('btn-start-flashcards').click();
 };

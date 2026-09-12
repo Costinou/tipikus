@@ -6,6 +6,7 @@
 <title>Tipikus Lite</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#4f46e5">
+<link rel="icon" type="image/png" href="/static/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icon-192.png">
 <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -38,7 +39,7 @@
     </table>
   </div>
 
-  <h3 class="section-title">Activité (6 derniers mois)</h3>
+  <h3 class="section-title">Activité (4 derniers mois)</h3>
   <div id="heatmaps-container"></div>
   <div class="heatmap-legend">
     <span class="legend-item"><span class="swatch level-0"></span> Pas de connexion</span>
@@ -78,13 +79,13 @@
     <h2 id="edit-deck-name">Deck</h2>
     <button class="btn-icon" id="btn-delete-deck">🗑</button>
   </header>
+  <button class="btn-secondary" id="btn-start-flashcards">▶ Démarrer les flashcards</button>
   <form id="form-add-mot" class="row-form">
     <input type="text" id="input-mot-fr" placeholder="Mot (français)" required>
     <input type="text" id="input-mot-trad" placeholder="Traduction" required>
     <button type="submit" class="btn-primary btn-small">Ajouter</button>
   </form>
   <div id="mots-list" class="card-list"></div>
-  <button class="btn-secondary" id="btn-start-flashcards">▶ Démarrer les flashcards</button>
 </section>
 
 <!-- VUE : FLASHCARDS -->
@@ -101,11 +102,8 @@
     <div id="flashcard" class="flashcard">
       <div class="flashcard-face" id="flashcard-front"></div>
     </div>
-    <p class="hint">Touche la carte pour retourner</p>
-    <div class="flashcard-actions hidden" id="flashcard-actions">
-      <button class="btn-danger" id="btn-know-no">Je savais pas</button>
-      <button class="btn-success" id="btn-know-yes">Je savais</button>
-    </div>
+    <p class="hint">1er clic : voir la traduction · 2e clic : carte suivante</p>
+    <button class="btn-secondary" id="btn-prev-card">◀ Précédent</button>
   </div>
   <div id="flashcard-done" class="hidden">
     <h3>Terminé 🎉</h3>

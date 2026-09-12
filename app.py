@@ -53,4 +53,6 @@ def post_data():
 if __name__ == '__main__':
     if not os.path.exists(DATA_FILE):
         save_data({"profiles": [], "decks": [], "last_updated": 0})
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Écoute uniquement en local : Nginx fait le reverse proxy HTTPS sur le port 443
+    # et redirige vers ce port. debug=False car l'app est exposée publiquement via Nginx.
+    app.run(debug=False, host='127.0.0.1', port=5000)
