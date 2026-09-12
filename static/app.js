@@ -442,7 +442,7 @@ function renderDeckEdit() {
   deck.mots.forEach((m, i) => {
     const div = document.createElement('div');
     div.className = 'card-item';
-    div.innerHTML = `<div><strong>${m.fr}</strong><div class="meta">${m.trad}</div></div>`;
+    div.innerHTML = `<div><strong class="word-source">${m.fr}</strong><div class="word-target">${m.trad}</div></div>`;
     const del = document.createElement('button');
     del.className = 'del-btn'; del.textContent = '🗑';
     del.onclick = () => mutate(s => {
@@ -519,7 +519,10 @@ function renderFlashcard() {
   zone.classList.remove('hidden');
   countCardAsSeen();
   const mot = flashcardSession.mots[flashcardSession.index];
-  document.getElementById('flashcard-front').textContent = flashcardSession.flipped ? mot.trad : mot.fr;
+  const frontEl = document.getElementById('flashcard-front');
+  frontEl.textContent = flashcardSession.flipped ? mot.trad : mot.fr;
+  frontEl.classList.toggle('flashcard-source', !flashcardSession.flipped);
+  frontEl.classList.toggle('flashcard-target', flashcardSession.flipped);
   document.getElementById('btn-prev-card').disabled = flashcardSession.index === 0;
   document.getElementById('flashcard-progress').textContent =
     `${flashcardSession.index + 1} / ${flashcardSession.mots.length}`;

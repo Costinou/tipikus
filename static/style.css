@@ -40,7 +40,11 @@ h1 { font-size: 28px; margin-bottom: 0; }
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.table-wrap { overflow-x: auto; margin: 12px 0; }
+.table-wrap {
+  overflow-x: auto; margin: 12px 0;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.table-wrap::-webkit-scrollbar { display: none; }
 .app-table {
   width: 100%; border-collapse: collapse; background: white;
   border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
@@ -72,7 +76,11 @@ h1 { font-size: 28px; margin-bottom: 0; }
   margin-top: 17px;
   font-size: 9px; color: #888; text-align: right; white-space: nowrap;
 }
-.heatmap-scroll { overflow-x: auto; }
+.heatmap-scroll {
+  overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.heatmap-scroll::-webkit-scrollbar { display: none; }
 .heatmap-months {
   display: grid; grid-auto-flow: column; grid-auto-columns: 12px; gap: 3px;
   font-size: 10px; color: #888; height: 14px; margin-bottom: 3px; white-space: nowrap;
@@ -105,6 +113,8 @@ h1 { font-size: 28px; margin-bottom: 0; }
   cursor: pointer;
 }
 .card-item .meta { font-size: 12px; color: #888; }
+.word-source { color: #1f2333; }
+.word-target { font-size: 13px; color: #4f46e5; margin-top: 2px; font-weight: 500; }
 .card-item .del-btn {
   border: none; background: transparent; color: #ef4444; font-size: 16px;
 }
@@ -118,6 +128,7 @@ h1 { font-size: 28px; margin-bottom: 0; }
 .btn-danger { background: #fee2e2; color: #ef4444; }
 .btn-success { background: #dcfce7; color: #16a34a; }
 .btn-small { width: auto; padding: 10px 16px; margin-top: 0; }
+#btn-start-flashcards { margin-bottom: 20px; }
 
 .row-form { display: flex; gap: 8px; margin-bottom: 12px; }
 .row-form input {
@@ -132,6 +143,8 @@ h1 { font-size: 28px; margin-bottom: 0; }
   cursor: pointer; user-select: none;
 }
 .hint { text-align: center; color: #999; font-size: 13px; margin-top: 10px; }
+.flashcard-source { color: #1f2333; }
+.flashcard-target { color: #4f46e5; }
 .flashcard-actions { display: flex; gap: 10px; margin-top: 20px; }
 
 #modal-overlay {
